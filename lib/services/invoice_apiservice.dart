@@ -125,14 +125,14 @@ class Model {
   }
 }
 
-class Size {
+class ProductSize {
   final String id;
   final String sizeName;
   final String addedby;
   final String activestatus;
   final String createdAt;
 
-  Size({
+  ProductSize({
     required this.id,
     required this.sizeName,
     required this.addedby,
@@ -140,8 +140,8 @@ class Size {
     required this.createdAt,
   });
 
-  factory Size.fromJson(Map<String, dynamic> json) {
-    return Size(
+  factory ProductSize.fromJson(Map<String, dynamic> json) {
+    return ProductSize(
       id: json['id']?.toString() ?? '',
       sizeName: json['sizename'] ?? '',
       addedby: json['addedby'] ?? '',
@@ -182,28 +182,30 @@ class InvoiceModel {
   final String invoiceNo;
   final String customerId;
   final String customerName;
+  final String customerPhone;
   final String date;
   final String remarks;
   final String taxPercentage;
   final String subtotal;
   final String grandTotal;
-  final String status;
   final String addedby;
   final String createdAt;
+  final int? totalItems;
 
   InvoiceModel({
     required this.id,
     required this.invoiceNo,
     required this.customerId,
     required this.customerName,
+    required this.customerPhone,
     required this.date,
     required this.remarks,
     required this.taxPercentage,
     required this.subtotal,
     required this.grandTotal,
-    required this.status,
     required this.addedby,
     required this.createdAt,
+    this.totalItems,
   });
 
   factory InvoiceModel.fromJson(Map<String, dynamic> json) {
@@ -212,14 +214,17 @@ class InvoiceModel {
       invoiceNo: json['invoiceno'] ?? json['orderno'] ?? '',
       customerId: json['customerid']?.toString() ?? '',
       customerName: json['customername'] ?? '',
+      customerPhone: json['customerphone'] ?? json['mobile1'] ?? '',
       date: json['date'] ?? '',
       remarks: json['remarks'] ?? '',
-      taxPercentage: json['taxpercentage']?.toString() ?? '0',
+      taxPercentage: json['taxpercentage']?.toString() ?? '5',
       subtotal: json['subtotal']?.toString() ?? '0',
       grandTotal: json['grandtotal']?.toString() ?? '0',
-      status: json['status'] ?? 'Draft',
       addedby: json['addedby'] ?? '',
       createdAt: json['created_at'] ?? '',
+      totalItems: json['total_items'] != null
+          ? int.tryParse(json['total_items'].toString())
+          : null,
     );
   }
 }
@@ -321,8 +326,8 @@ class InvoiceApiService {
   }
 
   // Get sizes
-  Future<List<Size>> getSizes(BuildContext context) async {
-    List<Size> list = [];
+  Future<List<ProductSize>> getSizes(BuildContext context) async {
+    List<ProductSize> list = [];
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       final companyid = prefs.getString('companyid') ?? '';
@@ -336,7 +341,7 @@ class InvoiceApiService {
       if (response.statusCode == 200) {
         final items = json.decode(response.body);
         for (var item in items) {
-          list.add(Size.fromJson(item));
+          list.add(ProductSize.fromJson(item));
         }
       }
     } catch (e) {
@@ -370,7 +375,7 @@ class InvoiceApiService {
     return list;
   }
 
-  // Save invoice
+  // Save invoice - WITHOUT DISCOUNT
   Future<String> saveInvoice(
       BuildContext context,
       String invoiceNo,
@@ -397,10 +402,9 @@ class InvoiceApiService {
         "items": items,
         "remarks": remarks,
         "taxpercentage": taxPercentage,
-        "subtotal": subtotal.replaceAll('₹', ''),
-        "grandtotal": grandTotal.replaceAll('₹', ''),
+        "subtotal": subtotal,
+        "grandtotal": grandTotal,
         "addedby": addedby,
-        "status": "Draft",
       };
 
       var response = await http.post(
@@ -441,7 +445,7 @@ class InvoiceApiService {
     }
   }
 
-  // Update invoice
+  // Update invoice - WITHOUT DISCOUNT
   Future<String> updateInvoice(
       BuildContext context,
       String invoiceId,
@@ -469,8 +473,8 @@ class InvoiceApiService {
         "items": items,
         "remarks": remarks,
         "taxpercentage": taxPercentage,
-        "subtotal": subtotal.replaceAll('₹', ''),
-        "grandtotal": grandTotal.replaceAll('₹', ''),
+        "subtotal": subtotal,
+        "grandtotal": grandTotal,
       };
 
       var response = await http.post(

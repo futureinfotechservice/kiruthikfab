@@ -4,7 +4,9 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../widgets/customappbarwidget.dart';
 import '../../services/invoice_apiservice.dart';
+import '../models/InvoicePrintPreview.dart';
 import 'InvoiceEntryPage.dart';
+
 
 class InvoiceListPage extends StatefulWidget {
   const InvoiceListPage({super.key});
@@ -24,10 +26,8 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
   DateTime? _fromDate;
   DateTime? _toDate;
   String _selectedCustomer = '';
-  String _selectedStatus = '';
 
   List<String> _customers = [];
-  List<String> _statuses = ['Draft', 'Confirmed', 'Cancelled'];
 
   late String userType;
   bool _showFilterSection = false;
@@ -38,6 +38,17 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
     super.initState();
     _loadInvoices();
     _searchController.addListener(_filterInvoices);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh when returning to this page
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _loadInvoices();
+      }
+    });
   }
 
   Future<void> _loadInvoices() async {
@@ -71,10 +82,7 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
         final matchesCustomer = _selectedCustomer.isEmpty ||
             invoice.customerName == _selectedCustomer;
 
-        final matchesStatus = _selectedStatus.isEmpty ||
-            invoice.status == _selectedStatus;
-
-        return matchesSearch && matchesDate && matchesCustomer && matchesStatus;
+        return matchesSearch && matchesDate && matchesCustomer;
       }).toList();
     });
   }
@@ -106,7 +114,6 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
       _fromDate = null;
       _toDate = null;
       _selectedCustomer = '';
-      _selectedStatus = '';
       _fromDateController.clear();
       _toDateController.clear();
       _filterInvoices();
@@ -141,10 +148,109 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
     }
   }
 
+  void _viewInvoice(InvoiceModel invoice) async {
+    final result = await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => InvoiceEntryPage(
+          invoice: {'invoice': invoice, 'isViewMode': true},
+        ),
+      ),
+    );
+
+    if (result == true) {
+      _loadInvoices();
+    }
+  }
+
+  void _editInvoice(InvoiceModel invoice) async {
+    final result = await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => InvoiceEntryPage(
+          invoice: invoice,
+        ),
+      ),
+    );
+
+    if (result == true) {
+      _loadInvoices();
+    }
+  }
+
+  void _printInvoice(InvoiceModel invoice) async {
+    // Load full invoice details for printing
+    final details = await invoiceApiService().getInvoiceDetails(context, invoice.id);
+
+    if (details.isNotEmpty) {
+      // Calculate tax amount from invoice data
+      double subtotal = double.tryParse(invoice.subtotal) ?? 0;
+      double grandTotal = double.tryParse(invoice.grandTotal) ?? 0;
+      double taxPercentage = double.tryParse(invoice.taxPercentage) ?? 5.0;
+
+      // Calculate tax amount (grandTotal = subtotal + tax)
+      double taxAmount = grandTotal - subtotal;
+
+      // Format the items with proper description
+      final formattedItems = details.map((item) {
+        // Build description with all available details
+        final List<String> descriptionParts = [];
+
+        // Add product name (always present)
+        descriptionParts.add(item['productname'] ?? item['productName'] ?? '');
+
+        // Add model if available
+        final modelName = item['modelname'] ?? item['modelName'] ?? '';
+        if (modelName.isNotEmpty) {
+          descriptionParts.add('Model: $modelName');
+        }
+
+        // Add size if available
+        final sizeName = item['sizename'] ?? item['sizeName'] ?? '';
+        if (sizeName.isNotEmpty) {
+          descriptionParts.add('Size: $sizeName');
+        }
+
+        // Add unit if available
+        final unitName = item['unitname'] ?? item['unitName'] ?? '';
+        if (unitName.isNotEmpty) {
+          descriptionParts.add('Unit: $unitName');
+        }
+
+        return {
+          ...item,
+          'formattedDescription': descriptionParts.join(' | '),
+        };
+      }).toList();
+
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => InvoicePrintPreview(
+            invoice: invoice,
+            items: formattedItems,
+            customerName: invoice.customerName,
+            subtotal: invoice.subtotal,
+            taxAmount: taxAmount.toStringAsFixed(2),
+            taxPercentage: invoice.taxPercentage,
+            grandTotal: invoice.grandTotal,
+          ),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No items found for this invoice'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBarWidget(title: 'Invoices'),
+      appBar: CustomAppBarWidget(
+        title: 'Invoices',
+        showBackButton: true,
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -190,13 +296,15 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
                           ),
                           const SizedBox(width: 8),
                           ElevatedButton(
-                            onPressed: () {
-                            Navigator.push(
-                                context,
+                            onPressed: () async {
+                              final result = await Navigator.of(context).push(
                                 MaterialPageRoute(
-                                  builder: (context) => InvoiceEntryPage(),
+                                  builder: (context) => const InvoiceEntryPage(),
                                 ),
                               );
+                              if (result == true) {
+                                _loadInvoices();
+                              }
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF4F46E5),
@@ -246,13 +354,15 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
                       ),
                       const SizedBox(width: 12),
                       ElevatedButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
+                        onPressed: () async {
+                          final result = await Navigator.of(context).push(
                             MaterialPageRoute(
-                              builder: (context) => InvoiceEntryPage(),
+                              builder: (context) => const InvoiceEntryPage(),
                             ),
                           );
+                          if (result == true) {
+                            _loadInvoices();
+                          }
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF4F46E5),
@@ -422,23 +532,6 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
             });
           },
         ),
-        const SizedBox(height: 12),
-        DropdownButtonFormField<String>(
-          value: _selectedStatus.isEmpty ? null : _selectedStatus,
-          decoration: const InputDecoration(labelText: 'Status'),
-          items: [
-            const DropdownMenuItem(value: '', child: Text('All Statuses')),
-            ..._statuses.map((status) {
-              return DropdownMenuItem(value: status, child: Text(status));
-            }),
-          ],
-          onChanged: (value) {
-            setState(() {
-              _selectedStatus = value ?? '';
-              _filterInvoices();
-            });
-          },
-        ),
       ],
     );
   }
@@ -492,25 +585,6 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
             },
           ),
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: DropdownButtonFormField<String>(
-            value: _selectedStatus.isEmpty ? null : _selectedStatus,
-            decoration: const InputDecoration(labelText: 'Status'),
-            items: [
-              const DropdownMenuItem(value: '', child: Text('All Statuses')),
-              ..._statuses.map((status) {
-                return DropdownMenuItem(value: status, child: Text(status));
-              }),
-            ],
-            onChanged: (value) {
-              setState(() {
-                _selectedStatus = value ?? '';
-                _filterInvoices();
-              });
-            },
-          ),
-        ),
       ],
     );
   }
@@ -542,19 +616,11 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
                       fontSize: 16,
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: _getStatusColor(invoice.status).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      invoice.status,
-                      style: TextStyle(
-                        color: _getStatusColor(invoice.status),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
+                  Text(
+                    'Items: ${invoice.totalItems ?? 0}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF6B7280),
                     ),
                   ),
                 ],
@@ -580,30 +646,26 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
                 children: [
                   IconButton(
                     icon: const Icon(Icons.visibility, color: Colors.green, size: 20),
-                    onPressed: () async {
-                      await GoRouter.of(context).pushNamed(
-                        "invoice-entry",
-                        extra: {'invoice': invoice, 'isViewMode': true},
-                      );
-                      _loadInvoices();
-                    },
+                    onPressed: () => _viewInvoice(invoice),
+                    tooltip: 'View',
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.print, color: Colors.blue, size: 20),
+                    onPressed: () => _printInvoice(invoice),
+                    tooltip: 'Print',
                   ),
                   if (userType == 'Admin') ...[
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 4),
                     IconButton(
-                      icon: const Icon(Icons.edit, color: Colors.blue, size: 20),
-                      onPressed: () async {
-                        await GoRouter.of(context).pushNamed(
-                          "invoice-entry",
-                          extra: invoice,
-                        );
-                        _loadInvoices();
-                      },
+                      icon: const Icon(Icons.edit, color: Colors.orange, size: 20),
+                      onPressed: () => _editInvoice(invoice),
+                      tooltip: 'Edit',
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 4),
                     IconButton(
                       icon: const Icon(Icons.delete, color: Colors.red, size: 20),
                       onPressed: () => _deleteInvoice(invoice.id),
+                      tooltip: 'Delete',
                     ),
                   ],
                 ],
@@ -628,9 +690,9 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
               Expanded(flex: 2, child: Text('Invoice No', style: TextStyle(fontWeight: FontWeight.w600))),
               Expanded(flex: 2, child: Text('Date', style: TextStyle(fontWeight: FontWeight.w600))),
               Expanded(flex: 3, child: Text('Customer', style: TextStyle(fontWeight: FontWeight.w600))),
+              Expanded(flex: 1, child: Text('Items', style: TextStyle(fontWeight: FontWeight.w600))),
               Expanded(flex: 2, child: Text('Amount', style: TextStyle(fontWeight: FontWeight.w600))),
-              Expanded(flex: 2, child: Text('Status', style: TextStyle(fontWeight: FontWeight.w600))),
-              Expanded(flex: 2, child: Text('Actions', style: TextStyle(fontWeight: FontWeight.w600))),
+              Expanded(flex: 3, child: Text('Actions', style: TextStyle(fontWeight: FontWeight.w600))),
             ],
           ),
         ),
@@ -655,53 +717,32 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
                       ),
                     ),
                     Expanded(flex: 3, child: Text(invoice.customerName)),
+                    Expanded(flex: 1, child: Text('${invoice.totalItems ?? 0}')),
                     Expanded(flex: 2, child: Text('₹${invoice.grandTotal}')),
                     Expanded(
-                      flex: 2,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: _getStatusColor(invoice.status).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          invoice.status,
-                          style: TextStyle(
-                            color: _getStatusColor(invoice.status),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      flex: 2,
+                      flex: 3,
                       child: Row(
                         children: [
                           IconButton(
                             icon: const Icon(Icons.visibility, color: Colors.green, size: 18),
-                            onPressed: () async {
-                              await GoRouter.of(context).pushNamed(
-                                "invoice-entry",
-                                extra: {'invoice': invoice, 'isViewMode': true},
-                              );
-                              _loadInvoices();
-                            },
+                            onPressed: () => _viewInvoice(invoice),
+                            tooltip: 'View',
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.print, color: Colors.blue, size: 18),
+                            onPressed: () => _printInvoice(invoice),
+                            tooltip: 'Print',
                           ),
                           if (userType == 'Admin') ...[
                             IconButton(
-                              icon: const Icon(Icons.edit, color: Colors.blue, size: 18),
-                              onPressed: () async {
-                                await GoRouter.of(context).pushNamed(
-                                  "invoice-entry",
-                                  extra: invoice,
-                                );
-                                _loadInvoices();
-                              },
+                              icon: const Icon(Icons.edit, color: Colors.orange, size: 18),
+                              onPressed: () => _editInvoice(invoice),
+                              tooltip: 'Edit',
                             ),
                             IconButton(
                               icon: const Icon(Icons.delete, color: Colors.red, size: 18),
                               onPressed: () => _deleteInvoice(invoice.id),
+                              tooltip: 'Delete',
                             ),
                           ],
                         ],
@@ -715,18 +756,5 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
         ),
       ],
     );
-  }
-
-  Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'confirmed':
-        return Colors.green;
-      case 'cancelled':
-        return Colors.red;
-      case 'draft':
-        return Colors.orange;
-      default:
-        return Colors.grey;
-    }
   }
 }

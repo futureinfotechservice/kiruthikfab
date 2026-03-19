@@ -14,7 +14,8 @@ $obj = json_decode($json, true);
 $companyid = $obj['companyid'];
 
 $sql = "SELECT h.id, h.invoiceno, h.customerid, c.customername, h.date, 
-        h.remarks, h.taxpercentage, h.subtotal, h.grandtotal, h.status, h.addedby, h.created_at
+        h.remarks, h.taxpercentage, h.subtotal, h.grandtotal, h.status, h.addedby, h.created_at,
+        (SELECT COUNT(*) FROM invoice_detail WHERE headid = h.id) as total_items
         FROM invoice_head h
         LEFT JOIN customermaster c ON h.customerid = c.id
         WHERE h.companyid = '$companyid'

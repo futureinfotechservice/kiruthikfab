@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:printing/printing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'package:dropdown_search/dropdown_search.dart';
@@ -10,6 +11,7 @@ import '../../../widgets/customdropdownwidget.dart';
 import '../../../widgets/customtextfield.dart';
 import '../../services/config.dart';
 import '../../services/invoice_apiservice.dart';
+import '../models/invoice_print_helper.dart';
 
 class InvoiceEntryPage extends StatefulWidget {
   final dynamic invoice;
@@ -29,24 +31,21 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
   final _formKey = GlobalKey<FormState>();
   var usertype;
 
-  // Lists for dropdowns
   final List<Map<String, dynamic>> _invoiceItems = [];
   final TextEditingController _remarksController = TextEditingController();
-  String _subtotal = '₹0.00';
-  String _taxAmount = '₹0.00';
-  String _grandTotal = '₹0.00';
 
-  // Tax percentage (can be made configurable)
-  double _taxPercentage = 0.0;
+  String _subtotal = '0.00';
+  String _taxAmount = '0.00';
+  String _grandTotal = '0.00';
 
-  // Dropdown data lists
+  double _taxPercentage = 5.0; // Default tax 5%
+
   List<Customer> customerlist = [];
   List<Product> productlist = [];
   List<Model> modellist = [];
-  List<Size> sizelist = [];
+  List<ProductSize> sizelist = [];
   List<Unit> unitlist = [];
 
-  // Controllers
   final _billNoController = TextEditingController();
   final _billDateController = TextEditingController(
     text: DateFormat("dd/MM/yyyy").format(DateTime.now()),
@@ -55,30 +54,22 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
   String? selectedCustomer;
   String? customerId;
 
-  // Selected values for each row
   List<String?> selectedProducts = [];
   List<String?> selectedModels = [];
   List<String?> selectedSizes = [];
   List<String?> selectedUnits = [];
 
-  // Controllers for quantity and rate
   List<TextEditingController> _quantityControllers = [];
   List<TextEditingController> _rateControllers = [];
 
-  // Focus nodes
   List<FocusNode> _quantityFocusNodes = [];
 
-  // Global keys for dropdowns
   final List<GlobalKey<DropdownSearchState<String>>> _productDropdownKeys = [];
   final List<GlobalKey<DropdownSearchState<String>>> _modelDropdownKeys = [];
   final List<GlobalKey<DropdownSearchState<String>>> _sizeDropdownKeys = [];
   final List<GlobalKey<DropdownSearchState<String>>> _unitDropdownKeys = [];
 
-  // Order status
-  String? _invoiceStatus;
-
-  // Getters for mode detection
-  bool get isEditMode => widget.invoice != null;
+  bool get isEditMode => widget.invoice != null && !widget.isViewMode;
   bool get isViewMode {
     if (widget.isViewMode) return true;
     if (widget.invoice is Map) {
@@ -87,7 +78,6 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
     return false;
   }
 
-  // Helper to get the actual invoice from extra
   InvoiceModel? get actualInvoice {
     if (widget.invoice is InvoiceModel) return widget.invoice;
     if (widget.invoice is Map) return (widget.invoice as Map)['invoice'];
@@ -95,7 +85,7 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
   }
 
   Future<void> loadInvoiceNumber() async {
-    if (isViewMode) return;
+    if (isViewMode || isEditMode) return;
 
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -171,8 +161,11 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
 
       selectedCustomer = invoice.customerName;
       customerId = invoice.customerId;
+
       _remarksController.text = invoice.remarks;
-      _invoiceStatus = invoice.status;
+      _taxPercentage = double.tryParse(invoice.taxPercentage) ?? 5.0;
+      _subtotal = invoice.subtotal;
+      _grandTotal = invoice.grandTotal;
 
       _loadInvoiceDetails(invoice.id);
     });
@@ -211,20 +204,16 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
             'amount': detail['amount']?.toString() ?? '0.00',
           });
 
-          // Add controllers
           _quantityControllers.add(TextEditingController(text: detail['quantity']?.toString() ?? '1'));
           _rateControllers.add(TextEditingController(text: detail['rate']?.toString() ?? '0.00'));
 
-          // Add focus nodes
           _quantityFocusNodes.add(FocusNode());
 
-          // Add dropdown keys
           _productDropdownKeys.add(GlobalKey<DropdownSearchState<String>>());
           _modelDropdownKeys.add(GlobalKey<DropdownSearchState<String>>());
           _sizeDropdownKeys.add(GlobalKey<DropdownSearchState<String>>());
           _unitDropdownKeys.add(GlobalKey<DropdownSearchState<String>>());
 
-          // Add selected values
           selectedProducts.add(detail['productname'] ?? '');
           selectedModels.add(detail['modelname'] ?? '');
           selectedSizes.add(detail['sizename'] ?? '');
@@ -265,13 +254,14 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
       subtotal += double.tryParse(item['amount']) ?? 0;
     }
 
+    // Calculate tax on subtotal (no discount)
     double tax = subtotal * (_taxPercentage / 100);
     double grandTotal = subtotal + tax;
 
     setState(() {
-      _subtotal = '₹${subtotal.toStringAsFixed(2)}';
-      _taxAmount = '₹${tax.toStringAsFixed(2)}';
-      _grandTotal = '₹${grandTotal.toStringAsFixed(2)}';
+      _subtotal = subtotal.toStringAsFixed(2);
+      _taxAmount = tax.toStringAsFixed(2);
+      _grandTotal = grandTotal.toStringAsFixed(2);
     });
   }
 
@@ -291,27 +281,22 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
         'amount': '0.00',
       });
 
-      // Add controllers
       _quantityControllers.add(TextEditingController(text: '1'));
       _rateControllers.add(TextEditingController());
 
-      // Add focus nodes
       _quantityFocusNodes.add(FocusNode());
 
-      // Add dropdown keys
       _productDropdownKeys.add(GlobalKey<DropdownSearchState<String>>());
       _modelDropdownKeys.add(GlobalKey<DropdownSearchState<String>>());
       _sizeDropdownKeys.add(GlobalKey<DropdownSearchState<String>>());
       _unitDropdownKeys.add(GlobalKey<DropdownSearchState<String>>());
 
-      // Add selected values
       selectedProducts.add('');
       selectedModels.add('');
       selectedSizes.add('');
       selectedUnits.add('');
     });
 
-    // Auto-focus the newly added product dropdown
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_productDropdownKeys.isNotEmpty) {
         _productDropdownKeys.last.currentState?.openDropDownSearch();
@@ -343,14 +328,24 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
   }
 
   void _updateItemAmount(int index) {
-    final quantity = double.tryParse(_quantityControllers[index].text) ?? 0;
-    final rate = double.tryParse(_rateControllers[index].text) ?? 0;
+    // Get raw values without any formatting
+    final quantityText = _quantityControllers[index].text.replaceAll(RegExp(r'[^\d.]'), '');
+    final rateText = _rateControllers[index].text.replaceAll(RegExp(r'[^\d.]'), '');
+
+    // Parse to double, default to 0 if empty or invalid
+    final quantity = double.tryParse(quantityText) ?? 0;
+    final rate = double.tryParse(rateText) ?? 0;
+
+    // Calculate amount
     final amount = quantity * rate;
 
+    // Update the item in the list
     setState(() {
       _invoiceItems[index]['quantity'] = quantity.toString();
-      _invoiceItems[index]['rate'] = rate.toString();
+      _invoiceItems[index]['rate'] = rate.toStringAsFixed(2);
       _invoiceItems[index]['amount'] = amount.toStringAsFixed(2);
+
+      // Recalculate all totals
       _calculateTotals();
     });
   }
@@ -369,7 +364,6 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
       selectedProducts[index] = productName;
     });
 
-    // Focus on quantity field after product selection
     WidgetsBinding.instance.addPostFrameCallback((_) {
       FocusScope.of(context).requestFocus(_quantityFocusNodes[index]);
     });
@@ -395,7 +389,7 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
 
     final selected = sizelist.firstWhere(
           (s) => s.sizeName == sizeName,
-      orElse: () => Size(id: '0', sizeName: '', addedby: '', activestatus: '1', createdAt: ''),
+      orElse: () => ProductSize(id: '0', sizeName: '', addedby: '', activestatus: '1', createdAt: ''),
     );
 
     setState(() {
@@ -476,11 +470,20 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
           _remarksController.text,
           _taxPercentage.toString(),
           _subtotal,
-          _grandTotal,
+          _grandTotal,  // 9 arguments
         ).then((result) {
           if (result == "Success") {
-            Future.delayed(const Duration(seconds: 2), () {
-              context.pop(true);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Invoice updated successfully'),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 1),
+              ),
+            );
+            Future.delayed(Duration(milliseconds: 500), () {
+              if (mounted) {
+                Navigator.of(context).pop(true);
+              }
             });
           }
         });
@@ -495,16 +498,41 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
           _remarksController.text,
           _taxPercentage.toString(),
           _subtotal,
-          _grandTotal,
+          _grandTotal,  // 9 arguments
         ).then((result) {
           if (result == "Success") {
-            Future.delayed(const Duration(seconds: 2), () {
-              context.pop(true);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Invoice saved successfully'),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 1),
+              ),
+            );
+            Future.delayed(Duration(milliseconds: 500), () {
+              if (mounted) {
+                Navigator.of(context).pop(true);
+              }
             });
           }
         });
       }
     }
+  }
+
+  void _printInvoice() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => InvoicePrintPreview(
+          invoice: actualInvoice!,
+          items: _invoiceItems,
+          customerName: selectedCustomer ?? '',
+          subtotal: _subtotal,
+          taxAmount: _taxAmount,
+          taxPercentage: _taxPercentage.toString(),
+          grandTotal: _grandTotal,
+        ),
+      ),
+    );
   }
 
   @override
@@ -516,6 +544,14 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: CustomAppBarWidget(
         title: isViewMode ? 'View Invoice' : (isEditMode ? 'Edit Invoice' : 'Invoice Entry'),
+        showBackButton: true,
+        actions: isViewMode ? [
+          IconButton(
+            icon: const Icon(Icons.print, color: Colors.black),
+            onPressed: _printInvoice,
+            tooltip: 'Print Invoice',
+          ),
+        ] : null,
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -524,27 +560,6 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
             key: _formKey,
             child: Column(
               children: [
-                // Status Bar (if view mode)
-                if (isViewMode && _invoiceStatus != null && _invoiceStatus!.isNotEmpty)
-                  Container(
-                    width: double.infinity,
-                    margin: const EdgeInsets.only(bottom: 16),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: _getStatusColor(_invoiceStatus!),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      'Status: ${_invoiceStatus!.toUpperCase()}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-
-                // Header Section
                 Container(
                   padding: EdgeInsets.all(isMobile ? 16 : 24),
                   decoration: BoxDecoration(
@@ -554,29 +569,24 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
                   ),
                   child: Column(
                     children: [
-                      // Bill No, Date, Customer Row
                       isMobile
                           ? _buildMobileHeader()
                           : _buildDesktopHeader(),
 
                       const SizedBox(height: 24),
 
-                      // Invoice Items Section
                       _buildItemsSection(isMobile),
 
                       const SizedBox(height: 24),
 
-                      // Totals Section
                       _buildTotalsSection(isMobile),
 
                       const SizedBox(height: 24),
 
-                      // Notes Section
                       _buildNotesSection(isMobile),
 
                       const SizedBox(height: 32),
 
-                      // Action Buttons
                       _buildActionButtons(isMobile),
                     ],
                   ),
@@ -589,19 +599,6 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
     );
   }
 
-  Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'draft':
-        return Colors.orange;
-      case 'confirmed':
-        return Colors.green;
-      case 'cancelled':
-        return Colors.red;
-      default:
-        return Colors.grey;
-    }
-  }
-
   Widget _buildMobileHeader() {
     return Column(
       children: [
@@ -609,15 +606,17 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
           controller: _billNoController,
           label: "Bill No.",
           hintText: "Enter bill number",
-          isReadOnly: isViewMode || !isEditMode,
+          isRequired: true,
+          fieldType: "text",
+          isReadOnly: isViewMode || isEditMode,
         ),
         const SizedBox(height: 16),
         CustomTextField(
           controller: _billDateController,
           label: "Bill Date",
           hintText: "DD/MM/YYYY",
+          isRequired: true,
           fieldType: "date",
-          // dateFormat: "dd/MM/yyyy",
           isReadOnly: isViewMode,
         ),
         const SizedBox(height: 16),
@@ -670,7 +669,9 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
             controller: _billNoController,
             label: "Bill No.",
             hintText: "Enter bill number",
-            isReadOnly: isViewMode || !isEditMode,
+            isRequired: true,
+            fieldType: "text",
+            isReadOnly: isViewMode || isEditMode,
           ),
         ),
         const SizedBox(width: 16),
@@ -679,8 +680,8 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
             controller: _billDateController,
             label: "Bill Date",
             hintText: "DD/MM/YYYY",
+            isRequired: true,
             fieldType: "date",
-            // dateFormat: "dd/MM/yyyy",
             isReadOnly: isViewMode,
           ),
         ),
@@ -735,9 +736,9 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
+            const Text(
               'Invoice Items',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
                 color: Color(0xFF374151),
@@ -790,7 +791,6 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
             padding: const EdgeInsets.all(12),
             child: Column(
               children: [
-                // S.No and Remove button
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -911,22 +911,28 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
                         children: [
                           const Text('Qty', style: TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
                           const SizedBox(height: 4),
-                          Container(
+                          SizedBox(
                             height: 40,
-                            decoration: BoxDecoration(
-                              border: Border.all(color: const Color(0xFFD1D5DB)),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
                             child: TextFormField(
                               controller: _quantityControllers[index],
-                              focusNode: _quantityFocusNodes[index],
                               keyboardType: TextInputType.number,
+                              textAlign: TextAlign.right,
                               decoration: const InputDecoration(
-                                border: InputBorder.none,
+                                border: OutlineInputBorder(),
                                 contentPadding: EdgeInsets.symmetric(horizontal: 8),
+                                hintText: '1',
                               ),
                               readOnly: isViewMode,
-                              onChanged: isViewMode ? null : (_) => _updateItemAmount(index),
+                              onChanged: (value) {
+                                String newValue = value.replaceAll(RegExp(r'[^\d]'), '');
+                                if (newValue != value) {
+                                  _quantityControllers[index].value = TextEditingValue(
+                                    text: newValue,
+                                    selection: TextSelection.collapsed(offset: newValue.length),
+                                  );
+                                }
+                                _updateItemAmount(index);
+                              },
                             ),
                           ),
                         ],
@@ -939,21 +945,37 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
                         children: [
                           const Text('Rate', style: TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
                           const SizedBox(height: 4),
-                          Container(
+                          SizedBox(
                             height: 40,
-                            decoration: BoxDecoration(
-                              border: Border.all(color: const Color(0xFFD1D5DB)),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
                             child: TextFormField(
                               controller: _rateControllers[index],
-                              keyboardType: TextInputType.number,
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              textAlign: TextAlign.right,
                               decoration: const InputDecoration(
-                                border: InputBorder.none,
+                                border: OutlineInputBorder(),
                                 contentPadding: EdgeInsets.symmetric(horizontal: 8),
+                                hintText: '0.00',
                               ),
                               readOnly: isViewMode,
-                              onChanged: isViewMode ? null : (_) => _updateItemAmount(index),
+                              onChanged: (value) {
+                                String newValue = value.replaceAll(RegExp(r'[^\d.]'), '');
+                                if (newValue.split('.').length > 2) {
+                                  newValue = newValue.substring(0, newValue.lastIndexOf('.'));
+                                }
+                                if (newValue.contains('.')) {
+                                  final parts = newValue.split('.');
+                                  if (parts[1].length > 2) {
+                                    newValue = '${parts[0]}.${parts[1].substring(0, 2)}';
+                                  }
+                                }
+                                if (newValue != value) {
+                                  _rateControllers[index].value = TextEditingValue(
+                                    text: newValue,
+                                    selection: TextSelection.collapsed(offset: newValue.length),
+                                  );
+                                }
+                                _updateItemAmount(index);
+                              },
                             ),
                           ),
                         ],
@@ -963,7 +985,7 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
                 ),
                 const SizedBox(height: 8),
 
-                // Amount
+                // Amount display
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -1015,7 +1037,7 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
                 Expanded(flex: 1, child: Text('Qty', style: TextStyle(fontWeight: FontWeight.w500))),
                 Expanded(flex: 1, child: Text('Rate', style: TextStyle(fontWeight: FontWeight.w500))),
                 Expanded(flex: 1, child: Text('Amount', style: TextStyle(fontWeight: FontWeight.w500))),
-                SizedBox(width: 50), // For action
+                SizedBox(width: 50),
               ],
             ),
           ),
@@ -1036,17 +1058,19 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
                 children: [
                   Expanded(flex: 1, child: Text('${index + 1}')),
 
-                  // Product dropdown
+                  // Product
                   Expanded(
                     flex: 2,
-                    child: CustomDropdownSearch(
+                    child: isViewMode
+                        ? Text(item['productName'] ?? '')
+                        : CustomDropdownSearch(
                       label: "",
                       isRequired: true,
                       items: productlist.map((p) => p.productName).toList(),
                       selectedItem: selectedProducts[index],
                       isReadOnly: isViewMode,
                       dropdownKey: _productDropdownKeys[index],
-                      onChanged: isViewMode ? null : (value) {
+                      onChanged: (value) {
                         if (value != null && value.isNotEmpty) {
                           _onProductSelected(index, value);
                         }
@@ -1054,17 +1078,19 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
                     ),
                   ),
 
-                  // Model dropdown
+                  // Model
                   Expanded(
                     flex: 2,
-                    child: CustomDropdownSearch(
+                    child: isViewMode
+                        ? Text(item['modelName'] ?? '')
+                        : CustomDropdownSearch(
                       label: "",
                       isRequired: false,
                       items: modellist.map((m) => m.modelName).toList(),
                       selectedItem: selectedModels[index],
                       isReadOnly: isViewMode,
                       dropdownKey: _modelDropdownKeys[index],
-                      onChanged: isViewMode ? null : (value) {
+                      onChanged: (value) {
                         if (value != null && value.isNotEmpty) {
                           _onModelSelected(index, value);
                         }
@@ -1072,17 +1098,19 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
                     ),
                   ),
 
-                  // Size dropdown
+                  // Size
                   Expanded(
                     flex: 1,
-                    child: CustomDropdownSearch(
+                    child: isViewMode
+                        ? Text(item['sizeName'] ?? '')
+                        : CustomDropdownSearch(
                       label: "",
                       isRequired: false,
                       items: sizelist.map((s) => s.sizeName).toList(),
                       selectedItem: selectedSizes[index],
                       isReadOnly: isViewMode,
                       dropdownKey: _sizeDropdownKeys[index],
-                      onChanged: isViewMode ? null : (value) {
+                      onChanged: (value) {
                         if (value != null && value.isNotEmpty) {
                           _onSizeSelected(index, value);
                         }
@@ -1090,17 +1118,19 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
                     ),
                   ),
 
-                  // Unit dropdown
+                  // Unit
                   Expanded(
                     flex: 1,
-                    child: CustomDropdownSearch(
+                    child: isViewMode
+                        ? Text(item['unitName'] ?? '')
+                        : CustomDropdownSearch(
                       label: "",
                       isRequired: false,
                       items: unitlist.map((u) => u.unitName).toList(),
                       selectedItem: selectedUnits[index],
                       isReadOnly: isViewMode,
                       dropdownKey: _unitDropdownKeys[index],
-                      onChanged: isViewMode ? null : (value) {
+                      onChanged: (value) {
                         if (value != null && value.isNotEmpty) {
                           _onUnitSelected(index, value);
                         }
@@ -1111,22 +1141,30 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
                   // Quantity
                   Expanded(
                     flex: 1,
-                    child: Container(
+                    child: isViewMode
+                        ? Text(item['quantity'] ?? '')
+                        : SizedBox(
                       height: 40,
-                      decoration: BoxDecoration(
-                        border: Border.all(color: const Color(0xFFD1D5DB)),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
                       child: TextFormField(
                         controller: _quantityControllers[index],
-                        focusNode: _quantityFocusNodes[index],
                         keyboardType: TextInputType.number,
+                        textAlign: TextAlign.right,
                         decoration: const InputDecoration(
-                          border: InputBorder.none,
+                          border: OutlineInputBorder(),
                           contentPadding: EdgeInsets.symmetric(horizontal: 8),
+                          hintText: '1',
                         ),
                         readOnly: isViewMode,
-                        onChanged: isViewMode ? null : (_) => _updateItemAmount(index),
+                        onChanged: (value) {
+                          String newValue = value.replaceAll(RegExp(r'[^\d]'), '');
+                          if (newValue != value) {
+                            _quantityControllers[index].value = TextEditingValue(
+                              text: newValue,
+                              selection: TextSelection.collapsed(offset: newValue.length),
+                            );
+                          }
+                          _updateItemAmount(index);
+                        },
                       ),
                     ),
                   ),
@@ -1134,22 +1172,39 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
                   // Rate
                   Expanded(
                     flex: 1,
-                    child: Container(
+                    child: isViewMode
+                        ? Text('₹${item['rate'] ?? ''}')
+                        : SizedBox(
                       height: 40,
-                      decoration: BoxDecoration(
-                        border: Border.all(color: const Color(0xFFD1D5DB)),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
                       child: TextFormField(
                         controller: _rateControllers[index],
-                        keyboardType: TextInputType.number,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         textAlign: TextAlign.right,
                         decoration: const InputDecoration(
-                          border: InputBorder.none,
+                          border: OutlineInputBorder(),
                           contentPadding: EdgeInsets.symmetric(horizontal: 8),
+                          hintText: '0.00',
                         ),
                         readOnly: isViewMode,
-                        onChanged: isViewMode ? null : (_) => _updateItemAmount(index),
+                        onChanged: (value) {
+                          String newValue = value.replaceAll(RegExp(r'[^\d.]'), '');
+                          if (newValue.split('.').length > 2) {
+                            newValue = newValue.substring(0, newValue.lastIndexOf('.'));
+                          }
+                          if (newValue.contains('.')) {
+                            final parts = newValue.split('.');
+                            if (parts[1].length > 2) {
+                              newValue = '${parts[0]}.${parts[1].substring(0, 2)}';
+                            }
+                          }
+                          if (newValue != value) {
+                            _rateControllers[index].value = TextEditingValue(
+                              text: newValue,
+                              selection: TextSelection.collapsed(offset: newValue.length),
+                            );
+                          }
+                          _updateItemAmount(index);
+                        },
                       ),
                     ),
                   ),
@@ -1160,12 +1215,12 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
                     child: Container(
                       height: 40,
                       padding: const EdgeInsets.symmetric(horizontal: 8),
+                      alignment: Alignment.centerRight,
                       decoration: BoxDecoration(
                         color: const Color(0xFFF3F4F6),
                         border: Border.all(color: const Color(0xFFD1D5DB)),
-                        borderRadius: BorderRadius.circular(6),
+                        borderRadius: BorderRadius.circular(4),
                       ),
-                      alignment: Alignment.centerRight,
                       child: Text(
                         '₹${double.tryParse(item['amount'])?.toStringAsFixed(2) ?? '0.00'}',
                         style: const TextStyle(fontWeight: FontWeight.w500),
@@ -1201,12 +1256,12 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
       child: isMobile
           ? Column(
         children: [
-          _buildTotalRow('Subtotal:', _subtotal),
+          _buildTotalRow('Subtotal:', '₹$_subtotal'),
           const SizedBox(height: 8),
-          _buildTotalRow('Tax (0%):', _taxAmount),
+          _buildTotalRow('Tax ($_taxPercentage%):', '₹$_taxAmount'),
           const Divider(color: Color(0xFFE2E8F0)),
           const SizedBox(height: 4),
-          _buildTotalRow('Grand Total:', _grandTotal, isBold: true),
+          _buildTotalRow('Total Amount:', '₹$_grandTotal', isBold: true),
         ],
       )
           : Row(
@@ -1217,11 +1272,11 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                _buildTotalRow('Subtotal:', _subtotal),
+                _buildTotalRow('Subtotal:', '₹$_subtotal'),
                 const SizedBox(height: 4),
-                _buildTotalRow('Tax (0%):', _taxAmount),
+                _buildTotalRow('Tax ($_taxPercentage%):', '₹$_taxAmount'),
                 const Divider(color: Color(0xFFE2E8F0), height: 20),
-                _buildTotalRow('Grand Total:', _grandTotal, isBold: true),
+                _buildTotalRow('Total Amount:', '₹$_grandTotal', isBold: true),
               ],
             ),
           ),
@@ -1267,24 +1322,12 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
           ),
         ),
         const SizedBox(height: 8),
-        Container(
-          width: double.infinity,
-          height: 110,
-          decoration: BoxDecoration(
-            border: Border.all(color: const Color(0xFFD1D5DB)),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: TextField(
-            controller: _remarksController,
-            maxLines: 4,
-            readOnly: isViewMode,
-            decoration: const InputDecoration(
-              border: InputBorder.none,
-              contentPadding: EdgeInsets.all(12),
-              hintText: 'Enter notes...',
-              hintStyle: TextStyle(color: Color(0xFF999999)),
-            ),
-          ),
+        CustomTextField(
+          controller: _remarksController,
+          label: "",
+          hintText: "Enter notes...",
+          fieldType: "multiline",
+          isReadOnly: isViewMode,
         ),
       ],
     );
@@ -1296,16 +1339,29 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
           ElevatedButton(
-            onPressed: () => context.pop(),
+            onPressed: () => Navigator.of(context).pop(),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF6B7280),
               foregroundColor: Colors.white,
-              // minimumSize: Size(isMobile ? 120 : 100, 45),
+              minimumSize: Size(isMobile ? 120 : 100, 45),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
             child: const Text('Close'),
+          ),
+          const SizedBox(width: 16),
+          ElevatedButton(
+            onPressed: _printInvoice,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF1E293B),
+              foregroundColor: Colors.white,
+              minimumSize: Size(isMobile ? 120 : 100, 45),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('Print'),
           ),
         ],
       );
@@ -1315,12 +1371,12 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
         ElevatedButton(
-          onPressed: () => context.pop(),
+          onPressed: () => Navigator.of(context).pop(),
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.white,
             foregroundColor: const Color(0xFF374151),
             side: const BorderSide(color: Color(0xFFD1D5DB)),
-            // minimumSize: Size(isMobile ? 120 : 100, 45),
+            minimumSize: Size(isMobile ? 120 : 100, 45),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
             ),
@@ -1333,12 +1389,350 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF1E293B),
             foregroundColor: Colors.white,
-            // minimumSize: Size(isMobile ? 150 : 160, 45),
+            minimumSize: Size(isMobile ? 150 : 160, 45),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
             ),
           ),
-          child: const Text('Save Invoice'),
+          child: Text(isEditMode ? 'Update Invoice' : 'Save Invoice'),
+        ),
+      ],
+    );
+  }
+}
+
+class InvoicePrintPreview extends StatelessWidget {
+  final InvoiceModel invoice;
+  final List<Map<String, dynamic>> items;
+  final String customerName;
+  final String subtotal;
+  final String taxAmount;
+  final String taxPercentage;
+  final String grandTotal;
+
+  const InvoicePrintPreview({
+    Key? key,
+    required this.invoice,
+    required this.items,
+    required this.customerName,
+    required this.subtotal,
+    required this.taxAmount,
+    required this.taxPercentage,
+    required this.grandTotal,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Print Invoice - ${invoice.invoiceNo}'),
+        backgroundColor: const Color(0xFF1E293B),
+        foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf, color: Colors.white),
+            onPressed: () async {
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (context) => const Center(
+                  child: CircularProgressIndicator(),
+                ),
+              );
+
+              try {
+                final pdf = await InvoicePrintHelper.generatePDF(
+                  invoice: invoice,
+                  items: items,
+                  customerName: customerName,
+                  subtotal: subtotal,
+                  taxAmount: taxAmount,
+                  taxPercentage: taxPercentage,
+                  grandTotal: grandTotal,
+                );
+
+                if (context.mounted) {
+                  Navigator.of(context).pop();
+                }
+
+                final bool isWeb = identical(0, 0.0);
+
+                if (isWeb) {
+                  await InvoicePrintHelper.downloadPDFWeb(
+                    pdf,
+                    'Invoice_${invoice.invoiceNo}.pdf',
+                  );
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('PDF downloaded successfully'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                } else {
+                  await Printing.layoutPdf(
+                    onLayout: (format) async => pdf,
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            tooltip: 'Download PDF',
+          ),
+          IconButton(
+            icon: const Icon(Icons.print, color: Colors.white),
+            onPressed: () async {
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (context) => const Center(
+                  child: CircularProgressIndicator(),
+                ),
+              );
+
+              try {
+                await InvoicePrintHelper.printInvoice(
+                  context: context,
+                  invoice: invoice,
+                  items: items,
+                  customerName: customerName,
+                  subtotal: subtotal,
+                  taxAmount: taxAmount,
+                  taxPercentage: taxPercentage,
+                  grandTotal: grandTotal,
+                );
+
+                if (context.mounted) {
+                  Navigator.of(context).pop();
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            tooltip: 'Print',
+          ),
+        ],
+      ),
+      body: Center(
+        child: SingleChildScrollView(
+          child: Container(
+            width: 800,
+            margin: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.shade300,
+                  blurRadius: 10,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header
+                Center(
+                  child: Column(
+                    children: [
+                      const Text(
+                        'TAX INVOICE',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1E293B),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Bill No: ${invoice.invoiceNo}  Date: ${DateFormat('dd/MM/yyyy').format(DateFormat('yyyy-MM-dd').parse(invoice.date))}',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 32),
+
+                // Bill To Section
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey.shade300),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Bill To:',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text('Customer Name: $customerName'),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 32),
+
+                // Items Table
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey.shade300),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    children: [
+                      // Table Header
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        color: Colors.grey.shade100,
+                        child: const Row(
+                          children: [
+                            Expanded(flex: 1, child: Text('S.No', style: TextStyle(fontWeight: FontWeight.bold))),
+                            Expanded(flex: 4, child: Text('Description', style: TextStyle(fontWeight: FontWeight.bold))),
+                            Expanded(flex: 1, child: Text('Qty', style: TextStyle(fontWeight: FontWeight.bold))),
+                            Expanded(flex: 1, child: Text('Rate', style: TextStyle(fontWeight: FontWeight.bold))),
+                            Expanded(flex: 1, child: Text('Amount', style: TextStyle(fontWeight: FontWeight.bold))),
+                          ],
+                        ),
+                      ),
+
+                      // Table Rows - Using formatted description
+                      ...items.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final item = entry.value;
+
+                        // Get the formatted description (either pre-formatted or build it)
+                        String description = item['formattedDescription'] ?? '';
+
+                        // If no formatted description, build it
+                        if (description.isEmpty) {
+                          final List<String> parts = [];
+                          parts.add(item['productName'] ?? item['productname'] ?? '');
+
+                          final model = item['modelName'] ?? item['modelname'] ?? '';
+                          if (model.isNotEmpty) parts.add('Model: $model');
+
+                          final size = item['sizeName'] ?? item['sizename'] ?? '';
+                          if (size.isNotEmpty) parts.add('Size: $size');
+
+                          final unit = item['unitName'] ?? item['unitname'] ?? '';
+                          if (unit.isNotEmpty) parts.add('Unit: $unit');
+
+                          description = parts.join(' | ');
+                        }
+
+                        return Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            border: Border(
+                              top: BorderSide(color: Colors.grey.shade300),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(flex: 1, child: Text('${index + 1}')),
+                              Expanded(
+                                flex: 4,
+                                child: Text(
+                                  description,
+                                  style: const TextStyle(fontSize: 11),
+                                ),
+                              ),
+                              Expanded(flex: 1, child: Text(item['quantity']?.toString() ?? '0')),
+                              Expanded(flex: 1, child: Text('₹${double.tryParse(item['rate']?.toString() ?? '0')?.toStringAsFixed(2)}')),
+                              Expanded(flex: 1, child: Text('₹${double.tryParse(item['amount']?.toString() ?? '0')?.toStringAsFixed(2)}')),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Totals Section
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    SizedBox(
+                      width: 300,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildTotalRow('Subtotal:', '₹$subtotal'),
+                          const SizedBox(height: 4),
+                          _buildTotalRow('Tax ($taxPercentage%):', '₹$taxAmount'),
+                          const Divider(color: Colors.grey),
+                          _buildTotalRow('Total Amount:', '₹$grandTotal', isBold: true),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 32),
+
+                // Footer
+                const Center(
+                  child: Text(
+                    'Thank you for your business!',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTotalRow(String label, String value, {bool isBold = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+            fontSize: isBold ? 16 : 14,
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+            fontSize: isBold ? 16 : 14,
+          ),
         ),
       ],
     );
