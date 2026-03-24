@@ -331,7 +331,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
       lastDate: DateTime(2100),
     );
     if (pickedDate != null) {
-      String formatted = DateFormat('dd-MM-yyyy').format(pickedDate);
+      String formatted = DateFormat('dd/MM/yyyy').format(pickedDate);
       _controller.text = formatted;
       widget.onChanged?.call(formatted);
       _validateField(); // Validate after setting date

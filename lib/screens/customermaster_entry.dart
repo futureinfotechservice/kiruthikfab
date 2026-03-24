@@ -492,57 +492,57 @@ class _CustomerMasterEntryScreenState extends State<CustomerMasterEntryScreen> {
                 ),
                 const SizedBox(height: 20),
 
-                _buildInputField(
-                  label: 'Referred By Name',
-                  hint: 'Enter referrer name',
-                  controller: _controllers['referredByName']!,
-                  isRequired: true,
-                ),
-                const SizedBox(height: 20),
-
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildInputField(
-                        label: 'Incharge',
-                        hint: 'Enter incharge name',
-                        controller: _controllers['incharge']!,
-                        isRequired: true,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _buildInputField(
-                        label: 'Agent',
-                        hint: 'Enter agent name',
-                        controller: _controllers['agent']!,
-                        isRequired: true,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildInputField(
-                        label: 'Sales Person',
-                        hint: 'Enter sales person name',
-                        controller: _controllers['salesPerson']!,
-                        isRequired: true,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _buildInputField(
-                        label: 'Occupation',
-                        hint: 'Enter occupation',
-                        controller: _controllers['occupation']!,
-                      ),
-                    ),
-                  ],
-                ),
+                // _buildInputField(
+                //   label: 'Referred By Name',
+                //   hint: 'Enter referrer name',
+                //   controller: _controllers['referredByName']!,
+                //   isRequired: true,
+                // ),
+                // const SizedBox(height: 20),
+                //
+                // Row(
+                //   children: [
+                //     Expanded(
+                //       child: _buildInputField(
+                //         label: 'Incharge',
+                //         hint: 'Enter incharge name',
+                //         controller: _controllers['incharge']!,
+                //         isRequired: true,
+                //       ),
+                //     ),
+                //     const SizedBox(width: 16),
+                //     Expanded(
+                //       child: _buildInputField(
+                //         label: 'Agent',
+                //         hint: 'Enter agent name',
+                //         controller: _controllers['agent']!,
+                //         isRequired: true,
+                //       ),
+                //     ),
+                //   ],
+                // ),
+                // const SizedBox(height: 20),
+                //
+                // Row(
+                //   children: [
+                //     Expanded(
+                //       child: _buildInputField(
+                //         label: 'Sales Person',
+                //         hint: 'Enter sales person name',
+                //         controller: _controllers['salesPerson']!,
+                //         isRequired: true,
+                //       ),
+                //     ),
+                //     const SizedBox(width: 16),
+                //     Expanded(
+                //       child: _buildInputField(
+                //         label: 'Occupation',
+                //         hint: 'Enter occupation',
+                //         controller: _controllers['occupation']!,
+                //       ),
+                //     ),
+                //   ],
+                // ),
                 // const SizedBox(height: 30),
 
                 // Row(

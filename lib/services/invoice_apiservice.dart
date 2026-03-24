@@ -125,6 +125,42 @@ class Model {
   }
 }
 
+
+class Company {
+  final String id;
+  final String companyName;
+  final String gstNo;
+  final String contactNo;
+  final String address;
+  final String emailId;
+  final String logoUrl;
+  final String activeStatus;
+
+  Company({
+    required this.id,
+    required this.companyName,
+    required this.gstNo,
+    required this.contactNo,
+    required this.address,
+    required this.emailId,
+    required this.logoUrl,
+    required this.activeStatus,
+  });
+
+  factory Company.fromJson(Map<String, dynamic> json) {
+    return Company(
+      id: json['id']?.toString() ?? '',
+      companyName: json['companyname'] ?? '',
+      gstNo: json['gstno'] ?? '',
+      contactNo: json['contactno'] ?? '',
+      address: json['address'] ?? '',
+      emailId: json['email_id'] ?? '',
+      logoUrl: json['logourl'] ?? '',
+      activeStatus: json['activestatus'] ?? '1',
+    );
+  }
+}
+
 class ProductSize {
   final String id;
   final String sizeName;
@@ -274,6 +310,34 @@ class InvoiceApiService {
     }
     return list;
   }
+
+  // Add this method to the InvoiceApiService class
+  Future<Company?> getCompanyDetails(BuildContext context) async {
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      final companyid = prefs.getString('companyid') ?? '';
+
+      if (companyid.isEmpty) return null;
+
+      final url = Uri.parse('$baseUrl/get_company_details.php');
+      final response = await http.post(
+        url,
+        body: json.encode({'companyid': companyid}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data != null && data.isNotEmpty) {
+          return Company.fromJson(data[0]);
+        }
+      }
+      return null;
+    } catch (e) {
+      print('Error loading company details: $e');
+      return null;
+    }
+  }
+
 
   // Get products
   Future<List<Product>> getProducts(BuildContext context) async {

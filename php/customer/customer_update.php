@@ -57,7 +57,7 @@ if (!empty($obj)) {
 }
 
 // Validate required fields
-$required_fields = ['customername', 'address', 'area', 'mobile1', 'refer', 'incharge', 'agent', 'salesperson'];
+$required_fields = ['customername', 'address', 'area', 'mobile1']; // , 'refer', 'incharge', 'agent', 'salesperson'
 foreach ($required_fields as $field) {
     if (empty($$field)) {
         echo json_encode(["status" => "error", "message" => ucfirst($field) . " is required"]);

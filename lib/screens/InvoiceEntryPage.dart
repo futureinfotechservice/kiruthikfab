@@ -64,6 +64,8 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
 
   List<FocusNode> _quantityFocusNodes = [];
 
+  final FocusNode _customerFocusNode = FocusNode();
+
   final List<GlobalKey<DropdownSearchState<String>>> _productDropdownKeys = [];
   final List<GlobalKey<DropdownSearchState<String>>> _modelDropdownKeys = [];
   final List<GlobalKey<DropdownSearchState<String>>> _sizeDropdownKeys = [];
@@ -146,6 +148,13 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
     } else {
       await loadInvoiceNumber();
       _addItem();
+
+      // Request focus on customer dropdown after data is loaded
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_customerFocusNode.canRequestFocus) {
+          _customerFocusNode.requestFocus();
+        }
+      });
     }
 
     _calculateTotals();
@@ -235,6 +244,7 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
     _billNoController.dispose();
     _billDateController.dispose();
     _remarksController.dispose();
+    _customerFocusNode.dispose();
 
     for (var controller in _quantityControllers) {
       controller.dispose();
@@ -297,11 +307,11 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
       selectedUnits.add('');
     });
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_productDropdownKeys.isNotEmpty) {
-        _productDropdownKeys.last.currentState?.openDropDownSearch();
-      }
-    });
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   if (_productDropdownKeys.isNotEmpty) {
+    //     _productDropdownKeys.last.currentState?.openDropDownSearch();
+    //   }
+    // });
   }
 
   void _removeItem(int index) {
@@ -626,6 +636,7 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
           items: customerlist.map((c) => c.customerName).toList(),
           selectedItem: selectedCustomer,
           isReadOnly: isViewMode,
+          // focusNode: _customerFocusNode,
           onChanged: isViewMode ? null : (value) {
             setState(() {
               selectedCustomer = value;
@@ -671,7 +682,7 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
             hintText: "Enter bill number",
             isRequired: true,
             fieldType: "text",
-            isReadOnly: isViewMode || isEditMode,
+            isReadOnly: true,
           ),
         ),
         const SizedBox(width: 16),
@@ -998,7 +1009,7 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
-                        '₹${double.tryParse(_invoiceItems[index]['amount'])?.toStringAsFixed(2) ?? '0.00'}',
+                        'Rs.${double.tryParse(_invoiceItems[index]['amount'])?.toStringAsFixed(2) ?? '0.00'}',
                         style: const TextStyle(
                           fontWeight: FontWeight.w500,
                         ),
@@ -1173,7 +1184,7 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
                   Expanded(
                     flex: 1,
                     child: isViewMode
-                        ? Text('₹${item['rate'] ?? ''}')
+                        ? Text('Rs.${item['rate'] ?? ''}')
                         : SizedBox(
                       height: 40,
                       child: TextFormField(
@@ -1222,7 +1233,7 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
-                        '₹${double.tryParse(item['amount'])?.toStringAsFixed(2) ?? '0.00'}',
+                        'Rs.${double.tryParse(item['amount'])?.toStringAsFixed(2) ?? '0.00'}',
                         style: const TextStyle(fontWeight: FontWeight.w500),
                       ),
                     ),
@@ -1256,12 +1267,12 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
       child: isMobile
           ? Column(
         children: [
-          _buildTotalRow('Subtotal:', '₹$_subtotal'),
+          _buildTotalRow('Subtotal:', 'Rs.$_subtotal'),
           const SizedBox(height: 8),
-          _buildTotalRow('Tax ($_taxPercentage%):', '₹$_taxAmount'),
+          _buildTotalRow('Tax ($_taxPercentage%):', 'Rs.$_taxAmount'),
           const Divider(color: Color(0xFFE2E8F0)),
           const SizedBox(height: 4),
-          _buildTotalRow('Total Amount:', '₹$_grandTotal', isBold: true),
+          _buildTotalRow('Total Amount:', 'Rs.$_grandTotal', isBold: true),
         ],
       )
           : Row(
@@ -1272,11 +1283,11 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                _buildTotalRow('Subtotal:', '₹$_subtotal'),
+                _buildTotalRow('Subtotal:', 'Rs.$_subtotal'),
                 const SizedBox(height: 4),
-                _buildTotalRow('Tax ($_taxPercentage%):', '₹$_taxAmount'),
+                _buildTotalRow('Tax ($_taxPercentage%):', 'Rs.$_taxAmount'),
                 const Divider(color: Color(0xFFE2E8F0), height: 20),
-                _buildTotalRow('Total Amount:', '₹$_grandTotal', isBold: true),
+                _buildTotalRow('Total Amount:', 'Rs.$_grandTotal', isBold: true),
               ],
             ),
           ),
@@ -1409,6 +1420,7 @@ class InvoicePrintPreview extends StatelessWidget {
   final String taxAmount;
   final String taxPercentage;
   final String grandTotal;
+  final Company? company; // Add company parameter
 
   const InvoicePrintPreview({
     Key? key,
@@ -1419,6 +1431,7 @@ class InvoicePrintPreview extends StatelessWidget {
     required this.taxAmount,
     required this.taxPercentage,
     required this.grandTotal,
+    this.company, // Make it optional
   }) : super(key: key);
 
   @override
@@ -1449,6 +1462,7 @@ class InvoicePrintPreview extends StatelessWidget {
                   taxAmount: taxAmount,
                   taxPercentage: taxPercentage,
                   grandTotal: grandTotal,
+                  company: company, // Pass company to PDF helper
                 );
 
                 if (context.mounted) {
@@ -1510,6 +1524,7 @@ class InvoicePrintPreview extends StatelessWidget {
                   taxAmount: taxAmount,
                   taxPercentage: taxPercentage,
                   grandTotal: grandTotal,
+                  company: company, // Pass company to print helper
                 );
 
                 if (context.mounted) {
@@ -1551,7 +1566,12 @@ class InvoicePrintPreview extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header
+                // Company Header Section
+                _buildCompanyHeader(),
+
+                const SizedBox(height: 24),
+
+                // Invoice Title
                 Center(
                   child: Column(
                     children: [
@@ -1565,7 +1585,7 @@ class InvoicePrintPreview extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Bill No: ${invoice.invoiceNo}  Date: ${DateFormat('dd/MM/yyyy').format(DateFormat('yyyy-MM-dd').parse(invoice.date))}',
+                        'Bill No: ${invoice.invoiceNo}  |  Date: ${DateFormat('dd/MM/yyyy').format(DateFormat('yyyy-MM-dd').parse(invoice.date))}',
                         style: const TextStyle(
                           fontSize: 14,
                           color: Colors.grey,
@@ -1623,15 +1643,13 @@ class InvoicePrintPreview extends StatelessWidget {
                         ),
                       ),
 
-                      // Table Rows - Using formatted description
+                      // Table Rows
                       ...items.asMap().entries.map((entry) {
                         final index = entry.key;
                         final item = entry.value;
 
-                        // Get the formatted description (either pre-formatted or build it)
                         String description = item['formattedDescription'] ?? '';
 
-                        // If no formatted description, build it
                         if (description.isEmpty) {
                           final List<String> parts = [];
                           parts.add(item['productName'] ?? item['productname'] ?? '');
@@ -1666,8 +1684,8 @@ class InvoicePrintPreview extends StatelessWidget {
                                 ),
                               ),
                               Expanded(flex: 1, child: Text(item['quantity']?.toString() ?? '0')),
-                              Expanded(flex: 1, child: Text('₹${double.tryParse(item['rate']?.toString() ?? '0')?.toStringAsFixed(2)}')),
-                              Expanded(flex: 1, child: Text('₹${double.tryParse(item['amount']?.toString() ?? '0')?.toStringAsFixed(2)}')),
+                              Expanded(flex: 1, child: Text('Rs.${double.tryParse(item['rate']?.toString() ?? '0')?.toStringAsFixed(2)}')),
+                              Expanded(flex: 1, child: Text('Rs.${double.tryParse(item['amount']?.toString() ?? '0')?.toStringAsFixed(2)}')),
                             ],
                           ),
                         );
@@ -1686,11 +1704,11 @@ class InvoicePrintPreview extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildTotalRow('Subtotal:', '₹$subtotal'),
+                          _buildTotalRow('Subtotal:', 'Rs.$subtotal'),
                           const SizedBox(height: 4),
-                          _buildTotalRow('Tax ($taxPercentage%):', '₹$taxAmount'),
+                          _buildTotalRow('Tax ($taxPercentage%):', 'Rs.$taxAmount'),
                           const Divider(color: Colors.grey),
-                          _buildTotalRow('Total Amount:', '₹$grandTotal', isBold: true),
+                          _buildTotalRow('Total Amount:', 'Rs.$grandTotal', isBold: true),
                         ],
                       ),
                     ),
@@ -1698,21 +1716,124 @@ class InvoicePrintPreview extends StatelessWidget {
                 ),
                 const SizedBox(height: 32),
 
-                // Footer
-                const Center(
-                  child: Text(
-                    'Thank you for your business!',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey,
-                    ),
-                  ),
-                ),
+                // Footer with Authorized Sign
+                _buildFooter(),
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildCompanyHeader() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Company Logo (if available)
+          if (company?.logoUrl != null && company!.logoUrl.isNotEmpty)
+            Container(
+              width: 80,
+              height: 80,
+              margin: const EdgeInsets.only(right: 16),
+              child: company!.logoUrl.startsWith('http')
+                  ? Image.network(company!.logoUrl, fit: BoxFit.contain)
+                  : const Icon(Icons.business, size: 50, color: Colors.grey),
+            ),
+
+          // Company Details
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  company?.companyName ?? 'Company Name',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1E293B),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                if (company?.address != null && company!.address.isNotEmpty)
+                  Text(
+                    company!.address,
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                const SizedBox(height: 4),
+                if (company?.contactNo != null && company!.contactNo.isNotEmpty)
+                  Text(
+                    'Contact: ${company!.contactNo}',
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                if (company?.emailId != null && company!.emailId.isNotEmpty)
+                  Text(
+                    'Email: ${company!.emailId}',
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                if (company?.gstNo != null && company!.gstNo.isNotEmpty)
+                  Text(
+                    'GST No: ${company!.gstNo}',
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFooter() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Terms & Conditions:',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              '1. Goods once sold will not be taken back\n2. Subject to local jurisdiction',
+              style: TextStyle(fontSize: 10, color: Colors.grey),
+            ),
+          ],
+        ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Container(
+              width: 200,
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              decoration: const BoxDecoration(
+                border: Border(
+                  top: BorderSide(color: Colors.black),
+                ),
+              ),
+              child: const Text(
+                'Authorized Signatory',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 

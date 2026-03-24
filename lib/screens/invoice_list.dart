@@ -180,6 +180,9 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
     // Load full invoice details for printing
     final details = await invoiceApiService().getInvoiceDetails(context, invoice.id);
 
+    // Load company details
+    final company = await invoiceApiService().getCompanyDetails(context);
+
     if (details.isNotEmpty) {
       // Calculate tax amount from invoice data
       double subtotal = double.tryParse(invoice.subtotal) ?? 0;
@@ -231,6 +234,7 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
             taxAmount: taxAmount.toStringAsFixed(2),
             taxPercentage: invoice.taxPercentage,
             grandTotal: invoice.grandTotal,
+            company: company, // Pass company details
           ),
         ),
       );
