@@ -219,6 +219,9 @@ class InvoiceModel {
   final String customerId;
   final String customerName;
   final String customerPhone;
+  final String customerGstNo;
+  final String customerAddress;
+  final String customerArea;
   final String date;
   final String remarks;
   final String taxPercentage;
@@ -234,6 +237,9 @@ class InvoiceModel {
     required this.customerId,
     required this.customerName,
     required this.customerPhone,
+    required this.customerGstNo,
+    required this.customerAddress,
+    required this.customerArea,
     required this.date,
     required this.remarks,
     required this.taxPercentage,
@@ -251,6 +257,9 @@ class InvoiceModel {
       customerId: json['customerid']?.toString() ?? '',
       customerName: json['customername'] ?? '',
       customerPhone: json['customerphone'] ?? json['mobile1'] ?? '',
+      customerGstNo: json['gst_no'] ?? '',
+      customerAddress: json['address'] ?? '',
+      customerArea: json['area'] ?? '',
       date: json['date'] ?? '',
       remarks: json['remarks'] ?? '',
       taxPercentage: json['taxpercentage']?.toString() ?? '5',
@@ -586,7 +595,7 @@ class InvoiceApiService {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       final companyid = prefs.getString('companyid') ?? '';
 
-      final url = Uri.parse('$baseUrl/invoice_list.php');
+      final url = Uri.parse('$baseUrl/invoice_list1.php');
       final response = await http.post(
         url,
         body: json.encode({'companyid': companyid}),
@@ -614,7 +623,7 @@ class InvoiceApiService {
       final companyid = prefs.getString('companyid') ?? '';
 
       final response = await http.post(
-        Uri.parse('$baseUrl/get_invoice_details.php'),
+        Uri.parse('$baseUrl/get_invoice_details1.php'),
         body: json.encode({
           'companyid': companyid,
           'invoiceid': invoiceId,

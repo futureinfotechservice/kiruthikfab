@@ -1,25 +1,17 @@
-import 'dart:html' as html;
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:printing/printing.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:intl/intl.dart';
 import '../../services/invoice_apiservice.dart';
 
-class InvoicePrintHelper {
-  static Future<void> downloadPDFWeb(Uint8List pdfBytes, String fileName) async {
-    final blob = html.Blob([pdfBytes], 'application/pdf');
-    final url = html.Url.createObjectUrlFromBlob(blob);
-    final anchor = html.AnchorElement(href: url)
-      ..target = 'blank'
-      ..download = fileName;
-    html.document.body?.children.add(anchor);
-    anchor.click();
-    html.document.body?.children.remove(anchor);
-    html.Url.revokeObjectUrl(url);
-  }
+// Conditional export based on platform
+import '../screens/invoice_print_helper_stub.dart'
+if (dart.library.html) '../screens/invoice_print_helper_web.dart';
 
+class InvoicePrintHelper {
   static Future<void> printInvoice({
     required BuildContext context,
     required InvoiceModel invoice,
@@ -43,10 +35,9 @@ class InvoicePrintHelper {
         company: company,
       );
 
-      final bool isWeb = identical(0, 0.0);
-
-      if (isWeb) {
-        await downloadPDFWeb(
+      if (kIsWeb) {
+        // Use the web-specific implementation
+        await InvoicePrintHelperWeb.downloadPDFWeb(
           pdf,
           'Invoice_${invoice.invoiceNo}.pdf',
         );
@@ -61,6 +52,7 @@ class InvoicePrintHelper {
           );
         }
       } else {
+        // For Android and other non-web platforms
         await Printing.layoutPdf(
           onLayout: (format) async => pdf,
         );
@@ -147,7 +139,7 @@ class InvoicePrintHelper {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
-        // Company Header - Reduced top space
+        // Company Header
         pw.Center(
           child: pw.Column(
             children: [
@@ -185,7 +177,7 @@ class InvoicePrintHelper {
 
         pw.SizedBox(height: 8),
 
-        // Invoice Title - Reduced spacing
+        // Invoice Title
         pw.Container(
           padding: const pw.EdgeInsets.symmetric(vertical: 6),
           decoration: pw.BoxDecoration(
@@ -208,9 +200,9 @@ class InvoicePrintHelper {
 
         pw.SizedBox(height: 12),
 
-        // Bill Information - Reduced fields
+        // Bill Information - UPDATED with Full Customer Details
         pw.Container(
-          padding: const pw.EdgeInsets.all(8),
+          padding: const pw.EdgeInsets.all(12),
           decoration: pw.BoxDecoration(
             color: PdfColors.grey100,
             borderRadius: pw.BorderRadius.circular(4),
@@ -219,7 +211,7 @@ class InvoicePrintHelper {
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
-              // Left column
+              // Left column - Invoice Details
               pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
@@ -231,12 +223,65 @@ class InvoicePrintHelper {
                   ),
                 ],
               ),
-              // Right column
-              pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  _buildInfoRow('Customer Name:', customerName),
-                ],
+
+              // Right column - Customer Details
+              pw.Expanded(
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.end,
+                  children: [
+                    pw.Text(
+                      'Bill To:',
+                      style: pw.TextStyle(
+                        fontWeight: pw.FontWeight.bold,
+                        fontSize: 11,
+                        color: PdfColors.blue700,
+                      ),
+                    ),
+                    pw.SizedBox(height: 4),
+                    pw.Text(
+                      invoice.customerName,
+                      style: pw.TextStyle(
+                        fontWeight: pw.FontWeight.bold,
+                        fontSize: 10,
+                      ),
+                      textAlign: pw.TextAlign.right,
+                    ),
+                    if (invoice.customerAddress.isNotEmpty)
+                      pw.Container(
+                        margin: const pw.EdgeInsets.only(top: 2),
+                        child: pw.Text(
+                          invoice.customerAddress,
+                          style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
+                          textAlign: pw.TextAlign.right,
+                        ),
+                      ),
+                    if (invoice.customerArea.isNotEmpty)
+                      pw.Text(
+                        invoice.customerArea,
+                        style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
+                        textAlign: pw.TextAlign.right,
+                      ),
+                    if (invoice.customerGstNo.isNotEmpty)
+                      pw.Container(
+                        margin: const pw.EdgeInsets.only(top: 4),
+                        child: pw.Text(
+                          'GSTIN/UIN: ${invoice.customerGstNo}',
+                          style: pw.TextStyle(
+                            fontSize: 9,
+                            fontWeight: pw.FontWeight.normal,
+                            color: PdfColors.blue800,
+                          ),
+                          textAlign: pw.TextAlign.right,
+                        ),
+                      ),
+                    if (invoice.customerPhone.isNotEmpty)
+                      pw.Text(
+                        'Phone: ${invoice.customerPhone}',
+                        style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
+                        textAlign: pw.TextAlign.right,
+                      ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -244,7 +289,7 @@ class InvoicePrintHelper {
 
         pw.SizedBox(height: 12),
 
-        // Items Table Header - Separate columns for Product, Model, Size, Unit
+        // Items Table Header
         pw.Container(
           padding: const pw.EdgeInsets.all(8),
           decoration: pw.BoxDecoration(
@@ -317,7 +362,7 @@ class InvoicePrintHelper {
           ),
         ),
 
-        // Items List - Separate columns
+        // Items List
         ...items.asMap().entries.map((entry) {
           final index = entry.key;
           final item = entry.value;
@@ -476,7 +521,7 @@ class InvoicePrintHelper {
                       mainAxisAlignment: pw.MainAxisAlignment.end,
                       children: [
                         pw.Text(
-                          'CGST (${(taxRateValue / 2)}%):',
+                          'CGST (${(taxRateValue / 2).toStringAsFixed(2)}%):',
                           style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
                         ),
                         pw.SizedBox(width: 12),
@@ -490,7 +535,7 @@ class InvoicePrintHelper {
                       mainAxisAlignment: pw.MainAxisAlignment.end,
                       children: [
                         pw.Text(
-                          'SGST (${(taxRateValue / 2)}%):',
+                          'SGST (${(taxRateValue / 2).toStringAsFixed(2)}%):',
                           style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
                         ),
                         pw.SizedBox(width: 12),
@@ -717,471 +762,3 @@ class InvoicePrintHelper {
     return _numberToWords(number ~/ 10000000) + ' Crore' + (number % 10000000 != 0 ? ' ${_numberToWords(number % 10000000)}' : '');
   }
 }
-
-
-// import 'dart:html' as html;
-// import 'dart:typed_data';
-// import 'package:flutter/material.dart';
-// import 'package:printing/printing.dart';
-// import 'package:pdf/widgets.dart' as pw;
-// import 'package:pdf/pdf.dart';
-// import 'package:intl/intl.dart';
-// import '../../services/invoice_apiservice.dart';
-//
-// class InvoicePrintHelper {
-//   static Future<void> downloadPDFWeb(Uint8List pdfBytes, String fileName) async {
-//     final blob = html.Blob([pdfBytes]);
-//     final url = html.Url.createObjectUrlFromBlob(blob);
-//     final anchor = html.AnchorElement(href: url)
-//       ..setAttribute('download', fileName)
-//       ..click();
-//     html.Url.revokeObjectUrl(url);
-//   }
-//
-//   static Future<void> printInvoice({
-//     required BuildContext context,
-//     required InvoiceModel invoice,
-//     required List<Map<String, dynamic>> items,
-//     required String customerName,
-//     required String subtotal,
-//     required String taxAmount,
-//     required String taxPercentage,
-//     required String grandTotal,
-//     Company? company,
-//   }) async {
-//     try {
-//       final pdf = await generatePDF(
-//         invoice: invoice,
-//         items: items,
-//         customerName: customerName,
-//         subtotal: subtotal,
-//         taxAmount: taxAmount,
-//         taxPercentage: taxPercentage,
-//         grandTotal: grandTotal,
-//         company: company,
-//       );
-//
-//       final bool isWeb = identical(0, 0.0);
-//
-//       if (isWeb) {
-//         await downloadPDFWeb(
-//           pdf,
-//           'Invoice_${invoice.invoiceNo}.pdf',
-//         );
-//
-//         if (context.mounted) {
-//           ScaffoldMessenger.of(context).showSnackBar(
-//             const SnackBar(
-//               content: Text('PDF downloaded successfully'),
-//               backgroundColor: Colors.green,
-//             ),
-//           );
-//         }
-//       } else {
-//         await Printing.layoutPdf(
-//           onLayout: (format) async => pdf,
-//         );
-//       }
-//     } catch (e) {
-//       print('Error printing: $e');
-//       if (context.mounted) {
-//         ScaffoldMessenger.of(context).showSnackBar(
-//           SnackBar(
-//             content: Text('Error generating PDF: $e'),
-//             backgroundColor: Colors.red,
-//           ),
-//         );
-//       }
-//     }
-//   }
-//
-//   static Future<Uint8List> generatePDF({
-//     required InvoiceModel invoice,
-//     required List<Map<String, dynamic>> items,
-//     required String customerName,
-//     required String subtotal,
-//     required String taxAmount,
-//     required String taxPercentage,
-//     required String grandTotal,
-//     Company? company,
-//   }) async {
-//     final pdf = pw.Document();
-//
-//     pdf.addPage(
-//       pw.MultiPage(
-//         pageFormat: PdfPageFormat.a4,
-//         margin: const pw.EdgeInsets.all(32),
-//         build: (pw.Context context) {
-//           return [
-//             // Company Header Section
-//             _buildCompanyHeader(company),
-//             pw.SizedBox(height: 24),
-//
-//             // Invoice Title
-//             pw.Center(
-//               child: pw.Column(
-//                 children: [
-//                   pw.Text(
-//                     'TAX INVOICE',
-//                     style: pw.TextStyle(
-//                       fontSize: 28,
-//                       fontWeight: pw.FontWeight.bold,
-//                       color: PdfColors.blue900,
-//                     ),
-//                   ),
-//                   pw.SizedBox(height: 8),
-//                   pw.Text(
-//                     'Bill No: ${invoice.invoiceNo}  |  Date: ${DateFormat('dd/MM/yyyy').format(DateTime.parse(invoice.date))}',
-//                     style: const pw.TextStyle(fontSize: 12, color: PdfColors.grey700),
-//                   ),
-//                 ],
-//               ),
-//             ),
-//             pw.SizedBox(height: 32),
-//
-//             // Bill To Section
-//             pw.Container(
-//               padding: const pw.EdgeInsets.all(16),
-//               decoration: pw.BoxDecoration(
-//                 border: pw.Border.all(color: PdfColors.grey400),
-//                 borderRadius: pw.BorderRadius.circular(8),
-//               ),
-//               child: pw.Column(
-//                 crossAxisAlignment: pw.CrossAxisAlignment.start,
-//                 children: [
-//                   pw.Text(
-//                     'Bill To:',
-//                     style: pw.TextStyle(
-//                       fontWeight: pw.FontWeight.bold,
-//                       fontSize: 16,
-//                     ),
-//                   ),
-//                   pw.SizedBox(height: 8),
-//                   pw.Text('Customer Name: $customerName'),
-//                   if (company?.gstNo != null && company!.gstNo.isNotEmpty)
-//                     pw.Text('GSTIN/UIN: ${company.gstNo}'),
-//                 ],
-//               ),
-//             ),
-//             pw.SizedBox(height: 32),
-//
-//             // Items Table
-//             pw.Container(
-//               decoration: pw.BoxDecoration(
-//                 border: pw.Border.all(color: PdfColors.grey400),
-//                 borderRadius: pw.BorderRadius.circular(4),
-//               ),
-//               child: pw.Column(
-//                 children: [
-//                   // Table Header
-//                   pw.Container(
-//                     padding: const pw.EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-//                     color: PdfColors.grey300,
-//                     child: pw.Row(
-//                       children: [
-//                         pw.Expanded(flex: 1, child: pw.Text('S.No', style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
-//                         pw.Expanded(flex: 4, child: pw.Text('Description', style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
-//                         pw.Expanded(flex: 1, child: pw.Text('Qty', style: pw.TextStyle(fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.right)),
-//                         pw.Expanded(flex: 1, child: pw.Text('Rate', style: pw.TextStyle(fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.right)),
-//                         pw.Expanded(flex: 1, child: pw.Text('Amount', style: pw.TextStyle(fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.right)),
-//                       ],
-//                     ),
-//                   ),
-//
-//                   // Table Rows
-//                   ...items.asMap().entries.map((entry) {
-//                     final index = entry.key;
-//                     final item = entry.value;
-//
-//                     // Build description with all available details
-//                     final List<String> descriptionParts = [];
-//
-//                     // Try different possible field names
-//                     String productName = item['productName'] ??
-//                         item['productname'] ??
-//                         item['product_name'] ??
-//                         '';
-//                     if (productName.isNotEmpty) {
-//                       descriptionParts.add(productName);
-//                     }
-//
-//                     String modelName = item['modelName'] ??
-//                         item['modelname'] ??
-//                         item['model_name'] ??
-//                         '';
-//                     if (modelName.isNotEmpty) {
-//                       descriptionParts.add('Model: $modelName');
-//                     }
-//
-//                     String sizeName = item['sizeName'] ??
-//                         item['sizename'] ??
-//                         item['size_name'] ??
-//                         '';
-//                     if (sizeName.isNotEmpty) {
-//                       descriptionParts.add('Size: $sizeName');
-//                     }
-//
-//                     String unitName = item['unitName'] ??
-//                         item['unitname'] ??
-//                         item['unit_name'] ??
-//                         '';
-//                     if (unitName.isNotEmpty) {
-//                       descriptionParts.add('Unit: $unitName');
-//                     }
-//
-//                     // If we have a pre-formatted description, use that instead
-//                     String description = item['formattedDescription'] ?? '';
-//                     if (description.isEmpty && descriptionParts.isNotEmpty) {
-//                       description = descriptionParts.join(' | ');
-//                     } else if (description.isEmpty) {
-//                       description = productName.isNotEmpty ? productName : 'Item ${index + 1}';
-//                     }
-//
-//                     // Get quantity, rate, amount with fallbacks
-//                     String quantity = item['quantity']?.toString() ??
-//                         item['qty']?.toString() ??
-//                         '0';
-//
-//                     String rate = item['rate']?.toString() ?? '0';
-//                     String amount = item['amount']?.toString() ?? '0';
-//
-//                     // Parse values for formatting
-//                     double qtyValue = double.tryParse(quantity) ?? 0;
-//                     double rateValue = double.tryParse(rate) ?? 0;
-//                     double amountValue = double.tryParse(amount) ?? 0;
-//
-//                     return pw.Container(
-//                       padding: const pw.EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-//                       decoration: pw.BoxDecoration(
-//                         border: pw.Border(
-//                           top: pw.BorderSide(color: PdfColors.grey400),
-//                         ),
-//                       ),
-//                       child: pw.Row(
-//                         children: [
-//                           pw.Expanded(flex: 1, child: pw.Text('${index + 1}')),
-//                           pw.Expanded(
-//                             flex: 4,
-//                             child: pw.Text(
-//                               description,
-//                               style: const pw.TextStyle(fontSize: 10),
-//                             ),
-//                           ),
-//                           pw.Expanded(
-//                             flex: 1,
-//                             child: pw.Text(
-//                               qtyValue.toStringAsFixed(0),
-//                               textAlign: pw.TextAlign.right,
-//                             ),
-//                           ),
-//                           pw.Expanded(
-//                             flex: 1,
-//                             child: pw.Text(
-//                               '${_formatCurrency(rateValue)}',
-//                               textAlign: pw.TextAlign.right,
-//                             ),
-//                           ),
-//                           pw.Expanded(
-//                             flex: 1,
-//                             child: pw.Text(
-//                               '${_formatCurrency(amountValue)}',
-//                               textAlign: pw.TextAlign.right,
-//                             ),
-//                           ),
-//                         ],
-//                       ),
-//                     );
-//                   }).toList(),
-//
-//                   // Add empty row for spacing if needed
-//                   if (items.length < 5)
-//                     pw.SizedBox(height: (5 - items.length) * 40),
-//                 ],
-//               ),
-//             ),
-//             pw.SizedBox(height: 24),
-//
-//             // Totals Section
-//             pw.Row(
-//               mainAxisAlignment: pw.MainAxisAlignment.end,
-//               children: [
-//                 pw.Container(
-//                   width: 300,
-//                   padding: const pw.EdgeInsets.all(12),
-//                   child: pw.Column(
-//                     crossAxisAlignment: pw.CrossAxisAlignment.start,
-//                     children: [
-//                       _buildPdfTotalRow('Subtotal:', _formatCurrency(double.tryParse(subtotal) ?? 0)),
-//                       pw.SizedBox(height: 4),
-//                       _buildPdfTotalRow('Tax ($taxPercentage%):', _formatCurrency(double.tryParse(taxAmount) ?? 0)),
-//                       pw.Divider(thickness: 1),
-//                       pw.SizedBox(height: 4),
-//                       _buildPdfTotalRow('Total Amount:', _formatCurrency(double.tryParse(grandTotal) ?? 0), isBold: true),
-//                     ],
-//                   ),
-//                 ),
-//               ],
-//             ),
-//             pw.SizedBox(height: 32),
-//
-//             // Footer with Terms and Authorized Sign
-//             _buildFooter(),
-//           ];
-//         },
-//       ),
-//     );
-//
-//     return pdf.save();
-//   }
-//
-//   static pw.Widget _buildCompanyHeader(Company? company) {
-//     return pw.Container(
-//       padding: const pw.EdgeInsets.all(16),
-//       decoration: pw.BoxDecoration(
-//         border: pw.Border.all(color: PdfColors.grey400),
-//         borderRadius: pw.BorderRadius.circular(8),
-//       ),
-//       child: pw.Row(
-//         crossAxisAlignment: pw.CrossAxisAlignment.start,
-//         children: [
-//           // Company Logo Placeholder (if you have logo loading logic)
-//           pw.Container(
-//             width: 80,
-//             height: 80,
-//             decoration: pw.BoxDecoration(
-//               border: pw.Border.all(color: PdfColors.grey300),
-//               borderRadius: pw.BorderRadius.circular(8),
-//             ),
-//             child: pw.Center(
-//               child: pw.Icon(pw.IconData(0xe3c9), size: 40, color: PdfColors.grey600),
-//             ),
-//           ),
-//           pw.SizedBox(width: 16),
-//
-//           // Company Details
-//           pw.Expanded(
-//             child: pw.Column(
-//               crossAxisAlignment: pw.CrossAxisAlignment.start,
-//               children: [
-//                 pw.Text(
-//                   company?.companyName ?? 'COMPANY NAME',
-//                   style: pw.TextStyle(
-//                     fontSize: 18,
-//                     fontWeight: pw.FontWeight.bold,
-//                     color: PdfColors.blue900,
-//                   ),
-//                 ),
-//                 pw.SizedBox(height: 8),
-//                 if (company?.address != null && company!.address.isNotEmpty)
-//                   pw.Text(
-//                     company.address,
-//                     style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
-//                   ),
-//                 pw.SizedBox(height: 4),
-//                 if (company?.contactNo != null && company!.contactNo.isNotEmpty)
-//                   pw.Text(
-//                     'Tel: ${company.contactNo}',
-//                     style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
-//                   ),
-//                 if (company?.emailId != null && company!.emailId.isNotEmpty)
-//                   pw.Text(
-//                     'Email: ${company.emailId}',
-//                     style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
-//                   ),
-//                 if (company?.gstNo != null && company!.gstNo.isNotEmpty)
-//                   pw.Text(
-//                     'GST No: ${company.gstNo}',
-//                     style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
-//                   ),
-//               ],
-//             ),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-//
-//   static pw.Widget _buildFooter() {
-//     return pw.Row(
-//       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-//       crossAxisAlignment: pw.CrossAxisAlignment.end,
-//       children: [
-//         // Terms and Conditions
-//         pw.Column(
-//           crossAxisAlignment: pw.CrossAxisAlignment.start,
-//           children: [
-//             pw.Text(
-//               'Terms & Conditions:',
-//               style: pw.TextStyle(
-//                 fontSize: 10,
-//                 fontWeight: pw.FontWeight.bold,
-//               ),
-//             ),
-//             pw.SizedBox(height: 4),
-//             pw.Text(
-//               '1. Goods once sold will not be taken back\n'
-//                   '2. Payment is due within 15 days\n'
-//                   '3. Subject to local jurisdiction',
-//               style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
-//             ),
-//           ],
-//         ),
-//
-//         // Authorized Signatory
-//         pw.Column(
-//           crossAxisAlignment: pw.CrossAxisAlignment.end,
-//           children: [
-//             pw.Container(
-//               width: 200,
-//               padding: const pw.EdgeInsets.only(top: 8),
-//               child: pw.Column(
-//                 children: [
-//                   pw.SizedBox(height: 40),
-//                   pw.Container(
-//                     width: 180,
-//                     height: 1,
-//                     color: PdfColors.black,
-//                   ),
-//                   pw.SizedBox(height: 8),
-//                   pw.Text(
-//                     'Authorized Signatory',
-//                     style: pw.TextStyle(
-//                       fontSize: 10,
-//                       fontWeight: pw.FontWeight.normal,
-//                     ),
-//                   ),
-//                 ],
-//               ),
-//             ),
-//           ],
-//         ),
-//       ],
-//     );
-//   }
-//
-//   static pw.Widget _buildPdfTotalRow(String label, String value, {bool isBold = false}) {
-//     return pw.Row(
-//       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-//       children: [
-//         pw.Text(
-//           label,
-//           style: pw.TextStyle(
-//             fontWeight: isBold ? pw.FontWeight.bold : pw.FontWeight.normal,
-//             fontSize: isBold ? 14 : 12,
-//           ),
-//         ),
-//         pw.Text(
-//           value,
-//           style: pw.TextStyle(
-//             fontWeight: isBold ? pw.FontWeight.bold : pw.FontWeight.normal,
-//             fontSize: isBold ? 14 : 12,
-//           ),
-//         ),
-//       ],
-//     );
-//   }
-//
-//   static String _formatCurrency(double amount) {
-//     return 'Rs. ${amount.toStringAsFixed(2)}';
-//   }
-// }

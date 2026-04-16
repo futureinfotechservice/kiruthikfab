@@ -5,6 +5,7 @@ import 'package:kiruthikfab/screens/product_master_screen.dart';
 import 'package:kiruthikfab/screens/refer_master_screen.dart';
 import 'package:kiruthikfab/screens/salesperson_master_screen.dart';
 import 'package:kiruthikfab/screens/size_master_screen.dart';
+import 'package:kiruthikfab/screens/source_list_screen.dart';
 import 'package:kiruthikfab/screens/unit_master_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -15,6 +16,7 @@ import 'customerlist_screen.dart';
 import 'dashboardscreen.dart';
 import 'incharge_master_screen.dart';
 import 'invoice_list.dart';
+import 'kyc_list_screen.dart';
 import 'loginpage.dart';
 import 'model_master_screen.dart';
 import 'occupation_master_screen.dart';
@@ -423,7 +425,7 @@ class _CustomerManagementAppState extends State<CustomerManagementApp> {
             padding: const EdgeInsets.only(left: 16),
             child: Column(
               children: [
-                _buildMasterSubItem(0, Icons.person, 'Customer Master'),
+                _buildMasterSubItem(0, Icons.person, 'Source Master'),
                 _buildMasterSubItem(1, Icons.shopping_bag, 'Product Master'),
                 _buildMasterSubItem(2, Icons.model_training, 'Model Master'),
                 _buildMasterSubItem(3, Icons.straighten, 'Size Master'),
@@ -470,6 +472,7 @@ class _CustomerManagementAppState extends State<CustomerManagementApp> {
             child: Column(
               children: [
                 _buildEntrySubItem(0, Icons.receipt, 'Bill Entry'),
+                _buildEntrySubItem(1, Icons.pages_outlined, 'KYC Entry'),
               ],
             ),
           ),
@@ -638,7 +641,7 @@ class _CustomerManagementAppState extends State<CustomerManagementApp> {
   String _getMasterScreenTitle() {
     switch (_masterSubIndex) {
       case 0:
-        return 'Customer Master';
+        return 'Source Master';
       case 1:
         return 'Product Master';
       case 2:
@@ -668,6 +671,8 @@ class _CustomerManagementAppState extends State<CustomerManagementApp> {
     switch (_entrySubIndex) {
       case 0:
         return 'Bill Entry';
+      case 1:
+        return 'KYC Entry';
       default:
         return 'Entry';
     }
@@ -780,7 +785,7 @@ class _MasterSectionScreenState extends State<MasterSectionScreen>
             child: TabBarView(
               controller: _tabController,
               children: const [
-                CustomerListScreen(),
+                SourceListScreen(),
                 ProductMasterScreen(),
                 ModelMasterScreen(),
                 SizeMasterScreen(),
@@ -801,7 +806,7 @@ class _MasterSectionScreenState extends State<MasterSectionScreen>
       return IndexedStack(
         index: masterSubIndex,
         children: const [
-          CustomerListScreen(),
+          SourceListScreen(),
           ProductMasterScreen(),
           ModelMasterScreen(),
           SizeMasterScreen(),
@@ -843,7 +848,7 @@ class _EntrySectionScreenState extends State<EntrySectionScreen>
     super.initState();
     entrySubIndex = widget.initialSubIndex;
     _tabController = TabController(
-      length: 1, // Updated to 1 tab
+      length: 2, // Updated to 1 tab
       vsync: this,
       initialIndex: entrySubIndex,
     );
@@ -898,6 +903,7 @@ class _EntrySectionScreenState extends State<EntrySectionScreen>
               isScrollable: true,
               tabs: const [
                 Tab(icon: Icon(Icons.receipt), text: 'Bill Entry'),
+                Tab(icon: Icon(Icons.pages_outlined), text: 'KYC Entry'),
               ],
             ),
           ),
@@ -906,6 +912,7 @@ class _EntrySectionScreenState extends State<EntrySectionScreen>
               controller: _tabController,
               children: [
                 const InvoiceListPage(),
+                const KYCListScreen(),
               ],
             ),
           ),
@@ -917,6 +924,7 @@ class _EntrySectionScreenState extends State<EntrySectionScreen>
         index: entrySubIndex,
         children: const [
           InvoiceListPage(),
+          KYCListScreen(),
         ],
       );
     }
