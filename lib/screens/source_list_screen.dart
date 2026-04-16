@@ -1,40 +1,40 @@
 import 'package:flutter/material.dart';
-import '../models/CustomerMasterModel.dart';
-import '../services/customer_apiservice.dart';
-import 'customermaster_entry.dart';
+import '../models/source_master_model.dart';
+import '../services/source_apiservice.dart';
+import 'source_entry.dart';
 
-class CustomerListScreen extends StatefulWidget {
-  const CustomerListScreen({super.key});
+class SourceListScreen extends StatefulWidget {
+  const SourceListScreen({super.key});
 
   @override
-  State<CustomerListScreen> createState() => _CustomerListScreenState();
+  State<SourceListScreen> createState() => _SourceListScreenState();
 }
 
-class _CustomerListScreenState extends State<CustomerListScreen> {
-  final CustomerApiService _apiService = CustomerApiService();
-  List<CustomerMasterModel> _customers = [];
+class _SourceListScreenState extends State<SourceListScreen> {
+  final SourceApiService _apiService = SourceApiService();
+  List<SourceMasterModel> _sources = [];
   bool _isLoading = true;
   String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
-    _loadCustomers();
+    _loadSources();
   }
 
-  Future<void> _loadCustomers() async {
+  Future<void> _loadSources() async {
     setState(() => _isLoading = true);
     try {
-      final customers = await _apiService.fetchCustomers(context);
+      final sources = await _apiService.fetchSources(context);
       setState(() {
-        _customers = customers;
+        _sources = sources;
       });
     } catch (e) {
-      print("Error loading customers: $e");
+      print("Error loading sources: $e");
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("Error loading customers: $e"),
+            content: Text("Error loading sources: $e"),
             backgroundColor: Colors.red,
           ),
         );
@@ -46,12 +46,12 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
     }
   }
 
-  Future<void> _deleteCustomer(String customerId, int index) async {
+  Future<void> _deleteSource(String sourceId, int index) async {
     final confirmed = await showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Confirm Delete'),
-        content: const Text('Are you sure you want to delete this customer?'),
+        content: const Text('Are you sure you want to delete this source?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -67,14 +67,14 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
 
     if (confirmed == true) {
       try {
-        final result = await _apiService.deleteCustomer(context, customerId);
+        final result = await _apiService.deleteSource(context, sourceId);
         if (result == "Success" && mounted) {
           setState(() {
-            _customers.removeAt(index);
+            _sources.removeAt(index);
           });
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Customer deleted successfully'),
+              content: Text('Source deleted successfully'),
               backgroundColor: Colors.green,
             ),
           );
@@ -83,7 +83,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
         print("Delete error: $e");
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error deleting customer: $e'),
+            content: Text('Error deleting source: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -91,25 +91,25 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
     }
   }
 
-  void _navigateToCustomerForm({CustomerMasterModel? customer}) async {
+  void _navigateToSourceForm({SourceMasterModel? source}) async {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => CustomerMasterEntryScreen(customer: customer),
+        builder: (context) => SourceEntryScreen(source: source),
       ),
     );
     if (result == true && mounted) {
-      _loadCustomers(); // Refresh list
+      _loadSources();
     }
   }
 
-  List<CustomerMasterModel> get _filteredCustomers {
-    if (_searchQuery.isEmpty) return _customers;
-    return _customers.where((customer) {
-      return customer.customername.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          customer.mobile1.contains(_searchQuery) ||
-          customer.area.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          customer.refer.toLowerCase().contains(_searchQuery.toLowerCase());
+  List<SourceMasterModel> get _filteredSources {
+    if (_searchQuery.isEmpty) return _sources;
+    return _sources.where((source) {
+      return source.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          source.mobileNo.contains(_searchQuery) ||
+          source.sourceNo.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          source.branch.toLowerCase().contains(_searchQuery.toLowerCase());
     }).toList();
   }
 
@@ -123,7 +123,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
         foregroundColor: Colors.white,
         actions: [
           IconButton(
-            onPressed: _loadCustomers,
+            onPressed: _loadSources,
             icon: const Icon(Icons.refresh),
             tooltip: 'Refresh',
           ),
@@ -151,14 +151,14 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
             ),
           ),
 
-          // Customer count
+          // Source count
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Total Source: ${_filteredCustomers.length}',
+                  'Total Sources: ${_filteredSources.length}',
                   style: const TextStyle(
                     fontSize: 14,
                     color: Colors.grey,
@@ -177,7 +177,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
 
           const SizedBox(height: 8),
 
-          // Customer List
+          // Source List
           Expanded(
             child: _isLoading
                 ? const Center(
@@ -187,16 +187,13 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
                   CircularProgressIndicator(),
                   SizedBox(height: 16),
                   Text(
-                    'Loading source...',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey,
-                    ),
+                    'Loading sources...',
+                    style: TextStyle(fontSize: 16, color: Colors.grey),
                   ),
                 ],
               ),
             )
-                : _filteredCustomers.isEmpty
+                : _filteredSources.isEmpty
                 ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -208,27 +205,21 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    'No source found',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.grey,
-                    ),
+                    'No sources found',
+                    style: TextStyle(fontSize: 18, color: Colors.grey),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     _searchQuery.isNotEmpty
                         ? 'Try a different search term'
                         : 'Add your first source',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[500],
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.grey[500]),
                   ),
                   if (_searchQuery.isEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 16.0),
                       child: ElevatedButton(
-                        onPressed: () => _navigateToCustomerForm(),
+                        onPressed: () => _navigateToSourceForm(),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF4318D1),
                         ),
@@ -239,9 +230,9 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
               ),
             )
                 : ListView.builder(
-              itemCount: _filteredCustomers.length,
+              itemCount: _filteredSources.length,
               itemBuilder: (context, index) {
-                final customer = _filteredCustomers[index];
+                final source = _filteredSources[index];
                 return Card(
                   margin: const EdgeInsets.symmetric(
                     horizontal: 16,
@@ -249,19 +240,17 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
                   ),
                   child: ListTile(
                     leading: CircleAvatar(
-                      backgroundColor: Colors.blue,
+                      backgroundColor: Colors.green,
                       child: Text(
-                        customer.customername.isNotEmpty
-                            ? customer.customername[0].toUpperCase()
+                        source.name.isNotEmpty
+                            ? source.name[0].toUpperCase()
                             : 'S',
                         style: const TextStyle(color: Colors.white),
                       ),
                     ),
                     title: Text(
-                      customer.customername,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w500,
-                      ),
+                      source.name,
+                      style: const TextStyle(fontWeight: FontWeight.w500),
                     ),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -269,9 +258,17 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
                         const SizedBox(height: 4),
                         Row(
                           children: [
+                            const Icon(Icons.confirmation_number, size: 14, color: Colors.grey),
+                            const SizedBox(width: 4),
+                            Text(source.sourceNo),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
                             const Icon(Icons.phone, size: 14, color: Colors.grey),
                             const SizedBox(width: 4),
-                            Text(customer.mobile1),
+                            Text(source.mobileNo),
                           ],
                         ),
                         const SizedBox(height: 2),
@@ -279,27 +276,24 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
                           children: [
                             const Icon(Icons.location_on, size: 14, color: Colors.grey),
                             const SizedBox(width: 4),
-                            Text(customer.area),
+                            Text(source.branch),
                           ],
                         ),
                         const SizedBox(height: 2),
                         Row(
                           children: [
-                            const Icon(Icons.person, size: 14, color: Colors.grey),
+                            const Icon(Icons.category, size: 14, color: Colors.grey),
                             const SizedBox(width: 4),
-                            Text('Refer: ${customer.refer}'),
+                            Text('Mode: ${source.sourcingMode}'),
                           ],
                         ),
-                        if (customer.gstNo.isNotEmpty) ...[
+                        if (source.companyName.isNotEmpty) ...[
                           const SizedBox(height: 2),
                           Row(
                             children: [
                               const Icon(Icons.business, size: 14, color: Colors.grey),
                               const SizedBox(width: 4),
-                              Text(
-                                customer.gstNo,
-                                style: const TextStyle(fontSize: 12),
-                              ),
+                              Text(source.companyName),
                             ],
                           ),
                         ],
@@ -309,19 +303,19 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         IconButton(
-                          onPressed: () => _navigateToCustomerForm(customer: customer),
+                          onPressed: () => _navigateToSourceForm(source: source),
                           icon: const Icon(Icons.edit, color: Colors.blue),
                           tooltip: 'Edit',
                         ),
                         IconButton(
-                          onPressed: () => _deleteCustomer(customer.id, index),
+                          onPressed: () => _deleteSource(source.id, index),
                           icon: const Icon(Icons.delete, color: Colors.red),
                           tooltip: 'Delete',
                         ),
                       ],
                     ),
                     onTap: () {
-                      _navigateToCustomerForm(customer: customer);
+                      _navigateToSourceForm(source: source);
                     },
                   ),
                 );
@@ -331,7 +325,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _navigateToCustomerForm(),
+        onPressed: () => _navigateToSourceForm(),
         backgroundColor: const Color(0xFF4318D1),
         child: const Icon(Icons.add, color: Colors.white),
       ),

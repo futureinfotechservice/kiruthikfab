@@ -4,17 +4,22 @@ import 'package:flutter/material.dart';
 import 'package:kiruthikfab/screens/product_master_screen.dart';
 import 'package:kiruthikfab/screens/refer_master_screen.dart';
 import 'package:kiruthikfab/screens/salesperson_master_screen.dart';
+import 'package:kiruthikfab/screens/salesperson_report.dart';
 import 'package:kiruthikfab/screens/size_master_screen.dart';
+import 'package:kiruthikfab/screens/source_list_screen.dart';
 import 'package:kiruthikfab/screens/unit_master_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'InvoiceEntryPage.dart';
 import 'agent_master_screen.dart';
 import 'area_master_screen.dart';
+import 'call_register_screen.dart';
 import 'customerlist_screen.dart';
 import 'dashboardscreen.dart';
+import 'delivery_management_screen.dart';
 import 'incharge_master_screen.dart';
 import 'invoice_list.dart';
+import 'kyc_list_screen.dart';
 import 'loginpage.dart';
 import 'model_master_screen.dart';
 import 'occupation_master_screen.dart';
@@ -423,7 +428,7 @@ class _CustomerManagementAppState extends State<CustomerManagementApp> {
             padding: const EdgeInsets.only(left: 16),
             child: Column(
               children: [
-                _buildMasterSubItem(0, Icons.person, 'Customer Master'),
+                _buildMasterSubItem(0, Icons.person, 'Source Master'),
                 _buildMasterSubItem(1, Icons.shopping_bag, 'Product Master'),
                 _buildMasterSubItem(2, Icons.model_training, 'Model Master'),
                 _buildMasterSubItem(3, Icons.straighten, 'Size Master'),
@@ -470,6 +475,10 @@ class _CustomerManagementAppState extends State<CustomerManagementApp> {
             child: Column(
               children: [
                 _buildEntrySubItem(0, Icons.receipt, 'Bill Entry'),
+                _buildEntrySubItem(1, Icons.pages_outlined, 'KYC Entry'),
+                _buildEntrySubItem(2, Icons.pages_outlined, 'Call Register'),
+                _buildEntrySubItem(3, Icons.pages_outlined, 'Delivery'),
+
               ],
             ),
           ),
@@ -505,7 +514,8 @@ class _CustomerManagementAppState extends State<CustomerManagementApp> {
             padding: const EdgeInsets.only(left: 16),
             child: Column(
               children: [
-                _buildReportSubItem(0, Icons.bar_chart, 'Sales Report'),
+                // _buildReportSubItem(0, Icons.bar_chart, 'Sales Report'),
+                _buildReportSubItem(0, Icons.bar_chart, 'Performance Report'),
               ],
             ),
           ),
@@ -638,7 +648,7 @@ class _CustomerManagementAppState extends State<CustomerManagementApp> {
   String _getMasterScreenTitle() {
     switch (_masterSubIndex) {
       case 0:
-        return 'Customer Master';
+        return 'Source Master';
       case 1:
         return 'Product Master';
       case 2:
@@ -668,6 +678,12 @@ class _CustomerManagementAppState extends State<CustomerManagementApp> {
     switch (_entrySubIndex) {
       case 0:
         return 'Bill Entry';
+      case 1:
+        return 'KYC Entry';
+      case 2:
+        return 'Call Register';
+      case 3:
+        return 'Delivery';
       default:
         return 'Entry';
     }
@@ -675,8 +691,10 @@ class _CustomerManagementAppState extends State<CustomerManagementApp> {
 
   String _getReportScreenTitle() {
     switch (_reportSubIndex) {
+      // case 0:
+      //   return 'Sales Report';
       case 0:
-        return 'Sales Report';
+        return 'Performance Report';
       default:
         return 'Reports';
     }
@@ -780,7 +798,7 @@ class _MasterSectionScreenState extends State<MasterSectionScreen>
             child: TabBarView(
               controller: _tabController,
               children: const [
-                CustomerListScreen(),
+                SourceListScreen(),
                 ProductMasterScreen(),
                 ModelMasterScreen(),
                 SizeMasterScreen(),
@@ -801,7 +819,7 @@ class _MasterSectionScreenState extends State<MasterSectionScreen>
       return IndexedStack(
         index: masterSubIndex,
         children: const [
-          CustomerListScreen(),
+          SourceListScreen(),
           ProductMasterScreen(),
           ModelMasterScreen(),
           SizeMasterScreen(),
@@ -843,7 +861,7 @@ class _EntrySectionScreenState extends State<EntrySectionScreen>
     super.initState();
     entrySubIndex = widget.initialSubIndex;
     _tabController = TabController(
-      length: 1, // Updated to 1 tab
+      length: 2, // Updated to 1 tab
       vsync: this,
       initialIndex: entrySubIndex,
     );
@@ -898,6 +916,10 @@ class _EntrySectionScreenState extends State<EntrySectionScreen>
               isScrollable: true,
               tabs: const [
                 Tab(icon: Icon(Icons.receipt), text: 'Bill Entry'),
+                Tab(icon: Icon(Icons.pages_outlined), text: 'KYC Entry'),
+                Tab(icon: Icon(Icons.pages_outlined), text: 'Call Register'),
+                Tab(icon: Icon(Icons.pages_outlined), text: 'Delivery'),
+
               ],
             ),
           ),
@@ -906,6 +928,10 @@ class _EntrySectionScreenState extends State<EntrySectionScreen>
               controller: _tabController,
               children: [
                 const InvoiceListPage(),
+                const KYCListScreen(),
+                const CallRegisterScreen(),
+                const DeliveryManagementListScreen(),
+
               ],
             ),
           ),
@@ -917,6 +943,10 @@ class _EntrySectionScreenState extends State<EntrySectionScreen>
         index: entrySubIndex,
         children: const [
           InvoiceListPage(),
+          KYCListScreen(),
+          CallRegisterScreen(),
+          DeliveryManagementListScreen(),
+
         ],
       );
     }
@@ -1002,7 +1032,8 @@ class _ReportSectionScreenState extends State<ReportSectionScreen>
               unselectedLabelColor: Colors.grey[400],
               isScrollable: true,
               tabs: const [
-                Tab(icon: Icon(Icons.bar_chart), text: 'Sales Report'),
+                // Tab(icon: Icon(Icons.bar_chart), text: 'Sales Report'),
+                Tab(icon: Icon(Icons.bar_chart), text: 'Performance Report'),
               ],
             ),
           ),
@@ -1011,6 +1042,7 @@ class _ReportSectionScreenState extends State<ReportSectionScreen>
               controller: _tabController,
               children: [
                 // SalesReportScreen(),
+                SalespersonReport(),
               ],
             ),
           ),
@@ -1022,6 +1054,7 @@ class _ReportSectionScreenState extends State<ReportSectionScreen>
         index: reportSubIndex,
         children: const [
           // SalesReportScreen(),
+          SalespersonReport(),
         ],
       );
     }

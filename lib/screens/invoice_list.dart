@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:printing/printing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../widgets/customappbarwidget.dart';
 import '../../services/invoice_apiservice.dart';
 import '../models/InvoicePrintPreview.dart';
+import '../models/invoice_print_helper.dart';
 import 'InvoiceEntryPage.dart';
-
 
 class InvoiceListPage extends StatefulWidget {
   const InvoiceListPage({super.key});
@@ -31,6 +32,7 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
 
   late String userType;
   bool _showFilterSection = false;
+
   bool get isMobile => MediaQuery.of(context).size.width < 900;
 
   @override
@@ -71,15 +73,19 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
 
     setState(() {
       _filteredInvoices = _invoices.where((invoice) {
-        final matchesSearch = query.isEmpty ||
+        final matchesSearch =
+            query.isEmpty ||
             invoice.invoiceNo.toLowerCase().contains(query) ||
             invoice.customerName.toLowerCase().contains(query);
 
         final invoiceDate = DateFormat("yyyy-MM-dd").parse(invoice.date);
-        final matchesDate = (_fromDate == null || invoiceDate.isAfter(_fromDate!)) &&
-            (_toDate == null || invoiceDate.isBefore(_toDate!.add(const Duration(days: 1))));
+        final matchesDate =
+            (_fromDate == null || invoiceDate.isAfter(_fromDate!)) &&
+            (_toDate == null ||
+                invoiceDate.isBefore(_toDate!.add(const Duration(days: 1))));
 
-        final matchesCustomer = _selectedCustomer.isEmpty ||
+        final matchesCustomer =
+            _selectedCustomer.isEmpty ||
             invoice.customerName == _selectedCustomer;
 
         return matchesSearch && matchesDate && matchesCustomer;
@@ -141,7 +147,10 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
     );
 
     if (confirm == true) {
-      final result = await invoiceApiService().deleteInvoice(context, invoiceId);
+      final result = await invoiceApiService().deleteInvoice(
+        context,
+        invoiceId,
+      );
       if (result == "Success") {
         _loadInvoices();
       }
@@ -151,9 +160,8 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
   void _viewInvoice(InvoiceModel invoice) async {
     final result = await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => InvoiceEntryPage(
-          invoice: {'invoice': invoice, 'isViewMode': true},
-        ),
+        builder: (context) =>
+            InvoiceEntryPage(invoice: {'invoice': invoice, 'isViewMode': true}),
       ),
     );
 
@@ -165,9 +173,7 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
   void _editInvoice(InvoiceModel invoice) async {
     final result = await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => InvoiceEntryPage(
-          invoice: invoice,
-        ),
+        builder: (context) => InvoiceEntryPage(invoice: invoice),
       ),
     );
 
@@ -178,7 +184,10 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
 
   void _printInvoice(InvoiceModel invoice) async {
     // Load full invoice details for printing
-    final details = await invoiceApiService().getInvoiceDetails(context, invoice.id);
+    final details = await invoiceApiService().getInvoiceDetails(
+      context,
+      invoice.id,
+    );
 
     // Load company details
     final company = await invoiceApiService().getCompanyDetails(context);
@@ -218,32 +227,20 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
           descriptionParts.add('Unit: $unitName');
         }
 
-        return {
-          ...item,
-          'formattedDescription': descriptionParts.join(' | '),
-        };
+        return {...item, 'formattedDescription': descriptionParts.join(' | ')};
       }).toList();
 
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (context) => InvoicePrintPreview(
-            invoice: invoice,
-            items: formattedItems,
-            customerName: invoice.customerName,
-            subtotal: invoice.subtotal,
-            taxAmount: taxAmount.toStringAsFixed(2),
-            taxPercentage: invoice.taxPercentage,
-            grandTotal: invoice.grandTotal,
-            company: company, // Pass company details
-          ),
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No items found for this invoice'),
-          backgroundColor: Colors.orange,
-        ),
+      // Generate and print PDF with customer details
+      await InvoicePrintHelper.printInvoice(
+        context: context,
+        invoice: invoice, // Now includes customer details
+        items: formattedItems,
+        customerName: invoice.customerName,
+        subtotal: invoice.subtotal,
+        taxAmount: taxAmount.toStringAsFixed(2),
+        taxPercentage: invoice.taxPercentage,
+        grandTotal: invoice.grandTotal,
+        company: company,
       );
     }
   }
@@ -251,10 +248,7 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBarWidget(
-        title: 'Invoices',
-        showBackButton: true,
-      ),
+      appBar: CustomAppBarWidget(title: 'Invoices', showBackButton: true),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -274,115 +268,138 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
               ),
               child: isMobile
                   ? Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Invoice List',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                          color: Color(0xFF1F2937),
-                        ),
-                      ),
-                      Row(
-                        children: [
-                          IconButton(
-                            onPressed: () {
-                              setState(() => _showFilterSection = !_showFilterSection);
-                            },
-                            icon: Icon(
-                              _showFilterSection ? Icons.filter_alt_off : Icons.filter_alt,
-                              color: _showFilterSection ? const Color(0xFF4F46E5) : Colors.grey,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          ElevatedButton(
-                            onPressed: () async {
-                              final result = await Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (context) => const InvoiceEntryPage(),
-                                ),
-                              );
-                              if (result == true) {
-                                _loadInvoices();
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF4F46E5),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Invoice List',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                                color: Color(0xFF1F2937),
                               ),
                             ),
-                            child: const Text(
-                              'Add Invoice',
-                              style: TextStyle(color: Colors.white),
+                            Row(
+                              children: [
+                                IconButton(
+                                  onPressed: () {
+                                    setState(
+                                      () => _showFilterSection =
+                                          !_showFilterSection,
+                                    );
+                                  },
+                                  icon: Icon(
+                                    _showFilterSection
+                                        ? Icons.filter_alt_off
+                                        : Icons.filter_alt,
+                                    color: _showFilterSection
+                                        ? const Color(0xFF4F46E5)
+                                        : Colors.grey,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                ElevatedButton(
+                                  onPressed: () async {
+                                    final result = await Navigator.of(context)
+                                        .push(
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                const InvoiceEntryPage(),
+                                          ),
+                                        );
+                                    if (result == true) {
+                                      _loadInvoices();
+                                    }
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF4F46E5),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    'Add Invoice',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ],
-              )
+                          ],
+                        ),
+                      ],
+                    )
                   : Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Invoice List',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                      color: Color(0xFF1F2937),
-                    ),
-                  ),
-                  Row(
-                    children: [
-                      OutlinedButton.icon(
-                        onPressed: () {
-                          setState(() => _showFilterSection = !_showFilterSection);
-                        },
-                        icon: Icon(
-                          _showFilterSection ? Icons.filter_alt_off : Icons.filter_alt,
-                          size: 16,
-                        ),
-                        label: Text(_showFilterSection ? 'Hide Filters' : 'Show Filters'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: _showFilterSection ? const Color(0xFF4F46E5) : Colors.grey,
-                          side: BorderSide(
-                            color: _showFilterSection ? const Color(0xFF4F46E5) : Colors.grey,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Invoice List',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                            color: Color(0xFF1F2937),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      ElevatedButton(
-                        onPressed: () async {
-                          final result = await Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => const InvoiceEntryPage(),
+                        Row(
+                          children: [
+                            OutlinedButton.icon(
+                              onPressed: () {
+                                setState(
+                                  () =>
+                                      _showFilterSection = !_showFilterSection,
+                                );
+                              },
+                              icon: Icon(
+                                _showFilterSection
+                                    ? Icons.filter_alt_off
+                                    : Icons.filter_alt,
+                                size: 16,
+                              ),
+                              label: Text(
+                                _showFilterSection
+                                    ? 'Hide Filters'
+                                    : 'Show Filters',
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: _showFilterSection
+                                    ? const Color(0xFF4F46E5)
+                                    : Colors.grey,
+                                side: BorderSide(
+                                  color: _showFilterSection
+                                      ? const Color(0xFF4F46E5)
+                                      : Colors.grey,
+                                ),
+                              ),
                             ),
-                          );
-                          if (result == true) {
-                            _loadInvoices();
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF4F46E5),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
+                            const SizedBox(width: 12),
+                            ElevatedButton(
+                              onPressed: () async {
+                                final result = await Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const InvoiceEntryPage(),
+                                  ),
+                                );
+                                if (result == true) {
+                                  _loadInvoices();
+                                }
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF4F46E5),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              child: const Text(
+                                'Add Invoice',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ),
+                          ],
                         ),
-                        child: const Text(
-                          'Add Invoice',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                      ],
+                    ),
             ),
 
             const SizedBox(height: 8),
@@ -400,7 +417,10 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
                 ),
                 child: Column(
                   children: [
-                    if (isMobile) _buildMobileFilters() else _buildDesktopFilters(),
+                    if (isMobile)
+                      _buildMobileFilters()
+                    else
+                      _buildDesktopFilters(),
                     const SizedBox(height: 12),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
@@ -415,7 +435,10 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF4F46E5),
                           ),
-                          child: const Text('Apply Filters', style: TextStyle(color: Colors.white)),
+                          child: const Text(
+                            'Apply Filters',
+                            style: TextStyle(color: Colors.white),
+                          ),
                         ),
                       ],
                     ),
@@ -447,7 +470,11 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
                         child: Row(
                           children: [
                             const SizedBox(width: 12),
-                            const Icon(Icons.search, size: 20, color: Colors.grey),
+                            const Icon(
+                              Icons.search,
+                              size: 20,
+                              color: Colors.grey,
+                            ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: TextField(
@@ -649,7 +676,11 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.visibility, color: Colors.green, size: 20),
+                    icon: const Icon(
+                      Icons.visibility,
+                      color: Colors.green,
+                      size: 20,
+                    ),
                     onPressed: () => _viewInvoice(invoice),
                     tooltip: 'View',
                   ),
@@ -661,13 +692,21 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
                   if (userType == 'Admin') ...[
                     const SizedBox(width: 4),
                     IconButton(
-                      icon: const Icon(Icons.edit, color: Colors.orange, size: 20),
+                      icon: const Icon(
+                        Icons.edit,
+                        color: Colors.orange,
+                        size: 20,
+                      ),
                       onPressed: () => _editInvoice(invoice),
                       tooltip: 'Edit',
                     ),
                     const SizedBox(width: 4),
                     IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red, size: 20),
+                      icon: const Icon(
+                        Icons.delete,
+                        color: Colors.red,
+                        size: 20,
+                      ),
                       onPressed: () => _deleteInvoice(invoice.id),
                       tooltip: 'Delete',
                     ),
@@ -691,12 +730,48 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: const Row(
             children: [
-              Expanded(flex: 2, child: Text('Invoice No', style: TextStyle(fontWeight: FontWeight.w600))),
-              Expanded(flex: 2, child: Text('Date', style: TextStyle(fontWeight: FontWeight.w600))),
-              Expanded(flex: 3, child: Text('Customer', style: TextStyle(fontWeight: FontWeight.w600))),
-              Expanded(flex: 1, child: Text('Items', style: TextStyle(fontWeight: FontWeight.w600))),
-              Expanded(flex: 2, child: Text('Amount', style: TextStyle(fontWeight: FontWeight.w600))),
-              Expanded(flex: 3, child: Text('Actions', style: TextStyle(fontWeight: FontWeight.w600))),
+              Expanded(
+                flex: 2,
+                child: Text(
+                  'Invoice No',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
+              Expanded(
+                flex: 2,
+                child: Text(
+                  'Date',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
+              Expanded(
+                flex: 3,
+                child: Text(
+                  'Customer',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
+              Expanded(
+                flex: 1,
+                child: Text(
+                  'Items',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
+              Expanded(
+                flex: 2,
+                child: Text(
+                  'Amount',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
+              Expanded(
+                flex: 3,
+                child: Text(
+                  'Actions',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
             ],
           ),
         ),
@@ -705,7 +780,8 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
         Expanded(
           child: ListView.separated(
             itemCount: _filteredInvoices.length,
-            separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFE5E7EB)),
+            separatorBuilder: (_, __) =>
+                const Divider(height: 1, color: Color(0xFFE5E7EB)),
             itemBuilder: (context, index) {
               final invoice = _filteredInvoices[index];
               return Container(
@@ -717,34 +793,55 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
                     Expanded(
                       flex: 2,
                       child: Text(
-                        DateFormat('dd/MM/yyyy').format(DateFormat('yyyy-MM-dd').parse(invoice.date)),
+                        DateFormat(
+                          'dd/MM/yyyy',
+                        ).format(DateFormat('yyyy-MM-dd').parse(invoice.date)),
                       ),
                     ),
                     Expanded(flex: 3, child: Text(invoice.customerName)),
-                    Expanded(flex: 1, child: Text('${invoice.totalItems ?? 0}')),
+                    Expanded(
+                      flex: 1,
+                      child: Text('${invoice.totalItems ?? 0}'),
+                    ),
                     Expanded(flex: 2, child: Text('₹${invoice.grandTotal}')),
                     Expanded(
                       flex: 3,
                       child: Row(
                         children: [
                           IconButton(
-                            icon: const Icon(Icons.visibility, color: Colors.green, size: 18),
+                            icon: const Icon(
+                              Icons.visibility,
+                              color: Colors.green,
+                              size: 18,
+                            ),
                             onPressed: () => _viewInvoice(invoice),
                             tooltip: 'View',
                           ),
                           IconButton(
-                            icon: const Icon(Icons.print, color: Colors.blue, size: 18),
+                            icon: const Icon(
+                              Icons.print,
+                              color: Colors.blue,
+                              size: 18,
+                            ),
                             onPressed: () => _printInvoice(invoice),
                             tooltip: 'Print',
                           ),
                           if (userType == 'Admin') ...[
                             IconButton(
-                              icon: const Icon(Icons.edit, color: Colors.orange, size: 18),
+                              icon: const Icon(
+                                Icons.edit,
+                                color: Colors.orange,
+                                size: 18,
+                              ),
                               onPressed: () => _editInvoice(invoice),
                               tooltip: 'Edit',
                             ),
                             IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red, size: 18),
+                              icon: const Icon(
+                                Icons.delete,
+                                color: Colors.red,
+                                size: 18,
+                              ),
                               onPressed: () => _deleteInvoice(invoice.id),
                               tooltip: 'Delete',
                             ),
