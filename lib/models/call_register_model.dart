@@ -1,13 +1,19 @@
+
+
+import 'CustomerInterestModel.dart';
+
 class CallRegisterModel {
   final int id;
   final String entryNo;
   final String sourceName;
   final String callBy;
   final String date;
+  final String followupDate;
   final String fromTime;
   final String toTime;
   final String feedback;
   final String notes;
+  final CustomerInterestModel interest;
 
   CallRegisterModel({
     required this.id,
@@ -19,6 +25,8 @@ class CallRegisterModel {
     required this.toTime,
     required this.feedback,
     required this.notes,
+    required this.followupDate,
+    required this.interest,
   });
 
   factory CallRegisterModel.fromJson(Map<String, dynamic> json) {
@@ -32,6 +40,12 @@ class CallRegisterModel {
       toTime: json['to'],
       feedback: json['feedback'],
       notes: json['notes'],
+      followupDate: json['followup_date'] ?? '',
+      interest: CustomerInterestModel.fromJson({
+        'id': json['interestid']?.toString() ?? '',
+        'companyid': json['companyid']?.toString() ?? '',
+        'interest': json['interest']?.toString() ?? '',
+      }),
     );
   }
 }

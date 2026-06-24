@@ -1,12 +1,16 @@
+import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 
 import '../../models/source_master_model.dart';
 
 import '../../services/source_apiservice.dart';
+import '../models/CustomerInterestModel.dart';
 import '../models/call_register_model.dart';
 import '../services/call_register_service.dart';
+import '../services/customer_interest_apiservice.dart';
 import 'add_call_register_screen.dart';
 
 class CallRegisterScreen extends StatefulWidget {
@@ -23,27 +27,44 @@ class _CallRegisterScreenState extends State<CallRegisterScreen> {
   bool loading = true;
 
   final searchController = TextEditingController();
+  final _searchController = TextEditingController();
 
   DateTime? fromDate;
   DateTime? toDate;
-
+  String? userType;
+  String? loginUsername;
+  String? loginId;
   @override
   void initState() {
     super.initState();
+
     load();
   }
 
   Future<void> load() async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
-
+      final id = prefs.getString('id');
+      final username = prefs.getString('username');
+      final userTypes = prefs.getString('user_type');
+      final isUser = userType == "USER";
       int companyId = int.parse(prefs.getString('companyid')!);
 
-      final data = await CallRegisterService().fetchRecords(companyId);
-
+      List<CallRegisterModel> data;
+      if (isUser) {
+        data = await CallRegisterService().fetchRecordsByCallById(
+          companyId,
+          id!,
+        );
+      } else {
+        data = await CallRegisterService().fetchRecords(companyId);
+      }
       if (!mounted) return;
 
       setState(() {
+        loginId = id;
+        loginUsername = username;
+        userType = userTypes;
         records = data;
         filtered = data;
         loading = false;
@@ -159,17 +180,35 @@ class _CallRegisterScreenState extends State<CallRegisterScreen> {
     );
   }
 
-  Future<void> showUpdateDialog(CallRegisterModel item) async {
-    final SourceApiService apiService = SourceApiService();
+  OutlineInputBorder border({Color color = const Color(0xFFD1D5DB)}) {
+    return OutlineInputBorder(
+      borderSide: BorderSide(color: color, width: 1.4),
+      borderRadius: BorderRadius.circular(6),
+    );
+  }
 
+  Future<void> showUpdateDialog(CallRegisterModel item) async {
+    final isUser = userType == "USER";
+    final SourceApiService apiService = SourceApiService();
+    final CustomerInterestApiservice _customerInterestService =
+        CustomerInterestApiservice();
+    final _searchController1 = TextEditingController();
     List<SourceMasterModel> sources = [];
     List<Map<String, dynamic>> agents = [];
-    final sources1 = await apiService.fetchSources(context);
-    final agent = await apiService.fetchEntryPersons(context);
-    setState(() {
-      sources = sources1;
-      agents = agent;
-    });
+    sources = await apiService.fetchSources(context);
+
+    List<CustomerInterestModel> interests = await _customerInterestService
+        .fetchInterests(context);
+    CustomerInterestModel? selectedInterest = interests.firstWhere(
+      (element) => element.id == item.interest.id,
+    );
+    DateTime? selectedFollowupDate;
+    if (!isUser) {
+      agents = await apiService.fetchEntryPersons(context);
+    }
+    // final agent = await apiService.fetchEntryPersons(context);
+
+    setState(() {});
     final feedbackController = TextEditingController(text: item.feedback);
 
     final notesController = TextEditingController(text: item.notes);
@@ -179,10 +218,175 @@ class _CallRegisterScreenState extends State<CallRegisterScreen> {
       orElse: () => sources.first,
     );
 
-    Map<String, dynamic>? selectedAgent = agents.firstWhere(
-      (e) => e['name'] == item.callBy,
-      orElse: () => agents.first,
-    );
+    Map<String, dynamic>? selectedAgent;
+    if (!isUser) {
+      selectedAgent = agents.firstWhere(
+        (e) => e['name'] == item.callBy,
+        orElse: () => agents.first,
+      );
+    }
+    Widget sectionLabel(String text) {
+      return Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          text,
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+        ),
+      );
+    }
+
+    Future<void> pickFollowupDate() async {
+      final date = await showDatePicker(
+        context: context,
+        firstDate: DateTime(2020),
+        lastDate: DateTime(2100),
+        initialDate: selectedFollowupDate,
+      );
+
+      if (date != null) {
+        setState(() {
+          selectedFollowupDate = date;
+        });
+      }
+    }
+
+    InputDecoration inputDecoration({Widget? prefixIcon, Widget? suffixIcon}) {
+      return InputDecoration(
+        prefixIcon: prefixIcon,
+        suffixIcon: suffixIcon,
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 18,
+        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      );
+    }
+
+    Widget dateField1() {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          sectionLabel("Followup Date *"),
+          const SizedBox(height: 8),
+          InkWell(
+            onTap: pickFollowupDate,
+            child: InputDecorator(
+              decoration: inputDecoration(
+                prefixIcon: const Icon(Icons.calendar_month_outlined),
+              ),
+              child: Text(
+                selectedFollowupDate == null
+                    ? ""
+                    : DateFormat("dd/MM/yyyy").format(selectedFollowupDate!),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    Widget customerInterest() {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          sectionLabel("Customer Interest *"),
+          const SizedBox(height: 8),
+          DropdownSearch<CustomerInterestModel>(
+            selectedItem: selectedInterest,
+
+            compareFn: (item, selectedItem) => item.id == selectedItem.id,
+
+            items: (filter, loadProps) => interests,
+
+            itemAsString: (CustomerInterestModel item) => item.interest,
+
+            decoratorProps: DropDownDecoratorProps(
+              baseStyle: const TextStyle(fontSize: 14, color: Colors.black),
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: const Color(0xFFF3F4F6),
+                border: border(),
+                enabledBorder: border(),
+                focusedBorder: border(),
+                disabledBorder: border(color: const Color(0xFFD1D5DB)),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 14,
+                ),
+                hintText: "Select Interest",
+                hintStyle: const TextStyle(color: Color(0xFF6B7280)),
+              ),
+            ),
+
+            onChanged: (CustomerInterestModel? value) {
+              setState(() {
+                selectedInterest = value;
+              });
+            },
+
+            popupProps: PopupProps.menu(
+              showSearchBox: true,
+
+              searchFieldProps: TextFieldProps(
+                controller: _searchController1,
+                decoration: InputDecoration(
+                  hintText: 'Search...',
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 12,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.clear, size: 20),
+                    onPressed: () {
+                      _searchController1.clear();
+                    },
+                  ),
+                ),
+              ),
+
+              menuProps: MenuProps(
+                borderRadius: BorderRadius.circular(12),
+                elevation: 6,
+                color: Colors.white,
+                backgroundColor: Colors.white,
+              ),
+
+              itemBuilder:
+                  (
+                    context,
+                    CustomerInterestModel item,
+                    bool isDisabled,
+                    bool isSelected,
+                  ) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      child: Text(
+                        item.interest,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: isSelected
+                              ? Theme.of(context).primaryColor
+                              : Colors.black,
+                        ),
+                      ),
+                    );
+                  },
+            ),
+          ),
+        ],
+      );
+    }
 
     await showDialog(
       context: context,
@@ -200,40 +404,125 @@ class _CallRegisterScreenState extends State<CallRegisterScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      DropdownButtonFormField<SourceMasterModel>(
-                        value: selectedSource,
-                        decoration: const InputDecoration(labelText: 'Source'),
-                        items: sources.map((e) {
-                          return DropdownMenuItem(
-                            value: e,
-                            child: Text(e.name),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          setDialogState(() {
-                            selectedSource = value;
-                          });
-                        },
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Source'),
+                          DropdownSearch<SourceMasterModel>(
+                            compareFn: (item, selectedItem) =>
+                                item == selectedItem,
+                            selectedItem: selectedSource,
+                            decoratorProps: DropDownDecoratorProps(
+                              baseStyle: TextStyle(
+                                fontSize: 14,
+                                color: Colors.black,
+                              ),
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor: const Color(0xFFF3F4F6),
+                                border: border(),
+                                enabledBorder: border(),
+                                focusedBorder: border(),
+                                disabledBorder: border(
+                                  color: const Color(0xFFD1D5DB),
+                                ),
+
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 14,
+                                ),
+                                hintStyle: TextStyle(
+                                  color: const Color(0xFF6B7280),
+                                ),
+                              ),
+                            ),
+                            items: (filter, loadProps) {
+                              final query = filter.toLowerCase().trim();
+
+                              return sources
+                                  .where(
+                                    (e) => e.name.toLowerCase().contains(query),
+                                  )
+                                  .take(100)
+                                  .toList();
+                            },
+                            itemAsString: (item) => item.name,
+                            // items: (filter, loadProps) => sources.map((source) {
+                            //   return source.name;
+                            // }).toList(),
+                            onChanged: (value) async {
+                              if (value == null) return;
+
+                              setState(() {
+                                selectedSource = sources.firstWhere(
+                                  (element) => element == value,
+                                );
+                              });
+                            },
+                            popupProps: PopupProps.menu(
+                              showSearchBox: true,
+                              searchFieldProps: TextFieldProps(
+                                controller: _searchController,
+
+                                decoration: InputDecoration(
+                                  hintText: 'Search...',
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 12,
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  suffixIcon: IconButton(
+                                    icon: const Icon(Icons.clear, size: 20),
+                                    onPressed: () {
+                                      _searchController.clear();
+                                    },
+                                  ),
+                                ),
+                                onSubmitted: (value) async {
+                                  setState(() {
+                                    selectedSource = sources.firstWhere(
+                                      (element) => element.name == value,
+                                    );
+                                  });
+                                },
+                              ),
+                              menuProps: MenuProps(
+                                borderRadius: BorderRadius.circular(12),
+                                elevation: 6,
+                                color: Colors.white,
+                                backgroundColor: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
 
                       const SizedBox(height: 15),
+                      if (!isUser)
+                        DropdownButtonFormField<Map<String, dynamic>>(
+                          value: selectedAgent,
+                          decoration: const InputDecoration(
+                            labelText: 'Call By',
+                          ),
+                          items: agents.map((e) {
+                            return DropdownMenuItem(
+                              value: e,
+                              child: Text(e['name']),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            setDialogState(() {
+                              selectedAgent = value;
+                            });
+                          },
+                        ),
 
-                      DropdownButtonFormField<Map<String, dynamic>>(
-                        value: selectedAgent,
-                        decoration: const InputDecoration(labelText: 'Call By'),
-                        items: agents.map((e) {
-                          return DropdownMenuItem(
-                            value: e,
-                            child: Text(e['name']),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          setDialogState(() {
-                            selectedAgent = value;
-                          });
-                        },
-                      ),
-
+                      const SizedBox(height: 15),
+                      dateField1(),
+                      const SizedBox(height: 15),
+                      customerInterest(),
                       const SizedBox(height: 15),
 
                       TextFormField(
@@ -270,13 +559,23 @@ class _CallRegisterScreenState extends State<CallRegisterScreen> {
 
                 ElevatedButton(
                   onPressed: () async {
+                    final follow = selectedFollowupDate == null
+                        ? ''
+                        : DateFormat(
+                            'yyyy-MM-dd',
+                          ).format(selectedFollowupDate!);
+
                     final res = await CallRegisterService().updateCallRegister(
                       id: item.id,
                       sourceId: int.parse(selectedSource!.id),
-                      callById: int.parse(selectedAgent!['id'].toString()),
+                      callById: !isUser
+                          ? int.parse(selectedAgent!['id'].toString())
+                          : 0,
 
                       feedback: feedbackController.text,
                       notes: notesController.text,
+                      followupDate: follow,
+                      interest: selectedInterest!.id.toString(),
                     );
 
                     if (res['status'] == true) {
@@ -306,10 +605,10 @@ class _CallRegisterScreenState extends State<CallRegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final mobile = MediaQuery.of(context).size.width < 700;
-    final medium =
-        MediaQuery.of(context).size.width < 700 &&
-        MediaQuery.of(context).size.width > 600;
-
+    // final medium =
+    //     MediaQuery.of(context).size.width < 700 &&
+    //     MediaQuery.of(context).size.width > 600;
+    final isUser = userType == "USER";
     return Scaffold(
       body: loading
           ? const Center(child: CircularProgressIndicator())
@@ -640,15 +939,17 @@ class _CallRegisterScreenState extends State<CallRegisterScreen> {
                       headingRowColor: WidgetStateProperty.all(
                         Colors.grey.shade200,
                       ),
-                      columns: const [
-                        DataColumn(label: Text('#')),
-                        DataColumn(label: Text('Entry No')),
-                        DataColumn(label: Text('Date')),
-                        DataColumn(label: Text('Source')),
-                        DataColumn(label: Text('Call By')),
-                        DataColumn(label: Text('From')),
-                        DataColumn(label: Text('To')),
-                        DataColumn(label: Text('Actions')),
+                      columns: [
+                        const DataColumn(label: Text('#')),
+                        const DataColumn(label: Text('Entry No')),
+                        const DataColumn(label: Text('Date')),
+                        const DataColumn(label: Text('Followup Date')),
+                        const DataColumn(label: Text('Source')),
+                        if (!isUser) const DataColumn(label: Text('Call By')),
+                        const DataColumn(label: Text('From')),
+                        const DataColumn(label: Text('To')),
+                        const DataColumn(label: Text('Interest')),
+                        const DataColumn(label: Text('Actions')),
                       ],
                       rows: List.generate(filtered.length, (index) {
                         final item = filtered[index];
@@ -670,10 +971,12 @@ class _CallRegisterScreenState extends State<CallRegisterScreen> {
                               ),
                             ),
                             DataCell(Text(item.date)),
+                            DataCell(Text(item.followupDate)),
                             DataCell(Text(item.sourceName)),
-                            DataCell(Text(item.callBy)),
+                            if (!isUser) DataCell(Text(item.callBy)),
                             DataCell(Text(item.fromTime)),
                             DataCell(Text(item.toTime)),
+                            DataCell(Text(item.interest.interest)),
                             DataCell(
                               Row(
                                 children: [

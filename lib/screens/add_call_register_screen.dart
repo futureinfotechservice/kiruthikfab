@@ -1,3 +1,4 @@
+import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -5,7 +6,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/source_master_model.dart';
 
 import '../../services/source_apiservice.dart';
+import '../models/CustomerInterestModel.dart';
 import '../services/call_register_service.dart';
+import '../services/customer_interest_apiservice.dart';
 
 class AddCallRegisterScreen extends StatefulWidget {
   const AddCallRegisterScreen({super.key});
@@ -16,49 +19,98 @@ class AddCallRegisterScreen extends StatefulWidget {
 
 class _AddCallRegisterScreenState extends State<AddCallRegisterScreen> {
   final SourceApiService _apiService = SourceApiService();
-
+  final CustomerInterestApiservice _customerInterestService =
+      CustomerInterestApiservice();
   bool _isLoading = false;
   final _formKey = GlobalKey<FormState>();
 
   final TextEditingController feedbackController = TextEditingController();
   final TextEditingController notesController = TextEditingController();
   final entryNoController = TextEditingController();
+  final _searchController = TextEditingController();
+  final _searchController1 = TextEditingController();
 
   DateTime? selectedDate;
+  DateTime? selectedFollowupDate;
   TimeOfDay? fromTime;
   TimeOfDay? toTime;
-
+  final TextEditingController fromTimeController = TextEditingController();
+  final TextEditingController toTimeController = TextEditingController();
   SourceMasterModel? selectedSource;
   Map<String, dynamic>? selectedAgent;
 
   List<Map<String, dynamic>> agents = [];
   Map<String, dynamic> callRegisters = {};
   List<SourceMasterModel> sources = [];
+  bool _initialized = false;
+  List<CustomerInterestModel> _interests = [];
+  CustomerInterestModel? _selectedInterest;
+  String? userType;
+  String? loginUsername;
+  String? loginId;
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    if (!_initialized) {
+      _initialized = true;
+      init();
+      loadData();
+    }
+  }
+
+  Future<void> loadData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    final id = prefs.getString('id');
+    final username = prefs.getString('username');
+    final userTypes = prefs.getString('user_type');
+    final isUser = userType == "USER";
+    setState(() {
+      loginId = id;
+      loginUsername = username;
+      userType = userTypes;
+      if (!isUser) {
+        selectedAgent = {'id': loginId, 'name': loginUsername};
+      }
+    });
+  }
+
   @override
   initState() {
     super.initState();
-    init();
   }
 
   Future<void> init() async {
     setState(() {
       _isLoading = true;
-
+      selectedDate = DateTime.now();
       feedbackController.clear();
       notesController.clear();
       entryNoController.clear();
-      selectedDate = null;
-      fromTime = null;
-      toTime = null;
 
+      fromTime = null;
+      toTime = TimeOfDay.now();
+      fromTimeController.clear();
+      toTimeController.text = toTime!.format(context);
       selectedSource = null;
       selectedAgent = null;
     });
+    final responses = await Future.wait([
+      CallRegisterService().fetchCallRegister(),
+      _apiService.fetchSources(context),
+      _apiService.fetchEntryPersons(context),
+      _customerInterestService.fetchInterests(context),
+    ]);
 
-    final res = await CallRegisterService().fetchCallRegister();
+    final res = responses[0] as Map<String, dynamic>;
 
-    final sources1 = await _apiService.fetchSources(context);
-    final agent = await _apiService.fetchEntryPersons(context);
+    final List<SourceMasterModel> sources1 =
+        responses[1] as List<SourceMasterModel>;
+
+    final agent = responses[2] as List<Map<String, dynamic>>;
+
+    final interests = responses[3] as List<CustomerInterestModel>;
+
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
     final companyName = prefs.getString('companyname') ?? '';
@@ -79,6 +131,7 @@ class _AddCallRegisterScreenState extends State<AddCallRegisterScreen> {
       sources = sources1;
       agents = agent;
       _isLoading = false;
+      _interests = interests;
     });
   }
 
@@ -114,12 +167,27 @@ class _AddCallRegisterScreenState extends State<AddCallRegisterScreen> {
       context: context,
       firstDate: DateTime(2020),
       lastDate: DateTime(2100),
-      initialDate: selectedDate ?? DateTime.now(),
+      initialDate: selectedDate,
     );
 
     if (date != null) {
       setState(() {
         selectedDate = date;
+      });
+    }
+  }
+
+  Future<void> pickFollowupDate() async {
+    final date = await showDatePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+      initialDate: selectedFollowupDate,
+    );
+
+    if (date != null) {
+      setState(() {
+        selectedFollowupDate = date;
       });
     }
   }
@@ -133,6 +201,7 @@ class _AddCallRegisterScreenState extends State<AddCallRegisterScreen> {
     if (time != null) {
       setState(() {
         fromTime = time;
+        fromTimeController.text = time.format(context);
       });
     }
   }
@@ -146,6 +215,7 @@ class _AddCallRegisterScreenState extends State<AddCallRegisterScreen> {
     if (time != null) {
       setState(() {
         toTime = time;
+        toTimeController.text = time.format(context);
       });
     }
   }
@@ -160,6 +230,23 @@ class _AddCallRegisterScreenState extends State<AddCallRegisterScreen> {
   }
 
   Future<void> saveRecord() async {
+    final follow = selectedFollowupDate == null
+        ? ''
+        : DateFormat('yyyy-MM-dd').format(selectedFollowupDate!);
+
+    if (fromTime != null && toTime != null) {
+      final fromMinutes = fromTime!.hour * 60 + fromTime!.minute;
+      final toMinutes = toTime!.hour * 60 + toTime!.minute;
+
+      if (fromMinutes >= toMinutes) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("From time should be less than To time"),
+          ),
+        );
+        return;
+      }
+    }
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
     final companyId = int.parse(prefs.getString('companyid').toString());
@@ -174,6 +261,8 @@ class _AddCallRegisterScreenState extends State<AddCallRegisterScreen> {
       to: formatTime(toTime),
       feedback: feedbackController.text,
       notes: notesController.text,
+      followupDate: follow,
+      interest: _selectedInterest!.id.toString(),
     );
 
     if (res['status'] == true) {
@@ -204,7 +293,7 @@ class _AddCallRegisterScreenState extends State<AddCallRegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
-
+    final isUser = userType == "USER";
     final bool mobile = width < 700;
 
     return Scaffold(
@@ -270,8 +359,8 @@ class _AddCallRegisterScreenState extends State<AddCallRegisterScreen> {
                                     const SizedBox(height: 20),
                                     _sourceField(),
                                     const SizedBox(height: 20),
-                                    _agentField(),
-                                    const SizedBox(height: 20),
+                                    if (!isUser) _agentField(),
+                                    if (!isUser) const SizedBox(height: 20),
                                     _fromTimeField(),
                                     const SizedBox(height: 20),
                                     _toTimeField(),
@@ -290,8 +379,9 @@ class _AddCallRegisterScreenState extends State<AddCallRegisterScreen> {
                                     Row(
                                       children: [
                                         Expanded(child: _sourceField()),
-                                        const SizedBox(width: 24),
-                                        Expanded(child: _agentField()),
+                                        if (!isUser) const SizedBox(width: 24),
+                                        if (!isUser)
+                                          Expanded(child: _agentField()),
                                       ],
                                     ),
                                     const SizedBox(height: 24),
@@ -305,6 +395,11 @@ class _AddCallRegisterScreenState extends State<AddCallRegisterScreen> {
                                   ],
                                 ),
 
+                          const SizedBox(height: 24),
+                          _dateField1(),
+                          const SizedBox(height: 24),
+
+                          customerInterest(),
                           const SizedBox(height: 24),
 
                           _sectionLabel("Feedback *"),
@@ -452,27 +547,233 @@ class _AddCallRegisterScreenState extends State<AddCallRegisterScreen> {
     );
   }
 
+  Widget customerInterest() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionLabel("Customer Interest *"),
+        const SizedBox(height: 8),
+        DropdownSearch<CustomerInterestModel>(
+          selectedItem: _selectedInterest,
+
+          compareFn: (item, selectedItem) => item.id == selectedItem.id,
+
+          items: (filter, loadProps) => _interests,
+
+          itemAsString: (CustomerInterestModel item) => item.interest,
+
+          decoratorProps: DropDownDecoratorProps(
+            baseStyle: const TextStyle(fontSize: 14, color: Colors.black),
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: const Color(0xFFF3F4F6),
+              border: border(),
+              enabledBorder: border(),
+              focusedBorder: border(),
+              disabledBorder: border(color: const Color(0xFFD1D5DB)),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 14,
+              ),
+              hintText: "Select Interest",
+              hintStyle: const TextStyle(color: Color(0xFF6B7280)),
+            ),
+          ),
+
+          onChanged: (CustomerInterestModel? value) {
+            setState(() {
+              _selectedInterest = value;
+            });
+          },
+
+          popupProps: PopupProps.menu(
+            showSearchBox: true,
+
+            searchFieldProps: TextFieldProps(
+              controller: _searchController1,
+              decoration: InputDecoration(
+                hintText: 'Search...',
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 12,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.clear, size: 20),
+                  onPressed: () {
+                    _searchController1.clear();
+                  },
+                ),
+              ),
+            ),
+
+            menuProps: MenuProps(
+              borderRadius: BorderRadius.circular(12),
+              elevation: 6,
+              color: Colors.white,
+              backgroundColor: Colors.white,
+            ),
+
+            itemBuilder:
+                (
+                  context,
+                  CustomerInterestModel item,
+                  bool isDisabled,
+                  bool isSelected,
+                ) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    child: Text(
+                      item.interest,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: isSelected
+                            ? Theme.of(context).primaryColor
+                            : Colors.black,
+                      ),
+                    ),
+                  );
+                },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _dateField1() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionLabel("Followup Date *"),
+        const SizedBox(height: 8),
+        InkWell(
+          onTap: pickFollowupDate,
+          child: InputDecorator(
+            decoration: _inputDecoration(
+              prefixIcon: const Icon(Icons.calendar_month_outlined),
+            ),
+            child: Text(
+              selectedFollowupDate == null
+                  ? ""
+                  : DateFormat("dd/MM/yyyy").format(selectedFollowupDate!),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  OutlineInputBorder border({Color color = const Color(0xFFD1D5DB)}) {
+    return OutlineInputBorder(
+      borderSide: BorderSide(color: color, width: 1.4),
+      borderRadius: BorderRadius.circular(6),
+    );
+  }
+
   Widget _sourceField() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _sectionLabel("Source Name *"),
         const SizedBox(height: 8),
-        DropdownButtonFormField<SourceMasterModel>(
-          value: selectedSource,
-          decoration: _inputDecoration(),
-          items: sources.map((source) {
-            return DropdownMenuItem<SourceMasterModel>(
-              value: source,
-              child: Text(source.name),
-            );
-          }).toList(),
-          onChanged: (value) {
+        DropdownSearch<SourceMasterModel>(
+          compareFn: (item, selectedItem) => item == selectedItem,
+          selectedItem: selectedSource,
+          decoratorProps: DropDownDecoratorProps(
+            baseStyle: TextStyle(fontSize: 14, color: Colors.black),
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: const Color(0xFFF3F4F6),
+              border: border(),
+              enabledBorder: border(),
+              focusedBorder: border(),
+              disabledBorder: border(color: const Color(0xFFD1D5DB)),
+
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 14,
+              ),
+              hintStyle: TextStyle(color: const Color(0xFF6B7280)),
+            ),
+          ),
+          items: (filter, loadProps) {
+            final query = filter.toLowerCase().trim();
+
+            return sources
+                .where((e) => e.name.toLowerCase().contains(query))
+                .take(100)
+                .toList();
+          },
+          itemAsString: (item) => item.name,
+          // items: (filter, loadProps) => sources.map((source) {
+          //   return source.name;
+          // }).toList(),
+          onChanged: (value) async {
+            if (value == null) return;
+
             setState(() {
-              selectedSource = value;
+              selectedSource = sources.firstWhere(
+                (element) => element == value,
+              );
             });
           },
+          popupProps: PopupProps.menu(
+            showSearchBox: true,
+            searchFieldProps: TextFieldProps(
+              controller: _searchController,
+
+              decoration: InputDecoration(
+                hintText: 'Search...',
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 12,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.clear, size: 20),
+                  onPressed: () {
+                    _searchController.clear();
+                  },
+                ),
+              ),
+              onSubmitted: (value) async {
+                setState(() {
+                  selectedSource = sources.firstWhere(
+                    (element) => element.name == value,
+                  );
+                });
+              },
+            ),
+            menuProps: MenuProps(
+              borderRadius: BorderRadius.circular(12),
+              elevation: 6,
+              color: Colors.white,
+              backgroundColor: Colors.white,
+            ),
+          ),
         ),
+        // DropdownButtonFormField<SourceMasterModel>(
+        //   initialValue: selectedSource,
+        //   decoration: _inputDecoration(),
+        //   items: sources.map((source) {
+        //     return DropdownMenuItem<SourceMasterModel>(
+        //       value: source,
+        //       child: Text(source.name),
+        //     );
+        //   }).toList(),
+        //   onChanged: (value) {
+        //     setState(() {
+        //       selectedSource = value;
+        //     });
+        //   },
+        // ),
       ],
     );
   }
@@ -484,21 +785,88 @@ class _AddCallRegisterScreenState extends State<AddCallRegisterScreen> {
         _sectionLabel("Call By *"),
         const SizedBox(height: 8),
         if (agents.isNotEmpty)
-          DropdownButtonFormField<Map<String, dynamic>>(
-            value: selectedAgent,
-            decoration: _inputDecoration(
-              prefixIcon: const Icon(Icons.person_outline),
+          DropdownSearch<String>(
+            compareFn: (item, selectedItem) => item == selectedItem,
+            selectedItem: selectedAgent?['name'],
+            decoratorProps: DropDownDecoratorProps(
+              baseStyle: TextStyle(fontSize: 14, color: Colors.black),
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: const Color(0xFFF3F4F6),
+                border: border(),
+                enabledBorder: border(),
+                focusedBorder: border(),
+                disabledBorder: border(color: const Color(0xFFD1D5DB)),
+
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 14,
+                ),
+                hintStyle: TextStyle(color: const Color(0xFF6B7280)),
+              ),
             ),
-            hint: const Text("Select agent"),
-            items: agents
-                .map((e) => DropdownMenuItem(value: e, child: Text(e['name'])))
-                .toList(),
+            items: (filter, loadProps) => agents.map((e) {
+              return e['name'].toString();
+            }).toList(),
             onChanged: (value) {
               setState(() {
-                selectedAgent = value;
+                selectedAgent = agents.firstWhere(
+                  (element) => element['name'] == value,
+                );
               });
             },
+            popupProps: PopupProps.menu(
+              showSearchBox: true,
+              searchFieldProps: TextFieldProps(
+                controller: _searchController1,
+
+                decoration: InputDecoration(
+                  hintText: 'Search...',
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 12,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.clear, size: 20),
+                    onPressed: () {
+                      _searchController1.clear();
+                    },
+                  ),
+                ),
+                onSubmitted: (value) async {
+                  setState(() {
+                    selectedAgent = agents.firstWhere(
+                      (element) => element['name'] == value,
+                    );
+                  });
+                },
+              ),
+              menuProps: MenuProps(
+                borderRadius: BorderRadius.circular(12),
+                elevation: 6,
+                color: Colors.white,
+                backgroundColor: Colors.white,
+              ),
+            ),
           ),
+        // DropdownButtonFormField<Map<String, dynamic>>(
+        //   initialValue: selectedAgent,
+        //   decoration: _inputDecoration(
+        //     prefixIcon: const Icon(Icons.person_outline),
+        //   ),
+        //   hint: const Text("Select agent"),
+        //   items: agents
+        //       .map((e) => DropdownMenuItem(value: e, child: Text(e['name'])))
+        //       .toList(),
+        //   onChanged: (value) {
+        //     setState(() {
+        //       selectedAgent = value;
+        //     });
+        //   },
+        // ),
       ],
     );
   }
@@ -506,7 +874,8 @@ class _AddCallRegisterScreenState extends State<AddCallRegisterScreen> {
   Widget _fromTimeField() {
     return _timeField(
       title: "From Time *",
-      value: formatTime(fromTime),
+      // value: formatTime(fromTime),
+      controller: fromTimeController,
       onTap: pickFromTime,
     );
   }
@@ -514,14 +883,15 @@ class _AddCallRegisterScreenState extends State<AddCallRegisterScreen> {
   Widget _toTimeField() {
     return _timeField(
       title: "To Time *",
-      value: formatTime(toTime),
+      // value: formatTime(toTime),
+      controller: toTimeController,
       onTap: pickToTime,
     );
   }
 
   Widget _timeField({
     required String title,
-    required String value,
+    required TextEditingController controller,
     required VoidCallback onTap,
   }) {
     return Column(
@@ -529,15 +899,33 @@ class _AddCallRegisterScreenState extends State<AddCallRegisterScreen> {
       children: [
         _sectionLabel(title),
         const SizedBox(height: 8),
-        InkWell(
-          onTap: onTap,
-          child: InputDecorator(
-            decoration: _inputDecoration(
-              prefixIcon: const Icon(Icons.access_time),
-              suffixIcon: const Icon(Icons.access_time),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: controller,
+                decoration: _inputDecoration(
+                  prefixIcon: const Icon(Icons.access_time),
+                ),
+                keyboardType: TextInputType.datetime,
+                // hintText: "HH:mm",
+              ),
             ),
-            child: Text(value),
-          ),
+            const SizedBox(width: 8),
+            InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                height: 56,
+                width: 56,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade400),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.access_time),
+              ),
+            ),
+          ],
         ),
       ],
     );

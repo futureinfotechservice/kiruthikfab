@@ -4,6 +4,7 @@ class SalesPersonMasterModel {
   String salespersonname;
   String addedby;
   String activestatus;
+  final String type;
 
   SalesPersonMasterModel({
     required this.id,
@@ -11,6 +12,7 @@ class SalesPersonMasterModel {
     required this.salespersonname,
     required this.addedby,
     required this.activestatus,
+    required this.type,
   });
 
   factory SalesPersonMasterModel.fromJson(Map<String, dynamic> json) {
@@ -20,6 +22,7 @@ class SalesPersonMasterModel {
       salespersonname: json['salespersonname']?.toString() ?? '',
       addedby: json['addedby']?.toString() ?? '',
       activestatus: json['activestatus']?.toString() ?? '1',
+      type: json['type']?.toString() ?? '1',
     );
   }
 
@@ -30,6 +33,7 @@ class SalesPersonMasterModel {
       'salespersonname': salespersonname,
       'addedby': addedby,
       'activestatus': activestatus,
+      'type': type,
     };
   }
 }

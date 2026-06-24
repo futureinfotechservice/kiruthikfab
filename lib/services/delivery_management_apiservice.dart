@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
-
 import 'config.dart';
 
 class DeliveryManagementApiService {
@@ -75,7 +74,6 @@ class DeliveryManagementApiService {
       final jsonData = jsonDecode(responseString);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        print('Json output : '+ jsonData.toString());
         return jsonData;
       }
 
@@ -92,7 +90,7 @@ class DeliveryManagementApiService {
     try {
       var request = await http
           .post(
-            Uri.parse("$baseUrl/fetch_all_delivery_management.php"),
+            Uri.parse("$baseUrl/fetch_all_delivery_management1.php"),
             body: {"companyid": companyId, "invoice_no": billNo},
           )
           .timeout(const Duration(seconds: 30));
@@ -144,15 +142,17 @@ class DeliveryManagementApiService {
     required String companyId,
     required String billNo,
     required String entryNoController,
+    required String deliveryPartnerController,
   }) async {
     try {
       var request = await http
           .post(
-            Uri.parse("$baseUrl/create_delivery.php"),
+            Uri.parse("$baseUrl/create_delivery1.php"),
             body: {
               "companyid": companyId,
               "invoiceno": billNo,
               "entry_no": entryNoController,
+              "delivery_partner": deliveryPartnerController,
             },
           )
           .timeout(const Duration(seconds: 30));

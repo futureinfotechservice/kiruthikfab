@@ -1,15 +1,15 @@
 import 'dart:typed_data';
-import 'package:flutter/material.dart';
+
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:printing/printing.dart';
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:intl/intl.dart';
-import '../../services/invoice_apiservice.dart';
+import 'package:printing/printing.dart';
 
-// Conditional export based on platform
-import '../screens/invoice_print_helper_stub.dart'
-if (dart.library.html) '../screens/invoice_print_helper_web.dart';
+import '../../../screens/invoice_print_helper_stub.dart'
+    if (dart.library.html) '../../screens/invoice_print_helper_web.dart';
+import '../../../services/invoice_apiservice.dart';
 
 class InvoicePrintHelper {
   static Future<void> printInvoice({
@@ -21,6 +21,7 @@ class InvoicePrintHelper {
     required String taxAmount,
     required String taxPercentage,
     required String grandTotal,
+    required String packingAmount,
     Company? company,
   }) async {
     try {
@@ -33,6 +34,7 @@ class InvoicePrintHelper {
         taxPercentage: taxPercentage,
         grandTotal: grandTotal,
         company: company,
+        packingAmount: packingAmount,
       );
 
       if (kIsWeb) {
@@ -53,9 +55,7 @@ class InvoicePrintHelper {
         }
       } else {
         // For Android and other non-web platforms
-        await Printing.layoutPdf(
-          onLayout: (format) async => pdf,
-        );
+        await Printing.layoutPdf(onLayout: (format) async => pdf);
       }
     } catch (e) {
       print('Error printing: $e');
@@ -78,6 +78,7 @@ class InvoicePrintHelper {
     required String taxAmount,
     required String taxPercentage,
     required String grandTotal,
+    required String packingAmount,
     Company? company,
   }) async {
     final pdf = pw.Document();
@@ -96,6 +97,7 @@ class InvoicePrintHelper {
             taxPercentage: taxPercentage,
             grandTotal: grandTotal,
             company: company,
+            packingAmount: packingAmount,
           ),
         ],
       ),
@@ -112,6 +114,7 @@ class InvoicePrintHelper {
     required String taxAmount,
     required String taxPercentage,
     required String grandTotal,
+    required String packingAmount,
     Company? company,
   }) {
     // Helper function to safely get string values
@@ -144,7 +147,10 @@ class InvoicePrintHelper {
           child: pw.Column(
             children: [
               pw.Text(
-                getStringValue(company?.companyName, defaultValue: 'COMPANY NAME'),
+                getStringValue(
+                  company?.companyName,
+                  defaultValue: 'COMPANY NAME',
+                ),
                 style: pw.TextStyle(
                   fontSize: 18,
                   fontWeight: pw.FontWeight.bold,
@@ -219,7 +225,9 @@ class InvoicePrintHelper {
                   pw.SizedBox(height: 4),
                   _buildInfoRow(
                     'Invoice Date:',
-                    DateFormat('dd/MM/yyyy').format(DateTime.parse(invoice.date)),
+                    DateFormat(
+                      'dd/MM/yyyy',
+                    ).format(DateTime.parse(invoice.date)),
                   ),
                 ],
               ),
@@ -251,14 +259,20 @@ class InvoicePrintHelper {
                         margin: const pw.EdgeInsets.only(top: 2),
                         child: pw.Text(
                           invoice.customerAddress,
-                          style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
+                          style: const pw.TextStyle(
+                            fontSize: 9,
+                            color: PdfColors.grey700,
+                          ),
                           textAlign: pw.TextAlign.right,
                         ),
                       ),
                     if (invoice.customerArea.isNotEmpty)
                       pw.Text(
                         invoice.customerArea,
-                        style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
+                        style: const pw.TextStyle(
+                          fontSize: 9,
+                          color: PdfColors.grey700,
+                        ),
                         textAlign: pw.TextAlign.right,
                       ),
                     if (invoice.customerGstNo.isNotEmpty)
@@ -277,7 +291,10 @@ class InvoicePrintHelper {
                     if (invoice.customerPhone.isNotEmpty)
                       pw.Text(
                         'Phone: ${invoice.customerPhone}',
-                        style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
+                        style: const pw.TextStyle(
+                          fontSize: 9,
+                          color: PdfColors.grey700,
+                        ),
                         textAlign: pw.TextAlign.right,
                       ),
                   ],
@@ -302,7 +319,10 @@ class InvoicePrintHelper {
                 flex: 1,
                 child: pw.Text(
                   'S.No',
-                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10),
+                  style: pw.TextStyle(
+                    fontWeight: pw.FontWeight.bold,
+                    fontSize: 10,
+                  ),
                   textAlign: pw.TextAlign.center,
                 ),
               ),
@@ -310,35 +330,50 @@ class InvoicePrintHelper {
                 flex: 2,
                 child: pw.Text(
                   'Product',
-                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10),
+                  style: pw.TextStyle(
+                    fontWeight: pw.FontWeight.bold,
+                    fontSize: 10,
+                  ),
                 ),
               ),
               pw.Expanded(
                 flex: 1,
                 child: pw.Text(
                   'Model',
-                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10),
+                  style: pw.TextStyle(
+                    fontWeight: pw.FontWeight.bold,
+                    fontSize: 10,
+                  ),
                 ),
               ),
               pw.Expanded(
                 flex: 1,
                 child: pw.Text(
                   'Size',
-                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10),
+                  style: pw.TextStyle(
+                    fontWeight: pw.FontWeight.bold,
+                    fontSize: 10,
+                  ),
                 ),
               ),
               pw.Expanded(
                 flex: 1,
                 child: pw.Text(
                   'Unit',
-                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10),
+                  style: pw.TextStyle(
+                    fontWeight: pw.FontWeight.bold,
+                    fontSize: 10,
+                  ),
                 ),
               ),
               pw.Expanded(
                 flex: 1,
                 child: pw.Text(
                   'Qty',
-                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10),
+                  style: pw.TextStyle(
+                    fontWeight: pw.FontWeight.bold,
+                    fontSize: 10,
+                  ),
                   textAlign: pw.TextAlign.center,
                 ),
               ),
@@ -346,7 +381,10 @@ class InvoicePrintHelper {
                 flex: 1,
                 child: pw.Text(
                   'Rate',
-                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10),
+                  style: pw.TextStyle(
+                    fontWeight: pw.FontWeight.bold,
+                    fontSize: 10,
+                  ),
                   textAlign: pw.TextAlign.right,
                 ),
               ),
@@ -354,7 +392,10 @@ class InvoicePrintHelper {
                 flex: 1,
                 child: pw.Text(
                   'Amount',
-                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10),
+                  style: pw.TextStyle(
+                    fontWeight: pw.FontWeight.bold,
+                    fontSize: 10,
+                  ),
                   textAlign: pw.TextAlign.right,
                 ),
               ),
@@ -373,9 +414,11 @@ class InvoicePrintHelper {
           String sizeName = item['sizeName'] ?? item['sizename'] ?? '';
           String unitName = item['unitName'] ?? item['unitname'] ?? '';
 
-          double quantity = double.tryParse(item['quantity']?.toString() ?? '0') ?? 0;
+          double quantity =
+              double.tryParse(item['quantity']?.toString() ?? '0') ?? 0;
           double rate = double.tryParse(item['rate']?.toString() ?? '0') ?? 0;
-          double amount = double.tryParse(item['amount']?.toString() ?? '0') ?? 0;
+          double amount =
+              double.tryParse(item['amount']?.toString() ?? '0') ?? 0;
 
           return pw.Container(
             padding: const pw.EdgeInsets.all(8),
@@ -482,6 +525,12 @@ class InvoicePrintHelper {
                 'Rs. ${taxableAmount.toStringAsFixed(2)}',
                 fontSize: 9,
               ),
+              pw.SizedBox(height: 2),
+              _buildTotalRow(
+                'Packing Amount:',
+                'Rs. $packingAmount.00',
+                fontSize: 9,
+              ),
               pw.SizedBox(height: 4),
 
               // Tax Slab Box
@@ -501,7 +550,7 @@ class InvoicePrintHelper {
                       children: [
                         pw.Text(
                           'Tax Slab (${taxRateValue.toStringAsFixed(0)}%):',
-                          style:  pw.TextStyle(
+                          style: pw.TextStyle(
                             fontWeight: pw.FontWeight.normal,
                             fontSize: 9,
                           ),
@@ -509,7 +558,7 @@ class InvoicePrintHelper {
                         pw.SizedBox(width: 12),
                         pw.Text(
                           'Rs. ${taxAmountValue.toStringAsFixed(2)}',
-                          style:  pw.TextStyle(
+                          style: pw.TextStyle(
                             fontWeight: pw.FontWeight.bold,
                             fontSize: 9,
                           ),
@@ -522,12 +571,18 @@ class InvoicePrintHelper {
                       children: [
                         pw.Text(
                           'CGST (${(taxRateValue / 2).toStringAsFixed(2)}%):',
-                          style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
+                          style: const pw.TextStyle(
+                            fontSize: 8,
+                            color: PdfColors.grey700,
+                          ),
                         ),
                         pw.SizedBox(width: 12),
                         pw.Text(
                           'Rs. ${(taxAmountValue / 2).toStringAsFixed(2)}',
-                          style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
+                          style: const pw.TextStyle(
+                            fontSize: 8,
+                            color: PdfColors.grey700,
+                          ),
                         ),
                       ],
                     ),
@@ -536,12 +591,18 @@ class InvoicePrintHelper {
                       children: [
                         pw.Text(
                           'SGST (${(taxRateValue / 2).toStringAsFixed(2)}%):',
-                          style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
+                          style: const pw.TextStyle(
+                            fontSize: 8,
+                            color: PdfColors.grey700,
+                          ),
                         ),
                         pw.SizedBox(width: 12),
                         pw.Text(
                           'Rs. ${(taxAmountValue / 2).toStringAsFixed(2)}',
-                          style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
+                          style: const pw.TextStyle(
+                            fontSize: 8,
+                            color: PdfColors.grey700,
+                          ),
                         ),
                       ],
                     ),
@@ -570,12 +631,18 @@ class InvoicePrintHelper {
             children: [
               pw.Text(
                 'Amount in Words: ',
-                style:  pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+                style: pw.TextStyle(
+                  fontWeight: pw.FontWeight.bold,
+                  fontSize: 9,
+                ),
               ),
               pw.Expanded(
                 child: pw.Text(
                   _convertToWords(grandTotalValue),
-                  style:  pw.TextStyle(fontSize: 9, fontStyle: pw.FontStyle.italic),
+                  style: pw.TextStyle(
+                    fontSize: 9,
+                    fontStyle: pw.FontStyle.italic,
+                  ),
                 ),
               ),
             ],
@@ -622,14 +689,13 @@ class InvoicePrintHelper {
               children: [
                 pw.Text(
                   'Customer Signature:',
-                  style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
+                  style: const pw.TextStyle(
+                    fontSize: 8,
+                    color: PdfColors.grey600,
+                  ),
                 ),
                 pw.SizedBox(height: 15),
-                pw.Container(
-                  width: 150,
-                  height: 0.5,
-                  color: PdfColors.grey400,
-                ),
+                pw.Container(width: 150, height: 0.5, color: PdfColors.grey400),
               ],
             ),
 
@@ -639,18 +705,20 @@ class InvoicePrintHelper {
               children: [
                 pw.Text(
                   'Authorized Signatory',
-                  style:  pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
+                  style: pw.TextStyle(
+                    fontSize: 9,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
                 ),
                 pw.SizedBox(height: 20),
-                pw.Container(
-                  width: 180,
-                  height: 0.5,
-                  color: PdfColors.grey400,
-                ),
+                pw.Container(width: 180, height: 0.5, color: PdfColors.grey400),
                 pw.SizedBox(height: 2),
                 pw.Text(
                   '(Authorized Person)',
-                  style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey600),
+                  style: const pw.TextStyle(
+                    fontSize: 7,
+                    color: PdfColors.grey600,
+                  ),
                 ),
               ],
             ),
@@ -671,7 +739,7 @@ class InvoicePrintHelper {
         pw.Center(
           child: pw.Text(
             'Thank you for your business!',
-            style:  pw.TextStyle(fontSize: 8, fontStyle: pw.FontStyle.italic),
+            style: pw.TextStyle(fontSize: 8, fontStyle: pw.FontStyle.italic),
           ),
         ),
       ],
@@ -683,7 +751,7 @@ class InvoicePrintHelper {
       children: [
         pw.Text(
           label,
-          style:  pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+          style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
         ),
         pw.SizedBox(width: 6),
         pw.Text(
@@ -694,7 +762,12 @@ class InvoicePrintHelper {
     );
   }
 
-  static pw.Widget _buildTotalRow(String label, String value, {bool isBold = false, double fontSize = 10}) {
+  static pw.Widget _buildTotalRow(
+    String label,
+    String value, {
+    bool isBold = false,
+    double fontSize = 10,
+  }) {
     return pw.Row(
       mainAxisAlignment: pw.MainAxisAlignment.end,
       children: [
@@ -737,28 +810,63 @@ class InvoicePrintHelper {
     if (number == 0) return 'Zero';
 
     const units = [
-      '', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
-      'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen',
-      'Seventeen', 'Eighteen', 'Nineteen'
+      '',
+      'One',
+      'Two',
+      'Three',
+      'Four',
+      'Five',
+      'Six',
+      'Seven',
+      'Eight',
+      'Nine',
+      'Ten',
+      'Eleven',
+      'Twelve',
+      'Thirteen',
+      'Fourteen',
+      'Fifteen',
+      'Sixteen',
+      'Seventeen',
+      'Eighteen',
+      'Nineteen',
     ];
 
     const tens = [
-      '', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'
+      '',
+      '',
+      'Twenty',
+      'Thirty',
+      'Forty',
+      'Fifty',
+      'Sixty',
+      'Seventy',
+      'Eighty',
+      'Ninety',
     ];
 
     if (number < 20) return units[number];
     if (number < 100) {
-      return tens[number ~/ 10] + (number % 10 != 0 ? ' ${units[number % 10]}' : '');
+      return tens[number ~/ 10] +
+          (number % 10 != 0 ? ' ${units[number % 10]}' : '');
     }
     if (number < 1000) {
-      return units[number ~/ 100] + ' Hundred' + (number % 100 != 0 ? ' ${_numberToWords(number % 100)}' : '');
+      return units[number ~/ 100] +
+          ' Hundred' +
+          (number % 100 != 0 ? ' ${_numberToWords(number % 100)}' : '');
     }
     if (number < 100000) {
-      return _numberToWords(number ~/ 1000) + ' Thousand' + (number % 1000 != 0 ? ' ${_numberToWords(number % 1000)}' : '');
+      return _numberToWords(number ~/ 1000) +
+          ' Thousand' +
+          (number % 1000 != 0 ? ' ${_numberToWords(number % 1000)}' : '');
     }
     if (number < 10000000) {
-      return _numberToWords(number ~/ 100000) + ' Lakh' + (number % 100000 != 0 ? ' ${_numberToWords(number % 100000)}' : '');
+      return _numberToWords(number ~/ 100000) +
+          ' Lakh' +
+          (number % 100000 != 0 ? ' ${_numberToWords(number % 100000)}' : '');
     }
-    return _numberToWords(number ~/ 10000000) + ' Crore' + (number % 10000000 != 0 ? ' ${_numberToWords(number % 10000000)}' : '');
+    return _numberToWords(number ~/ 10000000) +
+        ' Crore' +
+        (number % 10000000 != 0 ? ' ${_numberToWords(number % 10000000)}' : '');
   }
 }

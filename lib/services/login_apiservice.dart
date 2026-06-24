@@ -1,30 +1,36 @@
 // lib/services/api_service.dart
 import 'dart:convert';
-import 'package:flutter/cupertino.dart';
+
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../models/modules.dart';
-
-import '../screens/home.dart';
+import '../../models/modules.dart';
+import '../../screens/home.dart';
 import 'auth_service.dart';
 import 'config.dart';
 
-
-
 class ApiService {
-
   List<login_data> loginlist = [];
 
-
-
-
-
-  Future login(BuildContext context,String username, String password, String mailid, String unique_id, String platform ) async {
-    final url = Uri.parse('$baseUrl/login.php');
-
+  Future login(
+    BuildContext context,
+    String username,
+    String password,
+    String mailid,
+    String unique_id,
+    String platform,
+  ) async {
+    final url = Uri.parse('$baseUrl/login1.php');
+    print(
+      json.encode({
+        'username': username,
+        'password': password,
+        'email': mailid,
+        'platform': platform.toString(),
+        'unique_id': unique_id.toString(),
+      }),
+    );
     final response = await http.post(
       url,
       body: json.encode({
@@ -37,23 +43,37 @@ class ApiService {
     );
 
     var message = response.body.toString();
-    print(message.toString());
+
     if (message.toString().contains('login success')) {
-      ApiService().userdata(context,username,password,mailid,unique_id,platform);
-
+      ApiService().userdata(
+        context,
+        username,
+        password,
+        mailid,
+        unique_id,
+        platform,
+      );
     } else {
-
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(message.toString()), backgroundColor: Colors.red));
-
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message.toString()),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
-  Future userdata(BuildContext context,String username, String password, String mailid, String unique_id, String platform ) async {
-
+  Future userdata(
+    BuildContext context,
+    String username,
+    String password,
+    String mailid,
+    String unique_id,
+    String platform,
+  ) async {
     loginlist.clear();
     // var url = Uri.parse('$baseUrl/user_json5.php');
-    var url = Uri.parse('$baseUrl/user_json6.php');
+    var url = Uri.parse('$baseUrl/user_json7.php');
     var data = {
       'username': username.toString(),
       'password': password.toString(),
@@ -64,8 +84,9 @@ class ApiService {
     // var response = await http.get(url);
     var response = await http.post(url, body: json.encode(data));
     final items = json.decode(response.body);
+
     items.forEach((api) {
-      final ab = new login_data(
+      final ab = login_data(
         id: api['id'],
         username: api['username'],
         password: api['password'],
@@ -76,7 +97,7 @@ class ApiService {
         activestatus: api['activestatus'],
         // location_track: api['location_track']??'',
         companystatus: api['companystatus'],
-        unique_id: api['unique_id']??'',
+        unique_id: api['unique_id'] ?? '',
         // attendance: api['attendance'],
         // crm: api['crm'],
         // salesorder: api['salesorder'],
@@ -90,6 +111,7 @@ class ApiService {
         companyname: api['companyname'],
         // offer: api['offer'],
         logourl: api['logourl'],
+
         // general: api['general'],
         // settings: api['settings'],
         // profile: api['profile'],
@@ -109,7 +131,6 @@ class ApiService {
     prefs.setString('companyname', loginlist[0].companyname.toString());
     prefs.setString('logourl', loginlist[0].logourl.toString());
 
-
     // Save credentials for auto-login
     await AuthService.saveLoginCredentials(
       username: username,
@@ -123,8 +144,5 @@ class ApiService {
       context,
       MaterialPageRoute(builder: (context) => const CustomerManagementApp()),
     );
-
-
   }
-
 }

@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:printing/printing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../../widgets/customappbarwidget.dart';
-import '../../services/invoice_apiservice.dart';
-import '../models/InvoicePrintPreview.dart';
-import '../models/invoice_print_helper.dart';
+
+import '../../../../widgets/customappbarwidget.dart';
+import '../../../services/invoice_apiservice.dart';
+import '../../models/invoice_print_helper.dart';
 import 'InvoiceEntryPage.dart';
 
 class InvoiceListPage extends StatefulWidget {
@@ -196,7 +194,7 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
       // Calculate tax amount from invoice data
       double subtotal = double.tryParse(invoice.subtotal) ?? 0;
       double grandTotal = double.tryParse(invoice.grandTotal) ?? 0;
-      double taxPercentage = double.tryParse(invoice.taxPercentage) ?? 5.0;
+      // double taxPercentage = double.tryParse(invoice.taxPercentage) ?? 5.0;
 
       // Calculate tax amount (grandTotal = subtotal + tax)
       double taxAmount = grandTotal - subtotal;
@@ -241,6 +239,7 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
         taxPercentage: invoice.taxPercentage,
         grandTotal: invoice.grandTotal,
         company: company,
+        packingAmount: invoice.packingAmount.toString(),
       );
     }
   }

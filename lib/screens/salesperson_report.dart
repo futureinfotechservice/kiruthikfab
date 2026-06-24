@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:kiruthikfab/screens/sales_report_table.dart';
-
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../models/SalespersonData.dart';
-import '../services/salesperson_report_apiservice.dart';
-
+import '../../models/SalespersonData.dart';
+import '../../services/salesperson_report_apiservice.dart';
 
 class SalespersonReport extends StatefulWidget {
   const SalespersonReport({super.key});
@@ -34,7 +32,7 @@ class _SalespersonReportState extends State<SalespersonReport> {
 
   DateTime? _fromDate;
   DateTime? _toDate;
-
+  String? userType;
   @override
   void initState() {
     super.initState();
@@ -115,7 +113,16 @@ class _SalespersonReportState extends State<SalespersonReport> {
   }
 
   Future<void> init() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    // final id = prefs.getString('id');
+    final username = prefs.getString('username');
+    final userTypes = prefs.getString('user_type');
+
     setState(() {
+      userType = userTypes;
+      if (userTypes == 'USER') {
+        selectedSalesPerson = username;
+      }
       _isLoading = true;
     });
 
@@ -179,346 +186,21 @@ class _SalespersonReportState extends State<SalespersonReport> {
       setState(() {
         _isLoading = false;
       });
-    }
-  }
-
-  void _updateTotals() {
-    setState(() {
-      _totalCalls = _filteredData.fold(0, (sum, item) => sum + item.totalCalls);
-      _totalApproach = _filteredData.fold(
-        0,
-        (sum, item) => sum + item.approach,
-      );
-      _totalKycFilled = _filteredData.fold(
-        0,
-        (sum, item) => sum + item.kycFilled,
-      );
-      _totalValue = _filteredData.fold(0, (sum, item) => sum + item.value);
-    });
-  }
-
-  void _applyFilters() {
-    setState(() {
-      String searchQuery = selectedSalesPerson!.toLowerCase().trim().toString();
-
-      // Start with all salespersons
-      List<SalespersonData> filtered = List.from(allSalespersons);
-
-      // Filter by salesperson name
-      if (searchQuery.isNotEmpty) {
-        filtered = filtered.where((item) {
-          return item.name.toLowerCase().contains(searchQuery);
-        }).toList();
-      }
-
-      if (_fromDate != null && _toDate == null) {
-        fetchBetweenDate(
-          fromDate: DateFormat('yyyy-MM-dd').format(_fromDate!),
-          toDate: DateFormat('yyyy-MM-dd').format(DateTime.now()),
-        );
-      }
-      if (_fromDate != null && _toDate != null) {
-        fetchBetweenDate(
-          fromDate: DateFormat('yyyy-MM-dd').format(_fromDate!),
-          toDate: DateFormat('yyyy-MM-dd').format(_toDate!),
-        );
-      }
-
-      _filteredData = filtered;
-      _isFiltered = _filteredData.length != allSalespersons.length;
-      _updateTotals();
-    });
-  }
-
-  void _clearFilters() {
-    setState(() {
-      selectedSalesPerson = null;
-      _fromDateController.clear();
-      _toDateController.clear();
-      _fromDate = null;
-      _toDate = null;
-      _filteredData = List.from(allSalespersons);
-      _isFiltered = false;
-      _updateTotals();
-    });
-  }
-
-  Future<void> _selectDate(BuildContext context, bool isFromDate) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now(),
-      helpText: isFromDate ? 'Select FROM Date' : 'Select TO Date',
-    );
-
-    if (picked != null) {
-      setState(() {
-        if (isFromDate) {
-          _fromDate = picked;
-          _fromDateController.text = DateFormat('yyyy-MM-dd').format(picked);
-        } else {
-          _toDate = picked;
-          _toDateController.text = DateFormat('yyyy-MM-dd').format(picked);
-        }
-      });
+      if (userType == "USER") _applyFilters();
     }
   }
 
   @override
   void dispose() {
-    // _salespersonController.dispose();
     _fromDateController.dispose();
     _toDateController.dispose();
     super.dispose();
   }
 
-  Widget _header() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: const Color(0xff1E293B),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          bool isSmallScreen = constraints.maxWidth < 600;
-
-          if (isSmallScreen) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Salesperson Performance Report',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Salesperson-wise performance metrics',
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.star,
-                            color: Colors.orange,
-                            size: 16,
-                          ),
-                          const SizedBox(width: 4),
-                          const Text(
-                            'Analytics',
-                            style: TextStyle(color: Colors.white, fontSize: 12),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      onPressed: init,
-                      icon: const Icon(
-                        Icons.refresh,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            );
-          }
-
-          return Row(
-            children: [
-              const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Salesperson Performance Report',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    'Salesperson-wise performance metrics in a unified table view',
-                    style: TextStyle(fontSize: 14, color: Colors.grey),
-                  ),
-                ],
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.grey.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.star, color: Colors.orange),
-                    const SizedBox(width: 4),
-                    const Text(
-                      'Performance Analytics',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              IconButton(
-                onPressed: init,
-                icon: const Icon(Icons.refresh, color: Colors.white),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _header1() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: const Color(0xff1E293B),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          bool isSmallScreen = constraints.maxWidth < 600;
-
-          if (isSmallScreen) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Performance Records',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${_filteredData.length} salesperson(s) loaded',
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.star,
-                            color: Colors.orange,
-                            size: 16,
-                          ),
-                          const SizedBox(width: 4),
-                          const Text(
-                            'Salesperson Report',
-                            style: TextStyle(color: Colors.white, fontSize: 12),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            );
-          }
-
-          return Row(
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Performance Records',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${_filteredData.length} salesperson(s) loaded',
-                    style: const TextStyle(fontSize: 14, color: Colors.grey),
-                  ),
-                ],
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.grey.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.star, color: Colors.orange),
-                    const SizedBox(width: 4),
-                    const Text(
-                      'Salesperson Report',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
+    final isUser = userType == "USER";
+
     return Scaffold(
       backgroundColor: Colors.grey[50],
       body: SafeArea(
@@ -530,8 +212,7 @@ class _SalespersonReportState extends State<SalespersonReport> {
               children: [
                 _header(),
                 const SizedBox(height: 16),
-
-                _buildFilterRow(),
+                if (!isUser) _buildFilterRow(),
 
                 const SizedBox(height: 12),
 
@@ -916,6 +597,89 @@ class _SalespersonReportState extends State<SalespersonReport> {
     );
   }
 
+  void _updateTotals() {
+    setState(() {
+      _totalCalls = _filteredData.fold(0, (sum, item) => sum + item.totalCalls);
+      _totalApproach = _filteredData.fold(
+        0,
+        (sum, item) => sum + item.approach,
+      );
+      _totalKycFilled = _filteredData.fold(
+        0,
+        (sum, item) => sum + item.kycFilled,
+      );
+      _totalValue = _filteredData.fold(0, (sum, item) => sum + item.value);
+    });
+  }
+
+  void _applyFilters() {
+    setState(() {
+      String searchQuery = selectedSalesPerson!.toLowerCase().trim().toString();
+
+      // Start with all salespersons
+      List<SalespersonData> filtered = List.from(allSalespersons);
+
+      // Filter by salesperson name
+      if (searchQuery.isNotEmpty) {
+        filtered = filtered.where((item) {
+          return item.name.toLowerCase().contains(searchQuery);
+        }).toList();
+      }
+
+      if (_fromDate != null && _toDate == null) {
+        fetchBetweenDate(
+          fromDate: DateFormat('yyyy-MM-dd').format(_fromDate!),
+          toDate: DateFormat('yyyy-MM-dd').format(DateTime.now()),
+        );
+      }
+      if (_fromDate != null && _toDate != null) {
+        fetchBetweenDate(
+          fromDate: DateFormat('yyyy-MM-dd').format(_fromDate!),
+          toDate: DateFormat('yyyy-MM-dd').format(_toDate!),
+        );
+      }
+
+      _filteredData = filtered;
+      _isFiltered = _filteredData.length != allSalespersons.length;
+      _updateTotals();
+    });
+  }
+
+  void _clearFilters() {
+    setState(() {
+      selectedSalesPerson = null;
+      _fromDateController.clear();
+      _toDateController.clear();
+      _fromDate = null;
+      _toDate = null;
+      _filteredData = List.from(allSalespersons);
+      _isFiltered = false;
+      _updateTotals();
+    });
+  }
+
+  Future<void> _selectDate(BuildContext context, bool isFromDate) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+      helpText: isFromDate ? 'Select FROM Date' : 'Select TO Date',
+    );
+
+    if (picked != null) {
+      setState(() {
+        if (isFromDate) {
+          _fromDate = picked;
+          _fromDateController.text = DateFormat('yyyy-MM-dd').format(picked);
+        } else {
+          _toDate = picked;
+          _toDateController.text = DateFormat('yyyy-MM-dd').format(picked);
+        }
+      });
+    }
+  }
+
   Widget _buildFilterTextField({
     required TextEditingController controller,
     required String label,
@@ -1091,481 +855,248 @@ class _SalespersonReportState extends State<SalespersonReport> {
       ),
     );
   }
-}
 
-// Widget _buildDataTable() {
-//   if (_filteredData.isEmpty) {
-//     return Center(
-//       child: Column(
-//         mainAxisAlignment: MainAxisAlignment.center,
-//         children: [
-//           Icon(Icons.no_accounts, size: 64, color: Colors.grey[400]),
-//           const SizedBox(height: 16),
-//           Text(
-//             'No data available',
-//             style: TextStyle(color: Colors.grey[600], fontSize: 16),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-//
-//   return Container(
-//     decoration: BoxDecoration(
-//       color: Colors.white,
-//       borderRadius: BorderRadius.circular(12),
-//       boxShadow: [
-//         BoxShadow(
-//           color: Colors.grey.withValues(alpha: 0.1),
-//           spreadRadius: 1,
-//           blurRadius: 4,
-//           offset: const Offset(0, 2),
-//         ),
-//       ],
-//     ),
-//     child: LayoutBuilder(
-//       builder: (context, constraints) {
-//         return _buildFullTable();
-//       },
-//     ),
-//   );
-// }
-//
-// Widget _buildFullTable() {
-//   return SingleChildScrollView(
-//     scrollDirection: Axis.horizontal,
-//     child: SingleChildScrollView(
-//       child: DataTable(
-//         columnSpacing: 12,
-//         headingRowColor: WidgetStateProperty.resolveWith(
-//               (states) => Colors.white,
-//         ),
-//         headingTextStyle: const TextStyle(
-//           fontWeight: FontWeight.bold,
-//           fontSize: 12,
-//           color: Colors.black,
-//         ),
-//         dataTextStyle: const TextStyle(fontSize: 12),
-//         columns: const [
-//           DataColumn(
-//             label: Text('#', style: TextStyle(fontWeight: FontWeight.bold)),
-//           ),
-//           DataColumn(
-//             label: Text(
-//               'SALESPERSON',
-//               style: TextStyle(fontWeight: FontWeight.bold),
-//             ),
-//           ),
-//           DataColumn(
-//             label: Text(
-//               'TOTAL CALL',
-//               style: TextStyle(fontWeight: FontWeight.bold),
-//             ),
-//           ),
-//           DataColumn(
-//             label: Text(
-//               'APPROACH',
-//               style: TextStyle(fontWeight: FontWeight.bold),
-//             ),
-//           ),
-//           DataColumn(
-//             label: Text(
-//               'KYC FILLING',
-//               style: TextStyle(fontWeight: FontWeight.bold),
-//             ),
-//           ),
-//           DataColumn(
-//             label: Text(
-//               'TOTAL TIME',
-//               style: TextStyle(fontWeight: FontWeight.bold),
-//             ),
-//           ),
-//           DataColumn(
-//             label: Text(
-//               'EFFICIENCY',
-//               style: TextStyle(fontWeight: FontWeight.bold),
-//             ),
-//           ),
-//           DataColumn(
-//             label: Text(
-//               'HOURS',
-//               style: TextStyle(fontWeight: FontWeight.bold),
-//             ),
-//           ),
-//           DataColumn(
-//             label: Text(
-//               'TOTAL SALES',
-//               style: TextStyle(fontWeight: FontWeight.bold),
-//             ),
-//           ),
-//           DataColumn(
-//             label: Text(
-//               'SALES / MIN',
-//               style: TextStyle(fontWeight: FontWeight.bold),
-//             ),
-//           ),
-//           DataColumn(
-//             label: Text(
-//               'AVG / CUS',
-//               style: TextStyle(fontWeight: FontWeight.bold),
-//             ),
-//           ),
-//           DataColumn(
-//             label: Text(
-//               'VALUE',
-//               style: TextStyle(fontWeight: FontWeight.bold),
-//             ),
-//           ),
-//           DataColumn(
-//             label: Text(
-//               'DAY TOTAL ORDER',
-//               style: TextStyle(fontWeight: FontWeight.bold),
-//             ),
-//           ),
-//           DataColumn(
-//             label: Text(
-//               'DAY TOTAL VALUE',
-//               style: TextStyle(fontWeight: FontWeight.bold),
-//             ),
-//           ),
-//         ],
-//         rows: _filteredData.asMap().entries.map((entry) {
-//           int index = entry.key;
-//           final item = entry.value;
-//           return DataRow(
-//             cells: [
-//               DataCell(Text((index + 1).toString())),
-//               DataCell(
-//                 Column(
-//                   crossAxisAlignment: CrossAxisAlignment.start,
-//                   mainAxisSize: MainAxisSize.min,
-//                   children: [
-//                     Text(
-//                       item.name,
-//                       style: const TextStyle(
-//                         fontWeight: FontWeight.bold,
-//                         fontSize: 13,
-//                       ),
-//                     ),
-//                   ],
-//                 ),
-//               ),
-//               DataCell(Text(item.totalCalls.toString())),
-//               DataCell(Text(item.approach.toString())),
-//               DataCell(Text(item.kycFilled.toString())),
-//               DataCell(Text(item.totalTime)),
-//               DataCell(
-//                 Column(
-//                   crossAxisAlignment: CrossAxisAlignment.start,
-//                   mainAxisSize: MainAxisSize.min,
-//                   children: [
-//                     Text(
-//                       '${item.efficiency.toStringAsFixed(1)}%',
-//                       style: TextStyle(
-//                         fontWeight: FontWeight.bold,
-//                         color: _getEfficiencyColor(item.efficiency),
-//                       ),
-//                     ),
-//                   ],
-//                 ),
-//               ),
-//               DataCell(Text(item.hours)),
-//               DataCell(Text(item.totalProductSales.toString())),
-//               DataCell(Text(item.salesPerMin.toStringAsFixed(2))),
-//               DataCell(Text(item.avgPerCustomer.toStringAsFixed(1))),
-//               DataCell(
-//                 Text(
-//                   '₹${item.value.toString()}',
-//                   style: const TextStyle(
-//                     fontWeight: FontWeight.bold,
-//                     color: Colors.green,
-//                   ),
-//                 ),
-//               ),
-//               DataCell(
-//                 Text(
-//                   '0',
-//                   style: const TextStyle(
-//                     fontWeight: FontWeight.bold,
-//                     color: Colors.green,
-//                   ),
-//                 ),
-//               ),
-//               DataCell(
-//                 Text(
-//                   '₹0',
-//                   style: const TextStyle(
-//                     fontWeight: FontWeight.bold,
-//                     color: Colors.green,
-//                   ),
-//                 ),
-//               ),
-//             ],
-//           );
-//         }).toList(),
-//       ),
-//     ),
-//   );
-// }
-//
-// Color _getEfficiencyColor(double efficiency) {
-//   if (efficiency >= 90) {
-//     return Colors.green;
-//   } else if (efficiency >= 75) {
-//     return Colors.blue;
-//   } else if (efficiency >= 60) {
-//     return Colors.orange;
-//   } else {
-//     return Colors.red;
-//   }
-// }
-// Widget _buildCompactTable() {
-//   return SingleChildScrollView(
-//     scrollDirection: Axis.horizontal,
-//     child: SingleChildScrollView(
-//       child: DataTable(
-//         columnSpacing: 8,
-//         headingRowColor: WidgetStateProperty.resolveWith(
-//               (states) => Colors.indigo[50],
-//         ),
-//         headingTextStyle: const TextStyle(
-//           fontWeight: FontWeight.bold,
-//           fontSize: 10,
-//           color: Colors.indigo,
-//         ),
-//         dataTextStyle: const TextStyle(fontSize: 10),
-//         columns: const [
-//           DataColumn(
-//             label: Text('#', style: TextStyle(fontWeight: FontWeight.bold)),
-//           ),
-//           DataColumn(
-//             label: Text(
-//               'Salesperson',
-//               style: TextStyle(fontWeight: FontWeight.bold),
-//             ),
-//           ),
-//           DataColumn(
-//             label: Text(
-//               'Calls',
-//               style: TextStyle(fontWeight: FontWeight.bold),
-//             ),
-//           ),
-//           DataColumn(
-//             label: Text(
-//               'Appr.',
-//               style: TextStyle(fontWeight: FontWeight.bold),
-//             ),
-//           ),
-//           DataColumn(
-//             label: Text('KYC', style: TextStyle(fontWeight: FontWeight.bold)),
-//           ),
-//           DataColumn(
-//             label: Text(
-//               'Eff.',
-//               style: TextStyle(fontWeight: FontWeight.bold),
-//             ),
-//           ),
-//           DataColumn(
-//             label: Text(
-//               'Sales',
-//               style: TextStyle(fontWeight: FontWeight.bold),
-//             ),
-//           ),
-//           DataColumn(
-//             label: Text(
-//               'Value',
-//               style: TextStyle(fontWeight: FontWeight.bold),
-//             ),
-//           ),
-//         ],
-//         rows: _filteredData.asMap().entries.map((entry) {
-//           int index = entry.key;
-//           final item = entry.value;
-//           return DataRow(
-//             cells: [
-//               DataCell(Text((index + 1).toString())),
-//               DataCell(
-//                 Column(
-//                   crossAxisAlignment: CrossAxisAlignment.start,
-//                   mainAxisSize: MainAxisSize.min,
-//                   children: [
-//                     Text(
-//                       item.name,
-//                       style: const TextStyle(
-//                         fontWeight: FontWeight.bold,
-//                         fontSize: 11,
-//                       ),
-//                     ),
-//                   ],
-//                 ),
-//               ),
-//               DataCell(Text(item.totalCalls.toString())),
-//               DataCell(Text(item.approach.toString())),
-//               DataCell(Text(item.kycFilled.toString())),
-//               DataCell(
-//                 Text(
-//                   '${item.efficiency.toStringAsFixed(1)}%',
-//                   style: TextStyle(
-//                     fontWeight: FontWeight.bold,
-//                     color: _getEfficiencyColor(item.efficiency),
-//                   ),
-//                 ),
-//               ),
-//               DataCell(Text(item.totalProductSales.toString())),
-//               DataCell(
-//                 Text(
-//                   '₹${item.value.toString()}',
-//                   style: const TextStyle(
-//                     fontWeight: FontWeight.bold,
-//                     color: Colors.green,
-//                   ),
-//                 ),
-//               ),
-//             ],
-//           );
-//         }).toList(),
-//       ),
-//     ),
-//   );
-// }
-//
-// Widget _buildMobileCards() {
-//   return ListView.builder(
-//     physics: NeverScrollableScrollPhysics(),
-//     shrinkWrap: true,
-//     itemCount: _filteredData.length,
-//     itemBuilder: (context, index) {
-//       final item = _filteredData[index];
-//       return Card(
-//         margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-//         elevation: 2,
-//         child: Padding(
-//           padding: const EdgeInsets.all(12),
-//           child: Column(
-//             crossAxisAlignment: CrossAxisAlignment.start,
-//             children: [
-//               Row(
-//                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//                 children: [
-//                   Row(
-//                     children: [
-//                       Container(
-//                         width: 32,
-//                         height: 32,
-//                         decoration: BoxDecoration(
-//                           color: Colors.indigo[100],
-//                           borderRadius: BorderRadius.circular(16),
-//                         ),
-//                         child: Center(
-//                           child: Text(
-//                             (index + 1).toString(),
-//                             style: const TextStyle(
-//                               fontWeight: FontWeight.bold,
-//                               color: Colors.indigo,
-//                               fontSize: 12,
-//                             ),
-//                           ),
-//                         ),
-//                       ),
-//                       const SizedBox(width: 10),
-//                       Column(
-//                         crossAxisAlignment: CrossAxisAlignment.start,
-//                         children: [
-//                           Text(
-//                             item.name,
-//                             style: const TextStyle(
-//                               fontWeight: FontWeight.bold,
-//                               fontSize: 14,
-//                             ),
-//                           ),
-//                           Row(
-//                             children: [
-//                               Container(
-//                                 padding: const EdgeInsets.symmetric(
-//                                   horizontal: 6,
-//                                   vertical: 1,
-//                                 ),
-//                                 decoration: BoxDecoration(
-//                                   color: _getEfficiencyColor(item.efficiency),
-//                                   borderRadius: BorderRadius.circular(4),
-//                                 ),
-//                                 child: Text(
-//                                   '${item.efficiency.toStringAsFixed(1)}%',
-//                                   style: const TextStyle(
-//                                     fontSize: 10,
-//                                     color: Colors.white,
-//                                     fontWeight: FontWeight.bold,
-//                                   ),
-//                                 ),
-//                               ),
-//                               const SizedBox(width: 8),
-//                               Text(
-//                                 '${item.hours} • ${item.totalTime}',
-//                                 style: const TextStyle(
-//                                   fontSize: 11,
-//                                   color: Colors.grey,
-//                                 ),
-//                               ),
-//                             ],
-//                           ),
-//                         ],
-//                       ),
-//                     ],
-//                   ),
-//                   Column(
-//                     crossAxisAlignment: CrossAxisAlignment.end,
-//                     children: [
-//                       Text(
-//                         '₹${item.value.toString()}',
-//                         style: const TextStyle(
-//                           fontWeight: FontWeight.bold,
-//                           fontSize: 16,
-//                           color: Colors.green,
-//                         ),
-//                       ),
-//                       Text(
-//                         '${item.totalProductSales} sales',
-//                         style: const TextStyle(
-//                           fontSize: 11,
-//                           color: Colors.grey,
-//                         ),
-//                       ),
-//                     ],
-//                   ),
-//                 ],
-//               ),
-//               const Divider(height: 16),
-//               Row(
-//                 mainAxisAlignment: MainAxisAlignment.spaceAround,
-//                 children: [
-//                   _buildMobileStat('Calls', item.totalCalls.toString()),
-//                   _buildMobileStat('Appr.', item.approach.toString()),
-//                   _buildMobileStat('KYC', item.kycFilled.toString()),
-//                   _buildMobileStat(
-//                     'S/Min',
-//                     item.salesPerMin.toStringAsFixed(2),
-//                   ),
-//                   _buildMobileStat(
-//                     'Avg/Cus',
-//                     item.avgPerCustomer.toStringAsFixed(1),
-//                   ),
-//                 ],
-//               ),
-//             ],
-//           ),
-//         ),
-//       );
-//     },
-//   );
-// }
-// Widget _buildMobileStat(String label, String value) {
-//   return Column(
-//     children: [
-//       Text(
-//         value,
-//         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-//       ),
-//       Text(label, style: const TextStyle(fontSize: 9, color: Colors.grey)),
-//     ],
-//   );
-// }
+  Widget _header() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xff1E293B),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          bool isSmallScreen = constraints.maxWidth < 600;
+
+          if (isSmallScreen) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Salesperson Performance Report',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Salesperson-wise performance metrics',
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.star,
+                            color: Colors.orange,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 4),
+                          const Text(
+                            'Analytics',
+                            style: TextStyle(color: Colors.white, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      onPressed: init,
+                      icon: const Icon(
+                        Icons.refresh,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            );
+          }
+
+          return Row(
+            children: [
+              const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Salesperson Performance Report',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'Salesperson-wise performance metrics in a unified table view',
+                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
+                ],
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.grey.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.star, color: Colors.orange),
+                    const SizedBox(width: 4),
+                    const Text(
+                      'Performance Analytics',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                onPressed: init,
+                icon: const Icon(Icons.refresh, color: Colors.white),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _header1() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xff1E293B),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          bool isSmallScreen = constraints.maxWidth < 600;
+
+          if (isSmallScreen) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Performance Records',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${_filteredData.length} salesperson(s) loaded',
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.star,
+                            color: Colors.orange,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 4),
+                          const Text(
+                            'Salesperson Report',
+                            style: TextStyle(color: Colors.white, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            );
+          }
+
+          return Row(
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Performance Records',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${_filteredData.length} salesperson(s) loaded',
+                    style: const TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
+                ],
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.grey.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.star, color: Colors.orange),
+                    const SizedBox(width: 4),
+                    const Text(
+                      'Salesperson Report',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}

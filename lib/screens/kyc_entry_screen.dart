@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:dropdown_search/dropdown_search.dart';
 
-import '../services/kyc_apiservice.dart';
-import '../services/customer_apiservice.dart';
-import '../widgets/customdropdownwidget.dart';
+// import '../../services/customer_apiservice.dart';
+import '../../services/kyc_apiservice.dart';
+import '../../widgets/customdropdownwidget.dart';
 
 class KYCEntryScreen extends StatefulWidget {
   final Map<String, dynamic>? kycData;
@@ -15,7 +14,7 @@ class KYCEntryScreen extends StatefulWidget {
 
 class _KYCEntryScreenState extends State<KYCEntryScreen> {
   final KYCApiService _kycService = KYCApiService();
-  final CustomerApiService _customerService = CustomerApiService();
+  // final CustomerApiService _customerService = CustomerApiService();
 
   bool _isLoading = false;
   bool _isEditMode = false;
@@ -103,7 +102,10 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
     } catch (e) {
       print("Error loading dropdown data: $e");
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading data: $e'), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text('Error loading data: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -118,7 +120,9 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
         _totalAmount = widget.kycData!['total_amount']?.toString() ?? '0.00';
 
         if (widget.kycData!['family_members'] != null) {
-          _familyMembersWithProducts = List<Map<String, dynamic>>.from(widget.kycData!['family_members']);
+          _familyMembersWithProducts = List<Map<String, dynamic>>.from(
+            widget.kycData!['family_members'],
+          );
         }
 
         if (_familyMembersWithProducts.isEmpty) {
@@ -131,7 +135,7 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
   String _getNameById(List<Map<String, dynamic>> items, String? id) {
     if (id == null || id.isEmpty) return '';
     final item = items.firstWhere(
-          (item) => item['id'].toString() == id,
+      (item) => item['id'].toString() == id,
       orElse: () => {},
     );
     return item['name'] ?? '';
@@ -158,28 +162,51 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
 
   void _addProductToMember(int memberIndex) {
     setState(() {
-      _familyMembersWithProducts[memberIndex]['products'].add(_createEmptyProduct());
+      _familyMembersWithProducts[memberIndex]['products'].add(
+        _createEmptyProduct(),
+      );
     });
   }
 
   void _removeProductFromMember(int memberIndex, int productIndex) {
     setState(() {
-      _familyMembersWithProducts[memberIndex]['products'].removeAt(productIndex);
+      _familyMembersWithProducts[memberIndex]['products'].removeAt(
+        productIndex,
+      );
     });
     _calculateMemberTotal(memberIndex);
     _calculateTotalAmount();
   }
 
-  void _updateProduct(int memberIndex, int productIndex, String field, dynamic value) {
+  void _updateProduct(
+    int memberIndex,
+    int productIndex,
+    String field,
+    dynamic value,
+  ) {
     setState(() {
-      _familyMembersWithProducts[memberIndex]['products'][productIndex][field] = value;
+      _familyMembersWithProducts[memberIndex]['products'][productIndex][field] =
+          value;
 
       // Recalculate total for this product
       if (field == 'quantity' || field == 'price') {
-        double quantity = double.tryParse(_familyMembersWithProducts[memberIndex]['products'][productIndex]['quantity']?.toString() ?? '0') ?? 0;
-        double price = double.tryParse(_familyMembersWithProducts[memberIndex]['products'][productIndex]['price']?.toString() ?? '0') ?? 0;
+        double quantity =
+            double.tryParse(
+              _familyMembersWithProducts[memberIndex]['products'][productIndex]['quantity']
+                      ?.toString() ??
+                  '0',
+            ) ??
+            0;
+        double price =
+            double.tryParse(
+              _familyMembersWithProducts[memberIndex]['products'][productIndex]['price']
+                      ?.toString() ??
+                  '0',
+            ) ??
+            0;
         double total = quantity * price;
-        _familyMembersWithProducts[memberIndex]['products'][productIndex]['total'] = total.toStringAsFixed(2);
+        _familyMembersWithProducts[memberIndex]['products'][productIndex]['total'] =
+            total.toStringAsFixed(2);
       }
 
       _calculateMemberTotal(memberIndex);
@@ -193,7 +220,8 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
       total += double.tryParse(product['total']?.toString() ?? '0') ?? 0;
     }
     setState(() {
-      _familyMembersWithProducts[memberIndex]['member_total'] = total.toStringAsFixed(2);
+      _familyMembersWithProducts[memberIndex]['member_total'] = total
+          .toStringAsFixed(2);
     });
   }
 
@@ -210,7 +238,10 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
   Future<void> _submitForm() async {
     if (_selectedCustomerId == null || _selectedCustomerId!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a customer'), backgroundColor: Colors.red),
+        const SnackBar(
+          content: Text('Please select a customer'),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
@@ -235,7 +266,10 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
 
     if (validFamilyMembers.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please add at least one family member with products'), backgroundColor: Colors.red),
+        const SnackBar(
+          content: Text('Please add at least one family member with products'),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
@@ -269,7 +303,11 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
       if (result == "Success") {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(_isEditMode ? 'KYC updated successfully!' : 'KYC saved successfully!'),
+            content: Text(
+              _isEditMode
+                  ? 'KYC updated successfully!'
+                  : 'KYC saved successfully!',
+            ),
             backgroundColor: Colors.green,
           ),
         );
@@ -287,7 +325,9 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
   }
 
   Widget _buildCustomerDropdown() {
-    List<String> customerNames = _customers.map((c) => c['name'] as String).toList();
+    List<String> customerNames = _customers
+        .map((c) => c['name'] as String)
+        .toList();
     String? selectedName = _getNameById(_customers, _selectedCustomerId);
 
     return Column(
@@ -297,8 +337,12 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
           text: const TextSpan(
             children: [
               TextSpan(
-                text: 'Customer Name',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Color(0xFF374151)),
+                text: 'Source Name',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF374151),
+                ),
               ),
               TextSpan(
                 text: ' *',
@@ -321,7 +365,7 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
             onChanged: (value) {
               if (value != null && value.isNotEmpty) {
                 final selected = _customers.firstWhere(
-                      (c) => c['name'] == value,
+                  (c) => c['name'] == value,
                   orElse: () => {},
                 );
                 setState(() {
@@ -337,8 +381,14 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
   }
 
   // Mobile-optimized product row
-  Widget _buildProductRow(int memberIdx, int productIdx, Map<String, dynamic> product) {
-    List<String> productNames = _products.map((p) => p['name'] as String).toList();
+  Widget _buildProductRow(
+    int memberIdx,
+    int productIdx,
+    Map<String, dynamic> product,
+  ) {
+    List<String> productNames = _products
+        .map((p) => p['name'] as String)
+        .toList();
     List<String> sizeNames = _sizes.map((s) => s['name'] as String).toList();
 
     return Container(
@@ -355,16 +405,36 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Product', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.grey)),
+              const Text(
+                'Product',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey,
+                ),
+              ),
               const SizedBox(height: 4),
               CustomDropdownSearch(
                 label: "",
                 items: productNames,
                 selectedItem: product['product_name'],
                 onChanged: (value) {
-                  final selected = _products.firstWhere((p) => p['name'] == value, orElse: () => {});
-                  _updateProduct(memberIdx, productIdx, 'product_id', selected['id']?.toString() ?? '');
-                  _updateProduct(memberIdx, productIdx, 'product_name', selected['name']?.toString() ?? '');
+                  final selected = _products.firstWhere(
+                    (p) => p['name'] == value,
+                    orElse: () => {},
+                  );
+                  _updateProduct(
+                    memberIdx,
+                    productIdx,
+                    'product_id',
+                    selected['id']?.toString() ?? '',
+                  );
+                  _updateProduct(
+                    memberIdx,
+                    productIdx,
+                    'product_name',
+                    selected['name']?.toString() ?? '',
+                  );
                 },
               ),
             ],
@@ -378,13 +448,21 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Size', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.grey)),
+                    const Text(
+                      'Size',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey,
+                      ),
+                    ),
                     const SizedBox(height: 4),
                     CustomDropdownSearch(
                       label: "",
                       items: sizeNames,
                       selectedItem: product['size'],
-                      onChanged: (value) => _updateProduct(memberIdx, productIdx, 'size', value),
+                      onChanged: (value) =>
+                          _updateProduct(memberIdx, productIdx, 'size', value),
                     ),
                   ],
                 ),
@@ -394,17 +472,32 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Quantity', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.grey)),
+                    const Text(
+                      'Quantity',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey,
+                      ),
+                    ),
                     const SizedBox(height: 4),
                     TextFormField(
                       initialValue: product['quantity']?.toString(),
                       keyboardType: TextInputType.number,
                       decoration: const InputDecoration(
                         border: OutlineInputBorder(),
-                        contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 8,
+                        ),
                         isDense: true,
                       ),
-                      onChanged: (value) => _updateProduct(memberIdx, productIdx, 'quantity', value),
+                      onChanged: (value) => _updateProduct(
+                        memberIdx,
+                        productIdx,
+                        'quantity',
+                        value,
+                      ),
                     ),
                   ],
                 ),
@@ -420,17 +513,28 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Price', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.grey)),
+                    const Text(
+                      'Price',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey,
+                      ),
+                    ),
                     const SizedBox(height: 4),
                     TextFormField(
                       initialValue: product['price']?.toString(),
                       keyboardType: TextInputType.number,
                       decoration: const InputDecoration(
                         border: OutlineInputBorder(),
-                        contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 8,
+                        ),
                         isDense: true,
                       ),
-                      onChanged: (value) => _updateProduct(memberIdx, productIdx, 'price', value),
+                      onChanged: (value) =>
+                          _updateProduct(memberIdx, productIdx, 'price', value),
                     ),
                   ],
                 ),
@@ -440,10 +544,20 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Total', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.grey)),
+                    const Text(
+                      'Total',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey,
+                      ),
+                    ),
                     const SizedBox(height: 4),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 10,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.grey[100],
                         borderRadius: BorderRadius.circular(4),
@@ -454,9 +568,15 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
                           const Text('₹ ', style: TextStyle(fontSize: 13)),
                           Expanded(
                             child: Text(
-                              double.tryParse(product['total']?.toString() ?? '0')?.toStringAsFixed(2) ?? '0.00',
+                              double.tryParse(
+                                    product['total']?.toString() ?? '0',
+                                  )?.toStringAsFixed(2) ??
+                                  '0.00',
                               textAlign: TextAlign.right,
-                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                              ),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
@@ -475,7 +595,11 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
             alignment: Alignment.centerRight,
             child: IconButton(
               onPressed: () => _removeProductFromMember(memberIdx, productIdx),
-              icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+              icon: const Icon(
+                Icons.delete_outline,
+                color: Colors.red,
+                size: 20,
+              ),
               constraints: const BoxConstraints(),
               padding: EdgeInsets.zero,
             ),
@@ -488,9 +612,15 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
   // Mobile-optimized family member card
   Widget _buildFamilyMemberCard(int memberIdx) {
     var member = _familyMembersWithProducts[memberIdx];
-    List<String> genderNames = _genders.map((g) => g['name'] as String).toList();
-    List<String> relationNames = _relations.map((r) => r['name'] as String).toList();
-    List<String> occupationNames = _occupations.map((o) => o['name'] as String).toList();
+    List<String> genderNames = _genders
+        .map((g) => g['name'] as String)
+        .toList();
+    List<String> relationNames = _relations
+        .map((r) => r['name'] as String)
+        .toList();
+    List<String> occupationNames = _occupations
+        .map((o) => o['name'] as String)
+        .toList();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
@@ -506,7 +636,9 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: const Color(0xFFF8FAFC),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(12),
+              ),
               border: Border(bottom: BorderSide(color: Colors.grey[300]!)),
             ),
             child: Column(
@@ -517,14 +649,22 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
                     Expanded(
                       child: Text(
                         'Family Member ${memberIdx + 1}',
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF1E293B)),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1E293B),
+                        ),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     if (_familyMembersWithProducts.length > 1)
                       IconButton(
                         onPressed: () => _removeFamilyMember(memberIdx),
-                        icon: const Icon(Icons.delete_outline, color: Colors.red, size: 22),
+                        icon: const Icon(
+                          Icons.delete_outline,
+                          color: Colors.red,
+                          size: 22,
+                        ),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                       ),
@@ -538,7 +678,9 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF1E293B),
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                       padding: const EdgeInsets.symmetric(vertical: 10),
                     ),
                     icon: const Icon(Icons.person_add, size: 18),
@@ -558,17 +700,28 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Name', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.grey)),
+                    const Text(
+                      'Name',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey,
+                      ),
+                    ),
                     const SizedBox(height: 4),
                     TextFormField(
                       initialValue: member['name'],
                       decoration: const InputDecoration(
                         hintText: 'Enter name',
                         border: OutlineInputBorder(),
-                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
                         isDense: true,
                       ),
-                      onChanged: (value) => _updateFamilyMember(memberIdx, 'name', value),
+                      onChanged: (value) =>
+                          _updateFamilyMember(memberIdx, 'name', value),
                     ),
                   ],
                 ),
@@ -581,15 +734,32 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Gender', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.grey)),
+                          const Text(
+                            'Gender',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey,
+                            ),
+                          ),
                           const SizedBox(height: 4),
                           CustomDropdownSearch(
                             label: "",
                             items: genderNames,
-                            selectedItem: _getNameById(_genders, member['gender']),
+                            selectedItem: _getNameById(
+                              _genders,
+                              member['gender'],
+                            ),
                             onChanged: (value) {
-                              final selected = _genders.firstWhere((g) => g['name'] == value, orElse: () => {});
-                              _updateFamilyMember(memberIdx, 'gender', selected['id']?.toString() ?? '');
+                              final selected = _genders.firstWhere(
+                                (g) => g['name'] == value,
+                                orElse: () => {},
+                              );
+                              _updateFamilyMember(
+                                memberIdx,
+                                'gender',
+                                selected['id']?.toString() ?? '',
+                              );
                             },
                           ),
                         ],
@@ -600,7 +770,14 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Age', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.grey)),
+                          const Text(
+                            'Age',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey,
+                            ),
+                          ),
                           const SizedBox(height: 4),
                           TextFormField(
                             initialValue: member['age'],
@@ -608,10 +785,14 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
                             decoration: const InputDecoration(
                               hintText: 'Age',
                               border: OutlineInputBorder(),
-                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 10,
+                              ),
                               isDense: true,
                             ),
-                            onChanged: (value) => _updateFamilyMember(memberIdx, 'age', value),
+                            onChanged: (value) =>
+                                _updateFamilyMember(memberIdx, 'age', value),
                           ),
                         ],
                       ),
@@ -627,15 +808,32 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Relation', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.grey)),
+                          const Text(
+                            'Relation',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey,
+                            ),
+                          ),
                           const SizedBox(height: 4),
                           CustomDropdownSearch(
                             label: "",
                             items: relationNames,
-                            selectedItem: _getNameById(_relations, member['relation']),
+                            selectedItem: _getNameById(
+                              _relations,
+                              member['relation'],
+                            ),
                             onChanged: (value) {
-                              final selected = _relations.firstWhere((r) => r['name'] == value, orElse: () => {});
-                              _updateFamilyMember(memberIdx, 'relation', selected['id']?.toString() ?? '');
+                              final selected = _relations.firstWhere(
+                                (r) => r['name'] == value,
+                                orElse: () => {},
+                              );
+                              _updateFamilyMember(
+                                memberIdx,
+                                'relation',
+                                selected['id']?.toString() ?? '',
+                              );
                             },
                           ),
                         ],
@@ -646,16 +844,37 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Occupation', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.grey)),
+                          const Text(
+                            'Occupation',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey,
+                            ),
+                          ),
                           const SizedBox(height: 4),
                           CustomDropdownSearch(
                             label: "",
                             items: occupationNames,
-                            selectedItem: _getNameById(_occupations, member['occupation_id']),
+                            selectedItem: _getNameById(
+                              _occupations,
+                              member['occupation_id'],
+                            ),
                             onChanged: (value) {
-                              final selected = _occupations.firstWhere((o) => o['name'] == value, orElse: () => {});
-                              _updateFamilyMember(memberIdx, 'occupation_id', selected['id']?.toString() ?? '');
-                              _updateFamilyMember(memberIdx, 'occupation', selected['name']?.toString() ?? '');
+                              final selected = _occupations.firstWhere(
+                                (o) => o['name'] == value,
+                                orElse: () => {},
+                              );
+                              _updateFamilyMember(
+                                memberIdx,
+                                'occupation_id',
+                                selected['id']?.toString() ?? '',
+                              );
+                              _updateFamilyMember(
+                                memberIdx,
+                                'occupation',
+                                selected['name']?.toString() ?? '',
+                              );
                             },
                           ),
                         ],
@@ -677,7 +896,11 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
                 Expanded(
                   child: Text(
                     'Products for ${member['name']?.isNotEmpty == true ? member['name'] : 'Member ${memberIdx + 1}'}',
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF374151)),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF374151),
+                    ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -686,8 +909,13 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1E293B),
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                   ),
                   icon: const Icon(Icons.add, size: 16),
                   label: const Text('Add Product'),
@@ -715,7 +943,9 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: const Color(0xFFF8FAFC),
-              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
+              borderRadius: const BorderRadius.vertical(
+                bottom: Radius.circular(12),
+              ),
               border: Border(top: BorderSide(color: Colors.grey[300]!)),
             ),
             child: Row(
@@ -723,11 +953,19 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
               children: [
                 const Text(
                   'Member Total:',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Color(0xFF1E293B)),
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF1E293B),
+                  ),
                 ),
                 Text(
                   '₹ ${member['member_total'] ?? '0.00'}',
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF10B981)),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF10B981),
+                  ),
                 ),
               ],
             ),
@@ -756,7 +994,10 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
               icon: const Icon(Icons.add),
               label: const Text('Add Family Member'),
               style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
               ),
             ),
           ],
@@ -766,7 +1007,10 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
 
     return Column(
       children: [
-        ...List.generate(_familyMembersWithProducts.length, (index) => _buildFamilyMemberCard(index)),
+        ...List.generate(
+          _familyMembersWithProducts.length,
+          (index) => _buildFamilyMemberCard(index),
+        ),
       ],
     );
   }
@@ -782,118 +1026,149 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
       ),
       body: _isLoading
           ? const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('Loading...', style: TextStyle(fontSize: 16, color: Colors.grey)),
-          ],
-        ),
-      )
-          : SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Customer Selection Section
-            Container(
-              padding: const EdgeInsets.all(16),
-              color: const Color(0xFFF8FAFC),
-              child: _buildCustomerDropdown(),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Family Members with Products Section
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _buildFamilyMembersSection(),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Add Another Family Member Button (if not empty)
-            if (_familyMembersWithProducts.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: _addFamilyMember,
-                    icon: const Icon(Icons.person_add),
-                    label: const Text('Add Another Family Member'),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
-                  ),
-                ),
-              ),
-
-            const SizedBox(height: 20),
-
-            // Total Amount and Buttons
-            Container(
-              padding: const EdgeInsets.all(16),
-              color: const Color(0xFFF8FAFC),
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Grand Total:',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF1E293B)),
-                      ),
-                      Flexible(
-                        child: Text(
-                          '₹ $_totalAmount',
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF10B981)),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            side: BorderSide(color: Colors.grey[300]!),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          ),
-                          child: const Text('Cancel', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: _submitForm,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF1E293B),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          ),
-                          child: Text(
-                            _isEditMode ? 'Update KYC' : 'Save KYC',
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.white),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ),
-                    ],
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text(
+                    'Loading...',
+                    style: TextStyle(fontSize: 16, color: Colors.grey),
                   ),
                 ],
               ),
+            )
+          : SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Customer Selection Section
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    color: const Color(0xFFF8FAFC),
+                    child: _buildCustomerDropdown(),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Family Members with Products Section
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _buildFamilyMembersSection(),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Add Another Family Member Button (if not empty)
+                  if (_familyMembersWithProducts.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: _addFamilyMember,
+                          icon: const Icon(Icons.person_add),
+                          label: const Text('Add Another Family Member'),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                  const SizedBox(height: 20),
+
+                  // Total Amount and Buttons
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    color: const Color(0xFFF8FAFC),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Grand Total:',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF1E293B),
+                              ),
+                            ),
+                            Flexible(
+                              child: Text(
+                                '₹ $_totalAmount',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF10B981),
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: () => Navigator.of(context).pop(),
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
+                                  side: BorderSide(color: Colors.grey[300]!),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                child: const Text(
+                                  'Cancel',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: _submitForm,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF1E293B),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                child: Text(
+                                  _isEditMode ? 'Update KYC' : 'Save KYC',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.white,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                ],
+              ),
             ),
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
     );
   }
 }

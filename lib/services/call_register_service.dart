@@ -3,10 +3,9 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../models/call_register_model.dart';
 
-import '../models/call_register_model.dart';
 import 'config.dart';
-
 // const String baseUrl = 'http://localhost:5000';
 
 class CallRegisterService {
@@ -28,6 +27,8 @@ class CallRegisterService {
     // required String to,
     required String feedback,
     required String notes,
+    required String followupDate,
+    required String interest,
   }) async {
     final response = await http.post(
       Uri.parse('$baseUrl/update_call_register.php'),
@@ -40,6 +41,8 @@ class CallRegisterService {
         // 'to': to,
         'feedback': feedback,
         'notes': notes,
+        'followup_date': followupDate.toString(),
+        'interest': interest,
       },
     );
 
@@ -47,14 +50,31 @@ class CallRegisterService {
   }
 
   Future<List<CallRegisterModel>> fetchRecords(int companyId) async {
-    const String url = "$baseUrl/get_call_registers.php";
+    const String url = "$baseUrl/get_call_registers1.php";
     final response = await http.post(
       Uri.parse(url),
       body: {"companyid": companyId.toString()},
     );
 
     final json = jsonDecode(response.body);
+    print(json);
+    return (json['data'] as List)
+        .map((e) => CallRegisterModel.fromJson(e))
+        .toList();
+  }
 
+  Future<List<CallRegisterModel>> fetchRecordsByCallById(
+    int companyId,
+    String callById,
+  ) async {
+    const String url = "$baseUrl/get_call_registers_by_call_id.php";
+    final response = await http.post(
+      Uri.parse(url),
+      body: {"companyid": companyId.toString(), "call_by_id": callById},
+    );
+
+    final json = jsonDecode(response.body);
+    print(json);
     return (json['data'] as List)
         .map((e) => CallRegisterModel.fromJson(e))
         .toList();
@@ -88,13 +108,15 @@ class CallRegisterService {
     required int sourceId,
     required int callById,
     required String date,
+    required String followupDate,
     required String from,
     required String to,
     required String feedback,
     required String notes,
+    required String interest,
   }) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/insert_call_register.php'),
+      Uri.parse('$baseUrl/insert_call_register1.php'),
       body: {
         'companyid': companyId.toString(),
         'entry_no': entryNo,
@@ -105,6 +127,8 @@ class CallRegisterService {
         'to': to,
         'feedback': feedback,
         'notes': notes,
+        'followup_date': followupDate.toString(),
+        'interest': interest,
       },
     );
 

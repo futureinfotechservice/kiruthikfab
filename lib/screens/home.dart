@@ -1,20 +1,22 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:kiruthikfab/screens/product_based_sales_report.dart';
+
 import 'package:kiruthikfab/screens/product_master_screen.dart';
 import 'package:kiruthikfab/screens/refer_master_screen.dart';
 import 'package:kiruthikfab/screens/salesperson_master_screen.dart';
 import 'package:kiruthikfab/screens/salesperson_report.dart';
 import 'package:kiruthikfab/screens/size_master_screen.dart';
+import 'package:kiruthikfab/screens/source_followup_report.dart';
 import 'package:kiruthikfab/screens/source_list_screen.dart';
 import 'package:kiruthikfab/screens/unit_master_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'InvoiceEntryPage.dart';
+
 import 'agent_master_screen.dart';
 import 'area_master_screen.dart';
 import 'call_register_screen.dart';
-import 'customerlist_screen.dart';
+import 'customer_interest_master_screen.dart';
 import 'dashboardscreen.dart';
 import 'delivery_management_screen.dart';
 import 'incharge_master_screen.dart';
@@ -23,8 +25,6 @@ import 'kyc_list_screen.dart';
 import 'loginpage.dart';
 import 'model_master_screen.dart';
 import 'occupation_master_screen.dart';
-
-
 
 class CustomerManagementApp extends StatefulWidget {
   const CustomerManagementApp({super.key});
@@ -36,16 +36,33 @@ class CustomerManagementApp extends StatefulWidget {
 class _CustomerManagementAppState extends State<CustomerManagementApp> {
   int _selectedIndex = 0;
   int _masterSubIndex =
-  0; // 0: Customer Master, 1: Product Master, 2: Model Master, 3: Size Master, 4: Unit Master, 5: Area Master, 6: Refer Master, 7: Incharge Master, 8: Agent Master, 9: Sales Person Master, 10: Occupation Master
-  int _entrySubIndex =
-  0; // 0: Bill Entry
-  int _reportSubIndex =
-  0; // 0: Sales Report
-  int _backupIndex = 5; // Add backup index
-  // Create GlobalKey for MasterSectionScreen, EntrySectionScreen and ReportSectionScreen
+      0; // 0: Customer Master, 1: Product Master, 2: Model Master, 3: Size Master, 4: Unit Master, 5: Area Master, 6: Refer Master, 7: Incharge Master, 8: Agent Master, 9: Sales Person Master, 10: Occupation Master
+  int _entrySubIndex = 0; // 0: Bill Entry
+  int _reportSubIndex = 0; // 0: Sales Report
+  // int _backupIndex = 5; // Add backup index
   final GlobalKey<_MasterSectionScreenState> _masterSectionKey = GlobalKey();
   final GlobalKey<_EntrySectionScreenState> _entrySectionKey = GlobalKey();
   final GlobalKey<_ReportSectionScreenState> _reportSectionKey = GlobalKey();
+  String? userType;
+  String? loginUsername;
+  String? loginId;
+  @override
+  void initState() {
+    loadData();
+    super.initState();
+  }
+
+  Future<void> loadData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    final id = prefs.getString('id');
+    final username = prefs.getString('username');
+    final userTypes = prefs.getString('user_type');
+    setState(() {
+      loginId = id;
+      loginUsername = username;
+      userType = userTypes;
+    });
+  }
 
   void _switchMasterScreen(int subIndex) {
     setState(() {
@@ -165,7 +182,7 @@ class _CustomerManagementAppState extends State<CustomerManagementApp> {
   @override
   Widget build(BuildContext context) {
     final isWeb = kIsWeb && MediaQuery.of(context).size.width > 768;
-
+    final isUser = userType == "USER";
     if (isWeb) {
       return Scaffold(
         body: Row(
@@ -178,15 +195,17 @@ class _CustomerManagementAppState extends State<CustomerManagementApp> {
                 index: _selectedIndex,
                 children: [
                   const DashboardScreen(),
-                  MasterSectionScreen(
-                    key: _masterSectionKey,
-                    initialSubIndex: _masterSubIndex,
-                    onSubIndexChanged: (subIndex) {
-                      setState(() {
-                        _masterSubIndex = subIndex;
-                      });
-                    },
-                  ),
+                  isUser
+                      ? SizedBox()
+                      : MasterSectionScreen(
+                          key: _masterSectionKey,
+                          initialSubIndex: _masterSubIndex,
+                          onSubIndexChanged: (subIndex) {
+                            setState(() {
+                              _masterSubIndex = subIndex;
+                            });
+                          },
+                        ),
                   EntrySectionScreen(
                     key: _entrySectionKey,
                     initialSubIndex: _entrySubIndex,
@@ -220,15 +239,16 @@ class _CustomerManagementAppState extends State<CustomerManagementApp> {
           index: _selectedIndex,
           children: [
             const DashboardScreen(),
-            MasterSectionScreen(
-              key: _masterSectionKey,
-              initialSubIndex: _masterSubIndex,
-              onSubIndexChanged: (subIndex) {
-                setState(() {
-                  _masterSubIndex = subIndex;
-                });
-              },
-            ),
+            if (!isUser)
+              MasterSectionScreen(
+                key: _masterSectionKey,
+                initialSubIndex: _masterSubIndex,
+                onSubIndexChanged: (subIndex) {
+                  setState(() {
+                    _masterSubIndex = subIndex;
+                  });
+                },
+              ),
             EntrySectionScreen(
               key: _entrySectionKey,
               initialSubIndex: _entrySubIndex,
@@ -255,6 +275,7 @@ class _CustomerManagementAppState extends State<CustomerManagementApp> {
           type: BottomNavigationBarType.fixed,
           currentIndex: _selectedIndex,
           onTap: (index) {
+            print('index$index');
             setState(() {
               _selectedIndex = index;
               if (index != 1) {
@@ -271,20 +292,21 @@ class _CustomerManagementAppState extends State<CustomerManagementApp> {
           backgroundColor: const Color(0xFF1E293B),
           selectedItemColor: Colors.white,
           unselectedItemColor: Colors.grey[400],
-          items: const [
-            BottomNavigationBarItem(
+          items: [
+            const BottomNavigationBarItem(
               icon: Icon(Icons.dashboard),
               label: 'Dashboard',
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.folder_special),
-              label: 'Master',
-            ),
-            BottomNavigationBarItem(
+            if (!isUser)
+              const BottomNavigationBarItem(
+                icon: Icon(Icons.folder_special),
+                label: 'Master',
+              ),
+            const BottomNavigationBarItem(
               icon: Icon(Icons.edit_document),
               label: 'Entry',
             ),
-            BottomNavigationBarItem(
+            const BottomNavigationBarItem(
               icon: Icon(Icons.assessment),
               label: 'Reports',
             ),
@@ -305,17 +327,17 @@ class _CustomerManagementAppState extends State<CustomerManagementApp> {
       // Add back button only if not on Dashboard
       leading: _selectedIndex != 0
           ? IconButton(
-        icon: const Icon(Icons.arrow_back, color: Colors.white),
-        onPressed: () {
-          // Navigate to Dashboard
-          setState(() {
-            _selectedIndex = 0;
-            _masterSubIndex = 0;
-            _entrySubIndex = 0;
-            _reportSubIndex = 0;
-          });
-        },
-      )
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              onPressed: () {
+                // Navigate to Dashboard
+                setState(() {
+                  _selectedIndex = 0;
+                  _masterSubIndex = 0;
+                  _entrySubIndex = 0;
+                  _reportSubIndex = 0;
+                });
+              },
+            )
           : null,
       // Add logout button as action button
       actions: [
@@ -330,6 +352,7 @@ class _CustomerManagementAppState extends State<CustomerManagementApp> {
   }
 
   Widget _buildWebSidebar() {
+    final isUser = userType == "USER";
     return Container(
       width: 240,
       color: const Color(0xFF1E293B),
@@ -354,6 +377,11 @@ class _CustomerManagementAppState extends State<CustomerManagementApp> {
                   'Fab Management',
                   style: TextStyle(color: Colors.grey, fontSize: 12),
                 ),
+                SizedBox(height: 4),
+                Text(
+                  'V-1.0.4',
+                  style: TextStyle(color: Colors.grey, fontSize: 12),
+                ),
               ],
             ),
           ),
@@ -368,13 +396,14 @@ class _CustomerManagementAppState extends State<CustomerManagementApp> {
                 _buildSidebarItem(0, Icons.dashboard, 'Dashboard'),
 
                 // Master Section
-                _buildMasterSection(),
+                if (!isUser) _buildMasterSection(),
 
                 // Entry Section
                 _buildEntrySection(),
 
                 // Report Section
                 _buildReportSection(),
+
                 _buildSidebarItem(5, Icons.backup, 'Backup'),
                 // Logout button in sidebar for web
                 _buildLogoutSidebarItem(),
@@ -435,10 +464,15 @@ class _CustomerManagementAppState extends State<CustomerManagementApp> {
                 _buildMasterSubItem(4, Icons.scale, 'Unit Master'),
                 _buildMasterSubItem(5, Icons.map, 'Area Master'),
                 _buildMasterSubItem(6, Icons.people_alt, 'Refer Master'),
-                _buildMasterSubItem(7, Icons.manage_accounts, 'Incharge Master'),
+                _buildMasterSubItem(
+                  7,
+                  Icons.manage_accounts,
+                  'Incharge Master',
+                ),
                 _buildMasterSubItem(8, Icons.business_center, 'Agent Master'),
                 _buildMasterSubItem(9, Icons.person_add, 'Sales Person Master'),
                 _buildMasterSubItem(10, Icons.work, 'Occupation Master'),
+                _buildMasterSubItem(11, Icons.work, 'Customer Interest Master'),
               ],
             ),
           ),
@@ -476,9 +510,12 @@ class _CustomerManagementAppState extends State<CustomerManagementApp> {
               children: [
                 _buildEntrySubItem(0, Icons.receipt, 'Bill Entry'),
                 _buildEntrySubItem(1, Icons.pages_outlined, 'KYC Entry'),
-                _buildEntrySubItem(2, Icons.pages_outlined, 'Call Register'),
-                _buildEntrySubItem(3, Icons.pages_outlined, 'Delivery'),
-
+                _buildEntrySubItem(2, Icons.call, 'Call Register'),
+                _buildEntrySubItem(
+                  3,
+                  Icons.delivery_dining,
+                  'Delivery Management',
+                ),
               ],
             ),
           ),
@@ -514,8 +551,17 @@ class _CustomerManagementAppState extends State<CustomerManagementApp> {
             padding: const EdgeInsets.only(left: 16),
             child: Column(
               children: [
-                // _buildReportSubItem(0, Icons.bar_chart, 'Sales Report'),
                 _buildReportSubItem(0, Icons.bar_chart, 'Performance Report'),
+                _buildReportSubItem(
+                  1,
+                  Icons.stacked_bar_chart,
+                  'Product Sales Report',
+                ),
+                _buildReportSubItem(
+                  2,
+                  Icons.follow_the_signs,
+                  'Source Followup Report',
+                ),
               ],
             ),
           ),
@@ -669,6 +715,8 @@ class _CustomerManagementAppState extends State<CustomerManagementApp> {
         return 'Sales Person Master';
       case 10:
         return 'Occupation Master';
+      case 11:
+        return 'Customer Interest Master';
       default:
         return 'Master';
     }
@@ -680,10 +728,6 @@ class _CustomerManagementAppState extends State<CustomerManagementApp> {
         return 'Bill Entry';
       case 1:
         return 'KYC Entry';
-      case 2:
-        return 'Call Register';
-      case 3:
-        return 'Delivery';
       default:
         return 'Entry';
     }
@@ -691,10 +735,12 @@ class _CustomerManagementAppState extends State<CustomerManagementApp> {
 
   String _getReportScreenTitle() {
     switch (_reportSubIndex) {
-      // case 0:
-      //   return 'Sales Report';
       case 0:
-        return 'Performance Report';
+        return 'Sales Report';
+      case 1:
+        return 'Product Sales Report';
+      case 2:
+        return 'Source Followup Report';
       default:
         return 'Reports';
     }
@@ -726,7 +772,7 @@ class _MasterSectionScreenState extends State<MasterSectionScreen>
     super.initState();
     masterSubIndex = widget.initialSubIndex;
     _tabController = TabController(
-      length: 11, // Updated to 11 tabs
+      length: 12, // Updated to 11 tabs
       vsync: this,
       initialIndex: masterSubIndex,
     );
@@ -791,6 +837,7 @@ class _MasterSectionScreenState extends State<MasterSectionScreen>
                 Tab(icon: Icon(Icons.business_center), text: 'Agent'),
                 Tab(icon: Icon(Icons.person_add), text: 'Sales Person'),
                 Tab(icon: Icon(Icons.work), text: 'Occupation'),
+                Tab(icon: Icon(Icons.interests), text: 'Interest'),
               ],
             ),
           ),
@@ -809,6 +856,7 @@ class _MasterSectionScreenState extends State<MasterSectionScreen>
                 AgentMasterScreen(),
                 SalesPersonMasterScreen(),
                 OccupationMasterScreen(),
+                CustomerInterestMasterScreen(),
               ],
             ),
           ),
@@ -830,6 +878,7 @@ class _MasterSectionScreenState extends State<MasterSectionScreen>
           AgentMasterScreen(),
           SalesPersonMasterScreen(),
           OccupationMasterScreen(),
+          CustomerInterestMasterScreen(),
         ],
       );
     }
@@ -861,7 +910,7 @@ class _EntrySectionScreenState extends State<EntrySectionScreen>
     super.initState();
     entrySubIndex = widget.initialSubIndex;
     _tabController = TabController(
-      length: 2, // Updated to 1 tab
+      length: 4, // Updated to 1 tab
       vsync: this,
       initialIndex: entrySubIndex,
     );
@@ -917,9 +966,11 @@ class _EntrySectionScreenState extends State<EntrySectionScreen>
               tabs: const [
                 Tab(icon: Icon(Icons.receipt), text: 'Bill Entry'),
                 Tab(icon: Icon(Icons.pages_outlined), text: 'KYC Entry'),
-                Tab(icon: Icon(Icons.pages_outlined), text: 'Call Register'),
-                Tab(icon: Icon(Icons.pages_outlined), text: 'Delivery'),
-
+                Tab(icon: Icon(Icons.call), text: 'Call Register'),
+                Tab(
+                  icon: Icon(Icons.delivery_dining),
+                  text: 'Delivery Management',
+                ),
               ],
             ),
           ),
@@ -931,7 +982,6 @@ class _EntrySectionScreenState extends State<EntrySectionScreen>
                 const KYCListScreen(),
                 const CallRegisterScreen(),
                 const DeliveryManagementListScreen(),
-
               ],
             ),
           ),
@@ -946,7 +996,6 @@ class _EntrySectionScreenState extends State<EntrySectionScreen>
           KYCListScreen(),
           CallRegisterScreen(),
           DeliveryManagementListScreen(),
-
         ],
       );
     }
@@ -978,7 +1027,7 @@ class _ReportSectionScreenState extends State<ReportSectionScreen>
     super.initState();
     reportSubIndex = widget.initialSubIndex;
     _tabController = TabController(
-      length: 1, // Updated to 1 tab
+      length: 3,
       vsync: this,
       initialIndex: reportSubIndex,
     );
@@ -1032,8 +1081,15 @@ class _ReportSectionScreenState extends State<ReportSectionScreen>
               unselectedLabelColor: Colors.grey[400],
               isScrollable: true,
               tabs: const [
-                // Tab(icon: Icon(Icons.bar_chart), text: 'Sales Report'),
                 Tab(icon: Icon(Icons.bar_chart), text: 'Performance Report'),
+                Tab(
+                  icon: Icon(Icons.stacked_bar_chart),
+                  text: 'Product Sales Report',
+                ),
+                Tab(
+                  icon: Icon(Icons.follow_the_signs),
+                  text: 'Source Followup Report',
+                ),
               ],
             ),
           ),
@@ -1041,8 +1097,9 @@ class _ReportSectionScreenState extends State<ReportSectionScreen>
             child: TabBarView(
               controller: _tabController,
               children: [
-                // SalesReportScreen(),
                 SalespersonReport(),
+                ProductBasedSalesReport(),
+                SourceFollowupReport(),
               ],
             ),
           ),
@@ -1053,8 +1110,9 @@ class _ReportSectionScreenState extends State<ReportSectionScreen>
       return IndexedStack(
         index: reportSubIndex,
         children: const [
-          // SalesReportScreen(),
           SalespersonReport(),
+          ProductBasedSalesReport(),
+          SourceFollowupReport(),
         ],
       );
     }

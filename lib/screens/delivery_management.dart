@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -17,9 +18,12 @@ class DeliveryManagement extends StatefulWidget {
 
 class _DeliveryManagementState extends State<DeliveryManagement> {
   final entryNoController = TextEditingController();
+  final deliveryPartnerController = TextEditingController();
   String? billNo;
   final searchController = TextEditingController();
-
+  final _searchController = TextEditingController();
+  final GlobalKey<DropdownSearchState<String>> _internalDropdownKey =
+      GlobalKey();
   bool isLoading = true;
   bool isSaving = false;
 
@@ -32,11 +36,12 @@ class _DeliveryManagementState extends State<DeliveryManagement> {
   String? existingEntryNo;
 
   final List<String> checklists = [
-    "Invoice_No",
-    "Payment_Received",
-    "Hand_Stock_to_Delivery_Area",
-    "Package_Complete",
-    "Delivery_Partner",
+    "Invoice No",
+    "Payment Received",
+    "Hand Stock to Delivery Area",
+    "Package Complete",
+    "Delivery Partner",
+    "Customer Received",
   ];
 
   int? deliveryHeadId;
@@ -60,6 +65,56 @@ class _DeliveryManagementState extends State<DeliveryManagement> {
     init();
 
     searchController.addListener(_filterChecklists);
+  }
+
+  Future<void> init() async {
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      companyid = prefs.getString('companyid') ?? '';
+
+      if (companyid.isEmpty) {
+        _showSnackBar("Company ID not found", isError: true);
+        setState(() {
+          isLoading = false;
+        });
+        return;
+      }
+
+      final companyName = prefs.getString('companyname') ?? '';
+
+      final res = await DeliveryManagementApiService.fetchProducts(
+        companyId: companyid,
+      );
+
+      if (mounted) {
+        _companyName = companyName;
+
+        await _generateInitialEntryNumber(res);
+
+        final data = await DeliveryManagementApiService.fetchAllInvoiceNo(
+          companyId: companyid,
+        );
+
+        if (widget.billNO != '0') {
+          setState(() {
+            billNo = widget.billNO;
+          });
+          await fetchDelivery();
+        }
+
+        setState(() {
+          invoiceNo = data;
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        _showSnackBar("Error initializing data", isError: true);
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -150,10 +205,7 @@ class _DeliveryManagementState extends State<DeliveryManagement> {
           )
           .timeout(const Duration(seconds: 30));
 
-      if (mounted) {
-        _showSnackBar("Product status updated");
-        await fetchDelivery();
-      }
+      await fetchDelivery();
     } catch (e) {
       setState(() {
         productCheckedStatus[index] = !value;
@@ -213,9 +265,9 @@ class _DeliveryManagementState extends State<DeliveryManagement> {
             .timeout(const Duration(seconds: 30));
       }
 
-      if (mounted) {
-        _showSnackBar("Delivery Updated Successfully");
-      }
+      // if (mounted) {
+      //   // _showSnackBar("Delivery Updated Successfully");
+      // }
     } catch (e) {
       rethrow;
     } finally {
@@ -237,6 +289,7 @@ class _DeliveryManagementState extends State<DeliveryManagement> {
         companyId: companyid,
         billNo: billNo!,
         entryNoController: entryNoController.text,
+        deliveryPartnerController: deliveryPartnerController.text,
       );
 
       if (data["status"] == "success") {
@@ -271,7 +324,7 @@ class _DeliveryManagementState extends State<DeliveryManagement> {
             existingEntryNo = entryNoController.text;
           });
 
-          _showSnackBar("Delivery Created Successfully");
+          // _showSnackBar("Delivery Created Successfully");
         }
       } else {
         throw Exception(data["message"] ?? "Failed to create delivery");
@@ -291,69 +344,14 @@ class _DeliveryManagementState extends State<DeliveryManagement> {
     }
   }
 
-  Future<void> init() async {
-    try {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      companyid = prefs.getString('companyid') ?? '';
-
-      if (companyid.isEmpty) {
-        _showSnackBar("Company ID not found", isError: true);
-        setState(() {
-          isLoading = false;
-        });
-        return;
-      }
-
-      final companyName = prefs.getString('companyname') ?? '';
-
-      final res = await DeliveryManagementApiService.fetchProducts(
-        companyId: companyid,
-      );
-
-      if (mounted) {
-        _companyName = companyName;
-
-        await _generateInitialEntryNumber(res);
-
-        final data = await DeliveryManagementApiService.fetchAllInvoiceNo(
-          companyId: companyid,
-        );
-        if (widget.billNO != '0') {
-          setState(() {
-            billNo = widget.billNO;
-          });
-          await fetchDelivery();
-        }
-
-        setState(() {
-          invoiceNo = data;
-          isLoading = false;
-        });
-      }
-    } catch (e) {
-      print('Error initializing$e');
-      if (mounted) {
-        _showSnackBar("Error initializing data", isError: true);
-        setState(() {
-          isLoading = false;
-        });
-      }
-    }
-  }
-
   Future<void> _generateInitialEntryNumber(Map<String, dynamic> res) async {
-    print('Stage1');
     if (res['delivery_head'] == null) {
-      print('Stage2');
-      print(res.toString());
-      // print(res['other_entry_no'].toString());
-      final lastEntry = null;//res['other_entry_no']['entry_no'].toString();
-      print('Stage3');
+      final lastEntry = null; //res['other_entry_no']?['entry_no'];
+
       entryNoController.text = generateEntryNo(lastEntry, _companyName);
-      print('Stage4');
     } else {
       entryNoController.text = generateEntryNo(
-        res['delivery_head']['entry_no'].toString(),
+        res['delivery_head']['entry_no'],
         _companyName,
       );
     }
@@ -367,7 +365,7 @@ class _DeliveryManagementState extends State<DeliveryManagement> {
 
       if (mounted) {
         if (res['delivery_head'] == null) {
-          final lastEntry = res['other_entry_no']?['entry_no'];
+          final lastEntry = null; //res['other_entry_no']?['entry_no'];
           entryNoController.text = generateEntryNo(lastEntry, _companyName);
         } else {
           entryNoController.text = generateEntryNo(
@@ -379,75 +377,12 @@ class _DeliveryManagementState extends State<DeliveryManagement> {
     }
   }
 
-  Widget buildBillCard() {
-    return Container(
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1),
-            spreadRadius: 1,
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text("BILL NO.", style: TextStyle(fontWeight: FontWeight.w600)),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String>(
-            value: billNo,
-            hint: const Text("Select Bill Number"),
-            isExpanded: true,
-            decoration: InputDecoration(
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              prefixIcon: const Icon(Icons.receipt, color: Colors.blue),
-            ),
-            items: invoiceNo.map<DropdownMenuItem<String>>((invoice) {
-              return DropdownMenuItem<String>(
-                value: invoice['invoiceno'].toString(),
-                child: Text(
-                  invoice['invoiceno'].toString(),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              );
-            }).toList(),
-            onChanged: (value) async {
-              if (value != null) {
-                setState(() {
-                  billNo = value;
-                  isLoading = true;
-                });
-
-                await fetchDelivery();
-
-                if (mounted) {
-                  setState(() {
-                    isLoading = false;
-                  });
-                }
-              }
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
   Future<void> fetchDelivery() async {
     try {
       final res = await DeliveryManagementApiService().fetchAllProducts(
         companyId: companyid,
         billNo: billNo!,
       );
-
-      if (!mounted) return;
       final data = res;
 
       if (data["delivery_items"] != null && data["delivery_items"].isNotEmpty) {
@@ -461,7 +396,8 @@ class _DeliveryManagementState extends State<DeliveryManagement> {
         deliveryItems = data["delivery_items"];
         deliveryHeadId = int.parse(deliveryItems.first["headid"].toString());
         isEditMode = true;
-
+        deliveryPartnerController.text =
+            data["delivery_items"][0]['delivery_partner'] ?? '';
         existingEntryNo = data["entry_no"]?.toString();
         if (existingEntryNo != null && existingEntryNo!.isNotEmpty) {
           entryNoController.text = existingEntryNo!;
@@ -488,7 +424,8 @@ class _DeliveryManagementState extends State<DeliveryManagement> {
           _updateFilteredLists();
         });
       } else {
-
+        deliveryPartnerController.text = '';
+        // await generateNewEntryNumber();
         isEditMode = false;
         existingEntryNo = null;
         setState(() {
@@ -519,11 +456,11 @@ class _DeliveryManagementState extends State<DeliveryManagement> {
     if (mounted) {
       String newEntryNo;
       if (res['delivery_head'] == null) {
-        final lastEntry = null;//res['other_entry_no'][0]['entry_no'].toString();
+        final lastEntry = null; // res['other_entry_no']?['entry_no'];
         newEntryNo = generateEntryNo(lastEntry, _companyName);
       } else {
         newEntryNo = generateEntryNo(
-          res['delivery_head']['entry_no'].toString(),
+          res['delivery_head']['entry_no'],
           _companyName,
         );
       }
@@ -541,125 +478,11 @@ class _DeliveryManagementState extends State<DeliveryManagement> {
     }
   }
 
-  Widget buildLookupCard({
-    required String title,
-    required TextEditingController controller,
-    required String hint,
-    required Color iconColor,
-    required bool readOnly,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1),
-            spreadRadius: 1,
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-              if (isEditMode && existingEntryNo != null)
-                Container(
-                  margin: const EdgeInsets.only(left: 10),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.shade100,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    "Existing",
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: Colors.blue.shade700,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              if (!isEditMode)
-                Container(
-                  margin: const EdgeInsets.only(left: 10),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.green.shade100,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    "Auto-generated",
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: Colors.green.shade700,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            readOnly: readOnly,
-            controller: controller,
-            style: TextStyle(
-              color: readOnly ? Colors.grey.shade700 : Colors.blue,
-              fontWeight: FontWeight.w500,
-            ),
-            decoration: InputDecoration(
-              hintText: hint,
-              prefixIcon: Icon(
-                Icons.badge,
-                color: readOnly ? Colors.grey : Colors.blue,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              filled: true,
-              fillColor: readOnly ? Colors.grey.shade50 : Colors.white,
-              suffixIcon: !isEditMode && !readOnly
-                  ? IconButton(
-                      icon: const Icon(Icons.refresh, size: 20),
-                      onPressed: refreshEntryNumber,
-                      tooltip: "Generate New Entry Number",
-                    )
-                  : null,
-            ),
-          ),
-          if (!isEditMode)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text(
-                "New entry number will be auto-generated based on last entry",
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.grey.shade600,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
   String getCompanyPrefix(String companyName) {
     if (companyName.isEmpty) return "DF";
 
     final words = companyName.trim().split(RegExp(r'\s+'));
-print("companyName$companyName");
+
     if (words.length >= 2 && words[0].isNotEmpty && words[1].isNotEmpty) {
       return '${words[0][0]}${words[1][0]}'.toUpperCase();
     } else if (companyName.length >= 2) {
@@ -673,7 +496,7 @@ print("companyName$companyName");
     final prefix = getCompanyPrefix(companyName);
     final year = DateTime.now().year;
     int nextSequence = 1;
-    print('lastEntryNo'+companyName);
+
     if (lastEntryNo != null && lastEntryNo.isNotEmpty) {
       final parts = lastEntryNo.split('-');
       if (parts.length == 3) {
@@ -779,18 +602,34 @@ print("companyName$companyName");
 
   Widget _buildMobileLayout() {
     return Column(
-      children: [buildEntryCard(), const SizedBox(height: 15), buildBillCard()],
+      children: [
+        buildEntryCard(),
+        const SizedBox(height: 15),
+        buildBillCard(),
+        const SizedBox(height: 15),
+        buildDeliveryPartner(),
+      ],
     );
   }
 
   Widget _buildDesktopLayout() {
-    return Row(
+    return Column(
       children: [
-        Expanded(child: buildEntryCard()),
-        const SizedBox(width: 20),
-        Expanded(child: buildBillCard()),
+        Row(
+          children: [
+            Expanded(child: buildEntryCard()),
+            const SizedBox(width: 20),
+            Expanded(child: buildBillCard()),
+          ],
+        ),
+        const SizedBox(height: 15),
+        buildDeliveryPartner(),
       ],
     );
+  }
+
+  Widget buildDeliveryPartner() {
+    return buildPartnerCard();
   }
 
   Widget buildEntryCard() {
@@ -799,7 +638,7 @@ print("companyName$companyName");
       controller: entryNoController,
       hint: "Entry Number",
       iconColor: Colors.blue,
-      readOnly: isEditMode, // Make read-only in edit mode, editable in new mode
+      readOnly: true,
     );
   }
 
@@ -1030,8 +869,8 @@ print("companyName$companyName");
         child: Center(
           child: Text(
             searchQuery.isNotEmpty
-                ? "No products found matching '$searchQuery'"
-                : "No products found for this invoice",
+                ? "No checklists found matching '$searchQuery'"
+                : "No checklists found for this invoice",
             style: const TextStyle(fontSize: 16, color: Colors.grey),
           ),
         ),
@@ -1058,7 +897,7 @@ print("companyName$companyName");
               const Expanded(
                 flex: 3,
                 child: Text(
-                  "Product Name",
+                  "Checklists Item",
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
@@ -1130,8 +969,9 @@ print("companyName$companyName");
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            product['checklist']?.toString() ??
-                                'Unknown checklist',
+                            checklists[originalIndex],
+                            // product['checklist']?.toString() ??
+                            //     'Unknown checklist',
                             style: TextStyle(
                               fontWeight: FontWeight.w500,
                               fontSize: 14,
@@ -1298,7 +1138,7 @@ print("companyName$companyName");
       );
 
       if (data["status"] == "success") {
-        _showSnackBar("Delivery Finished Successfully!");
+        // _showSnackBar("Delivery Finished Successfully!");
 
         Future.delayed(const Duration(seconds: 2), () {
           if (mounted) {
@@ -1317,5 +1157,277 @@ print("companyName$companyName");
         });
       }
     }
+  }
+
+  Widget buildBillCard() {
+    OutlineInputBorder border({Color color = const Color(0xFFD1D5DB)}) {
+      return OutlineInputBorder(
+        borderSide: BorderSide(color: color, width: 1.4),
+        borderRadius: BorderRadius.circular(6),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withValues(alpha: 0.1),
+            spreadRadius: 1,
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text("BILL NO.", style: TextStyle(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 12),
+
+          DropdownSearch<String>(
+            key: _internalDropdownKey,
+            selectedItem: billNo,
+            decoratorProps: DropDownDecoratorProps(
+              baseStyle: TextStyle(fontSize: 14, color: Colors.black),
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: const Color(0xFFF3F4F6),
+                border: border(),
+                enabledBorder: border(),
+                focusedBorder: border(),
+                disabledBorder: border(color: const Color(0xFFD1D5DB)),
+
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 14,
+                ),
+                hintStyle: TextStyle(color: const Color(0xFF6B7280)),
+              ),
+            ),
+            items: (filter, loadProps) => invoiceNo.map<String>((invoice) {
+              return invoice['invoiceno'];
+            }).toList(),
+            onChanged: (value) async {
+              if (value == null) return;
+
+              setState(() {
+                billNo = value;
+              });
+
+              await Future.delayed(const Duration(milliseconds: 200));
+
+              await fetchDelivery();
+            },
+            popupProps: PopupProps.menu(
+              showSearchBox: true,
+              searchFieldProps: TextFieldProps(
+                controller: _searchController,
+
+                decoration: InputDecoration(
+                  hintText: 'Search...',
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 12,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.clear, size: 20),
+                    onPressed: () {
+                      _searchController.clear();
+                    },
+                  ),
+                ),
+                onSubmitted: (value) {
+                  setState(() {
+                    billNo = value;
+                  });
+
+                  WidgetsBinding.instance.addPostFrameCallback((_) async {
+                    if (!mounted) return;
+
+                    setState(() => isLoading = true);
+
+                    await fetchDelivery();
+
+                    if (mounted) {
+                      setState(() => isLoading = false);
+                    }
+                  });
+                },
+              ),
+              menuProps: MenuProps(
+                borderRadius: BorderRadius.circular(12),
+                elevation: 6,
+                color: Colors.white,
+                backgroundColor: Colors.white,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget buildPartnerCard() {
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withValues(alpha: 0.1),
+            spreadRadius: 1,
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                'Delivery Partner.',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: deliveryPartnerController,
+            readOnly: isEditMode,
+            decoration: InputDecoration(
+              hintText: 'Delivery Partner.',
+
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              filled: true,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget buildLookupCard({
+    required String title,
+    required TextEditingController controller,
+    required String hint,
+    required Color iconColor,
+    required bool readOnly,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withValues(alpha: 0.1),
+            spreadRadius: 1,
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+              if (isEditMode && existingEntryNo != null)
+                Container(
+                  margin: const EdgeInsets.only(left: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    "Existing",
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.blue.shade700,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              if (!isEditMode)
+                Container(
+                  margin: const EdgeInsets.only(left: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    "Auto-generated",
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.green.shade700,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            readOnly: readOnly,
+            controller: controller,
+            style: TextStyle(
+              color: readOnly ? Colors.grey.shade700 : Colors.blue,
+              fontWeight: FontWeight.w500,
+            ),
+            decoration: InputDecoration(
+              hintText: hint,
+              prefixIcon: Icon(
+                Icons.badge,
+                color: readOnly ? Colors.grey : Colors.blue,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              filled: true,
+              fillColor: readOnly ? Colors.grey.shade50 : Colors.white,
+              suffixIcon: !isEditMode && !readOnly
+                  ? IconButton(
+                      icon: const Icon(Icons.refresh, size: 20),
+                      onPressed: refreshEntryNumber,
+                      tooltip: "Generate New Entry Number",
+                    )
+                  : null,
+            ),
+          ),
+          if (!isEditMode)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                "New entry number will be auto-generated based on last entry",
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.grey.shade600,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }

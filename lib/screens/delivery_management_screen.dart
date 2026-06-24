@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+
 import '../models/DeliveryModel.dart';
 import '../services/delivery_management_apiservice.dart';
 import 'delivery_management.dart';
@@ -60,7 +61,6 @@ class _DeliveryManagementListScreenState
       );
 
       if (data['status'] == 'success' && data['delivery_items'] != null) {
-        // Convert to DeliveryRecord objects
         final records = (data['delivery_items'] as List)
             .map((item) => DeliveryRecord.fromJson(item))
             .toList();
@@ -81,6 +81,7 @@ class _DeliveryManagementListScreenState
       setState(() {
         loading = false;
       });
+      print("Error loading data: ${e.toString()}");
       _showSnackBar("Error loading data: ${e.toString()}", isError: true);
     }
   }
@@ -422,6 +423,8 @@ class _DeliveryManagementListScreenState
               ),
               DataColumn(
                 label: Text(
+                  overflow: TextOverflow.ellipsis,
+                  softWrap: true,
                   "Bill No",
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),

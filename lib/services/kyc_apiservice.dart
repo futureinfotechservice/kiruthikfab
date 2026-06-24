@@ -1,19 +1,23 @@
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import '../models/kyc_master_model.dart';
+
+import '../../models/kyc_master_model.dart';
 import 'config.dart';
 
 class KYCApiService {
   // Fetch Customers for dropdown
-  Future<List<Map<String, dynamic>>> fetchCustomers(BuildContext context) async {
+  Future<List<Map<String, dynamic>>> fetchCustomers(
+    BuildContext context,
+  ) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final companyid = prefs.getString('companyid') ?? '';
 
     if (companyid.isEmpty) return [];
 
-    var url = Uri.parse('$baseUrl/fetch_customers_for_kyc.php');
+    var url = Uri.parse('$baseUrl/fetch_customers_for_kyc1.php');
     try {
       var response = await http.post(url, body: {'companyid': companyid});
       if (response.statusCode == 200) {
@@ -71,7 +75,9 @@ class KYCApiService {
   }
 
   // Fetch Relations
-  Future<List<Map<String, dynamic>>> fetchRelations(BuildContext context) async {
+  Future<List<Map<String, dynamic>>> fetchRelations(
+    BuildContext context,
+  ) async {
     var url = Uri.parse('$baseUrl/fetch_relations.php');
     try {
       var response = await http.post(url);
@@ -107,7 +113,9 @@ class KYCApiService {
   }
 
   // Fetch Occupations (reusing existing)
-  Future<List<Map<String, dynamic>>> fetchOccupations(BuildContext context) async {
+  Future<List<Map<String, dynamic>>> fetchOccupations(
+    BuildContext context,
+  ) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final companyid = prefs.getString('companyid') ?? '';
 
@@ -241,8 +249,9 @@ class KYCApiService {
 
         try {
           List<dynamic> items = json.decode(response.body);
-          List<KYCMasterModel> kycList = items.map((item) =>
-              KYCMasterModel.fromJson(item)).toList();
+          List<KYCMasterModel> kycList = items
+              .map((item) => KYCMasterModel.fromJson(item))
+              .toList();
           return kycList;
         } catch (e) {
           print("JSON decode error: $e");
@@ -259,7 +268,10 @@ class KYCApiService {
   }
 
   // Fetch Single KYC
-  Future<Map<String, dynamic>?> fetchKYCDetail(BuildContext context, String kycId) async {
+  Future<Map<String, dynamic>?> fetchKYCDetail(
+    BuildContext context,
+    String kycId,
+  ) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final companyid = prefs.getString('companyid') ?? '';
 
@@ -301,10 +313,7 @@ class KYCApiService {
       var response = await http.post(
         url,
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: {
-          'kyc_id': kycId,
-          'companyid': companyid,
-        },
+        body: {'kyc_id': kycId, 'companyid': companyid},
       );
 
       print("Delete Response: ${response.body}");

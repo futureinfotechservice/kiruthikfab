@@ -4,8 +4,6 @@ import 'package:http/http.dart' as http;
 
 import 'config.dart';
 
-
-
 class SalespersonReportApiService {
   Future<List<dynamic>> fetchAllSalesPerson({required String companyId}) async {
     final res = await http.post(
