@@ -688,7 +688,7 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
                     onPressed: () => _printInvoice(invoice),
                     tooltip: 'Print',
                   ),
-                  if (userType == 'Admin') ...[
+                  if (userType.toUpperCase() == 'ADMIN') ...[
                     const SizedBox(width: 4),
                     IconButton(
                       icon: const Icon(
@@ -825,7 +825,7 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
                             onPressed: () => _printInvoice(invoice),
                             tooltip: 'Print',
                           ),
-                          if (userType == 'Admin') ...[
+                          if (userType.toUpperCase() == 'ADMIN') ...[
                             IconButton(
                               icon: const Icon(
                                 Icons.edit,

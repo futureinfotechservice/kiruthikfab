@@ -1,8 +1,5 @@
-import 'dart:convert';
-import 'dart:typed_data';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:dropdown_search/dropdown_search.dart';
+import 'package:flutter/material.dart';
 
 import '../models/CustomerMasterModel.dart';
 import '../services/customer_apiservice.dart';
@@ -13,7 +10,8 @@ class CustomerMasterEntryScreen extends StatefulWidget {
   const CustomerMasterEntryScreen({super.key, this.customer});
 
   @override
-  State<CustomerMasterEntryScreen> createState() => _CustomerMasterEntryScreenState();
+  State<CustomerMasterEntryScreen> createState() =>
+      _CustomerMasterEntryScreenState();
 }
 
 class _CustomerMasterEntryScreenState extends State<CustomerMasterEntryScreen> {
@@ -24,8 +22,8 @@ class _CustomerMasterEntryScreenState extends State<CustomerMasterEntryScreen> {
   String? _photoFilePath;
   String? _aadharFileName;
   String? _photoFileName;
-  Uint8List? _aadharBytes;
-  Uint8List? _photoBytes;
+  // Uint8List? _aadharBytes;
+  // Uint8List? _photoBytes;
 
   bool _isLoading = false;
   bool _isEditMode = false;
@@ -62,10 +60,13 @@ class _CustomerMasterEntryScreenState extends State<CustomerMasterEntryScreen> {
   // Dropdown keys for auto-focus
   final GlobalKey<DropdownSearchState<String>> _areaDropdownKey = GlobalKey();
   final GlobalKey<DropdownSearchState<String>> _referDropdownKey = GlobalKey();
-  final GlobalKey<DropdownSearchState<String>> _inchargeDropdownKey = GlobalKey();
+  final GlobalKey<DropdownSearchState<String>> _inchargeDropdownKey =
+      GlobalKey();
   final GlobalKey<DropdownSearchState<String>> _agentDropdownKey = GlobalKey();
-  final GlobalKey<DropdownSearchState<String>> _salesPersonDropdownKey = GlobalKey();
-  final GlobalKey<DropdownSearchState<String>> _occupationDropdownKey = GlobalKey();
+  final GlobalKey<DropdownSearchState<String>> _salesPersonDropdownKey =
+      GlobalKey();
+  final GlobalKey<DropdownSearchState<String>> _occupationDropdownKey =
+      GlobalKey();
 
   @override
   void initState() {
@@ -117,10 +118,14 @@ class _CustomerMasterEntryScreenState extends State<CustomerMasterEntryScreen> {
         }
       }
     } catch (e) {
-      print("Error loading dropdown data: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading dropdown data: $e'), backgroundColor: Colors.red),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading dropdown data: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -140,51 +145,54 @@ class _CustomerMasterEntryScreenState extends State<CustomerMasterEntryScreen> {
       // These IDs should be stored in the database and retrieved in the model
       if (widget.customer!.areaId.isNotEmpty) {
         _selectedAreaId = widget.customer!.areaId;
-        print("Loading Area ID: ${widget.customer!.areaId}, Name: ${widget.customer!.area}");
       } else if (widget.customer!.area.isNotEmpty) {
         // Fallback: try to find ID by name if ID is empty (for backward compatibility)
         _selectedAreaId = _getIdByName(_areas, widget.customer!.area);
-        print("Fallback: Found Area ID $_selectedAreaId for name ${widget.customer!.area}");
       }
 
       if (widget.customer!.referId.isNotEmpty) {
         _selectedReferId = widget.customer!.referId;
-        print("Loading Refer ID: ${widget.customer!.referId}, Name: ${widget.customer!.refer}");
       } else if (widget.customer!.refer.isNotEmpty) {
         _selectedReferId = _getIdByName(_refers, widget.customer!.refer);
-        print("Fallback: Found Refer ID $_selectedReferId for name ${widget.customer!.refer}");
       }
 
       if (widget.customer!.inchargeId.isNotEmpty) {
         _selectedInchargeId = widget.customer!.inchargeId;
-        print("Loading Incharge ID: ${widget.customer!.inchargeId}, Name: ${widget.customer!.incharge}");
       } else if (widget.customer!.incharge.isNotEmpty) {
-        _selectedInchargeId = _getIdByName(_incharges, widget.customer!.incharge);
-        print("Fallback: Found Incharge ID $_selectedInchargeId for name ${widget.customer!.incharge}");
+        _selectedInchargeId = _getIdByName(
+          _incharges,
+          widget.customer!.incharge,
+        );
       }
 
       if (widget.customer!.agentId.isNotEmpty) {
         _selectedAgentId = widget.customer!.agentId;
-        print("Loading Agent ID: ${widget.customer!.agentId}, Name: ${widget.customer!.agent}");
       } else if (widget.customer!.agent.isNotEmpty) {
         _selectedAgentId = _getIdByName(_agents, widget.customer!.agent);
-        print("Fallback: Found Agent ID $_selectedAgentId for name ${widget.customer!.agent}");
       }
 
       if (widget.customer!.salespersonId.isNotEmpty) {
         _selectedSalesPersonId = widget.customer!.salespersonId;
-        print("Loading SalesPerson ID: ${widget.customer!.salespersonId}, Name: ${widget.customer!.salesperson}");
       } else if (widget.customer!.salesperson.isNotEmpty) {
-        _selectedSalesPersonId = _getIdByName(_salesPersons, widget.customer!.salesperson);
-        print("Fallback: Found SalesPerson ID $_selectedSalesPersonId for name ${widget.customer!.salesperson}");
+        _selectedSalesPersonId = _getIdByName(
+          _salesPersons,
+          widget.customer!.salesperson,
+        );
       }
 
       if (widget.customer!.occupationId.isNotEmpty) {
         _selectedOccupationId = widget.customer!.occupationId;
-        print("Loading Occupation ID: ${widget.customer!.occupationId}, Name: ${widget.customer!.occupation}");
+        print(
+          "Loading Occupation ID: ${widget.customer!.occupationId}, Name: ${widget.customer!.occupation}",
+        );
       } else if (widget.customer!.occupation.isNotEmpty) {
-        _selectedOccupationId = _getIdByName(_occupations, widget.customer!.occupation);
-        print("Fallback: Found Occupation ID $_selectedOccupationId for name ${widget.customer!.occupation}");
+        _selectedOccupationId = _getIdByName(
+          _occupations,
+          widget.customer!.occupation,
+        );
+        print(
+          "Fallback: Found Occupation ID $_selectedOccupationId for name ${widget.customer!.occupation}",
+        );
       }
 
       // Load file references
@@ -211,7 +219,7 @@ class _CustomerMasterEntryScreenState extends State<CustomerMasterEntryScreen> {
   String? _getIdByName(List<Map<String, dynamic>> items, String? name) {
     if (name == null || name.isEmpty) return null;
     final item = items.firstWhere(
-          (item) => item['name'].toString().toLowerCase() == name.toLowerCase(),
+      (item) => item['name'].toString().toLowerCase() == name.toLowerCase(),
       orElse: () => {},
     );
     return item['id']?.toString();
@@ -221,7 +229,7 @@ class _CustomerMasterEntryScreenState extends State<CustomerMasterEntryScreen> {
   String _getNameById(List<Map<String, dynamic>> items, String? id) {
     if (id == null || id.isEmpty) return '';
     final item = items.firstWhere(
-          (item) => item['id'].toString() == id,
+      (item) => item['id'].toString() == id,
       orElse: () => {},
     );
     return item['name'] ?? '';
@@ -231,48 +239,48 @@ class _CustomerMasterEntryScreenState extends State<CustomerMasterEntryScreen> {
   void dispose() {
     _customerNameFocusNode.dispose();
     _controllers.forEach((key, controller) => controller.dispose());
-    _aadharBytes = null;
-    _photoBytes = null;
+    // _aadharBytes = null;
+    // _photoBytes = null;
     super.dispose();
   }
 
-  void _showFilePreview(BuildContext context, String fileName, String label) {
-    Uint8List? fileBytes;
-    if (label.contains('Aadhar')) {
-      fileBytes = _aadharBytes;
-    } else {
-      fileBytes = _photoBytes;
-    }
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Preview: $fileName'),
-        content: Container(
-          constraints: const BoxConstraints(maxWidth: 400, maxHeight: 500),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (fileBytes != null)
-                Image.memory(
-                  fileBytes,
-                  fit: BoxFit.contain,
-                  height: 300,
-                )
-              else
-                const Text('File data not available for preview'),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
-    );
-  }
+  // void _showFilePreview(BuildContext context, String fileName, String label) {
+  //   Uint8List? fileBytes;
+  //   if (label.contains('Aadhar')) {
+  //     fileBytes = _aadharBytes;
+  //   } else {
+  //     fileBytes = _photoBytes;
+  //   }
+  //
+  //   showDialog(
+  //     context: context,
+  //     builder: (context) => AlertDialog(
+  //       title: Text('Preview: $fileName'),
+  //       content: Container(
+  //         constraints: const BoxConstraints(maxWidth: 400, maxHeight: 500),
+  //         child: Column(
+  //           mainAxisSize: MainAxisSize.min,
+  //           children: [
+  //             if (fileBytes != null)
+  //               Image.memory(
+  //                 fileBytes,
+  //                 fit: BoxFit.contain,
+  //                 height: 300,
+  //               )
+  //             else
+  //               const Text('File data not available for preview'),
+  //           ],
+  //         ),
+  //       ),
+  //       actions: [
+  //         TextButton(
+  //           onPressed: () => Navigator.pop(context),
+  //           child: const Text('Close'),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) {
@@ -282,31 +290,46 @@ class _CustomerMasterEntryScreenState extends State<CustomerMasterEntryScreen> {
     // Validate dropdown selections
     if (_selectedAreaId == null || _selectedAreaId!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select Area'), backgroundColor: Colors.red),
+        const SnackBar(
+          content: Text('Please select Area'),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
     if (_selectedReferId == null || _selectedReferId!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select Referred By Name'), backgroundColor: Colors.red),
+        const SnackBar(
+          content: Text('Please select Referred By Name'),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
     if (_selectedInchargeId == null || _selectedInchargeId!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select Incharge'), backgroundColor: Colors.red),
+        const SnackBar(
+          content: Text('Please select Incharge'),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
     if (_selectedAgentId == null || _selectedAgentId!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select Agent'), backgroundColor: Colors.red),
+        const SnackBar(
+          content: Text('Please select Agent'),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
     if (_selectedSalesPersonId == null || _selectedSalesPersonId!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select Sales Person'), backgroundColor: Colors.red),
+        const SnackBar(
+          content: Text('Please select Sales Person'),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
@@ -374,7 +397,11 @@ class _CustomerMasterEntryScreenState extends State<CustomerMasterEntryScreen> {
       if (result == "Success") {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(_isEditMode ? 'Customer updated successfully!' : 'Customer created successfully!'),
+            content: Text(
+              _isEditMode
+                  ? 'Customer updated successfully!'
+                  : 'Customer created successfully!',
+            ),
             backgroundColor: Colors.green,
           ),
         );
@@ -387,10 +414,7 @@ class _CustomerMasterEntryScreenState extends State<CustomerMasterEntryScreen> {
     } catch (e) {
       print("Submit Error: $e");
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -423,7 +447,11 @@ class _CustomerMasterEntryScreenState extends State<CustomerMasterEntryScreen> {
             if (isRequired)
               const Text(
                 ' *',
-                style: TextStyle(color: Colors.red, fontSize: 14, fontWeight: FontWeight.w500),
+                style: TextStyle(
+                  color: Colors.red,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
           ],
         ),
@@ -441,28 +469,42 @@ class _CustomerMasterEntryScreenState extends State<CustomerMasterEntryScreen> {
             keyboardType: keyboardType,
             decoration: InputDecoration(
               hintText: hint,
-              hintStyle: const TextStyle(fontSize: 16, color: Color(0xFF999999)),
-              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: isTextArea ? 12 : 0),
+              hintStyle: const TextStyle(
+                fontSize: 16,
+                color: Color(0xFF999999),
+              ),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: isTextArea ? 12 : 0,
+              ),
               border: InputBorder.none,
             ),
-            validator: validator ?? (value) {
-              if (isRequired && (value == null || value.isEmpty)) {
-                return 'This field is required';
-              }
-              if (keyboardType == TextInputType.phone && value != null && value.isNotEmpty) {
-                final phoneRegex = RegExp(r'^[0-9]{10}$');
-                if (!phoneRegex.hasMatch(value)) {
-                  return 'Enter valid 10-digit mobile number';
-                }
-              }
-              if (label.contains('GST') && value != null && value.isNotEmpty) {
-                final gstRegex = RegExp(r'^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$');
-                if (!gstRegex.hasMatch(value)) {
-                  return 'Enter valid GST number';
-                }
-              }
-              return null;
-            },
+            validator:
+                validator ??
+                (value) {
+                  if (isRequired && (value == null || value.isEmpty)) {
+                    return 'This field is required';
+                  }
+                  if (keyboardType == TextInputType.phone &&
+                      value != null &&
+                      value.isNotEmpty) {
+                    final phoneRegex = RegExp(r'^[0-9]{10}$');
+                    if (!phoneRegex.hasMatch(value)) {
+                      return 'Enter valid 10-digit mobile number';
+                    }
+                  }
+                  if (label.contains('GST') &&
+                      value != null &&
+                      value.isNotEmpty) {
+                    final gstRegex = RegExp(
+                      r'^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$',
+                    );
+                    if (!gstRegex.hasMatch(value)) {
+                      return 'Enter valid GST number';
+                    }
+                  }
+                  return null;
+                },
           ),
         ),
       ],
@@ -482,7 +524,9 @@ class _CustomerMasterEntryScreenState extends State<CustomerMasterEntryScreen> {
         ? _getNameById(items, selectedId)
         : null;
 
-    List<String> itemNames = items.map((item) => item['name'] as String).toList();
+    List<String> itemNames = items
+        .map((item) => item['name'] as String)
+        .toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -500,7 +544,11 @@ class _CustomerMasterEntryScreenState extends State<CustomerMasterEntryScreen> {
             if (isRequired)
               const Text(
                 ' *',
-                style: TextStyle(color: Colors.red, fontSize: 14, fontWeight: FontWeight.w500),
+                style: TextStyle(
+                  color: Colors.red,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
           ],
         ),
@@ -515,7 +563,7 @@ class _CustomerMasterEntryScreenState extends State<CustomerMasterEntryScreen> {
             if (value != null && value.isNotEmpty) {
               // Find the ID for the selected name
               final selectedItem = items.firstWhere(
-                    (item) => item['name'] == value,
+                (item) => item['name'] == value,
                 orElse: () => {},
               );
               onChanged(selectedItem['id']?.toString());
@@ -528,89 +576,89 @@ class _CustomerMasterEntryScreenState extends State<CustomerMasterEntryScreen> {
     );
   }
 
-  Widget _buildUploadArea({
-    required String label,
-    required String description,
-    required String fileTypes,
-    required VoidCallback onTap,
-    String? fileName,
-    String? fileUrl,
-  }) {
-    bool hasExistingFile = fileUrl != null && fileUrl.isNotEmpty;
-    bool hasNewFile = fileName != null && fileName.isNotEmpty;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Color(0xFF2D3748)),
-        ),
-        const SizedBox(height: 8),
-        GestureDetector(
-          onTap: onTap,
-          child: Container(
-            width: double.infinity,
-            height: 132,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFFE2E8F0), width: 2),
-            ),
-            child: hasExistingFile || hasNewFile
-                ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.file_present, size: 32, color: Colors.green),
-                  const SizedBox(height: 8),
-                  Text(
-                    fileName != null
-                        ? (fileName.length > 30 ? '${fileName.substring(0, 27)}...' : fileName)
-                        : (hasExistingFile ? 'Existing file' : ''),
-                    style: const TextStyle(fontSize: 14, color: Color(0xFF4A5568), fontWeight: FontWeight.w500),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 4),
-                  Text('Click to change', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-                  const SizedBox(height: 8),
-                  if (hasNewFile && !hasExistingFile)
-                    ElevatedButton.icon(
-                      onPressed: () => _showFilePreview(context, fileName!, label),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                        foregroundColor: Colors.white,
-                        minimumSize: const Size(120, 36),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      ),
-                      icon: const Icon(Icons.preview, size: 16),
-                      label: const Text('Preview', style: TextStyle(fontSize: 12)),
-                    ),
-                ],
-              ),
-            )
-                : Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(Icons.add, size: 24, color: Colors.grey),
-                ),
-                const SizedBox(height: 12),
-                Text(description, style: const TextStyle(fontSize: 14, color: Color(0xFF4A5568))),
-                const SizedBox(height: 4),
-                Text(fileTypes, style: const TextStyle(fontSize: 12, color: Color(0xFFA0AEC0))),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+  // Widget _buildUploadArea({
+  //   required String label,
+  //   required String description,
+  //   required String fileTypes,
+  //   required VoidCallback onTap,
+  //   String? fileName,
+  //   String? fileUrl,
+  // }) {
+  //   bool hasExistingFile = fileUrl != null && fileUrl.isNotEmpty;
+  //   bool hasNewFile = fileName != null && fileName.isNotEmpty;
+  //
+  //   return Column(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       Text(
+  //         label,
+  //         style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Color(0xFF2D3748)),
+  //       ),
+  //       const SizedBox(height: 8),
+  //       GestureDetector(
+  //         onTap: onTap,
+  //         child: Container(
+  //           width: double.infinity,
+  //           height: 132,
+  //           decoration: BoxDecoration(
+  //             borderRadius: BorderRadius.circular(8),
+  //             border: Border.all(color: const Color(0xFFE2E8F0), width: 2),
+  //           ),
+  //           child: hasExistingFile || hasNewFile
+  //               ? Center(
+  //             child: Column(
+  //               mainAxisAlignment: MainAxisAlignment.center,
+  //               children: [
+  //                 const Icon(Icons.file_present, size: 32, color: Colors.green),
+  //                 const SizedBox(height: 8),
+  //                 Text(
+  //                   fileName != null
+  //                       ? (fileName.length > 30 ? '${fileName.substring(0, 27)}...' : fileName)
+  //                       : (hasExistingFile ? 'Existing file' : ''),
+  //                   style: const TextStyle(fontSize: 14, color: Color(0xFF4A5568), fontWeight: FontWeight.w500),
+  //                   textAlign: TextAlign.center,
+  //                 ),
+  //                 const SizedBox(height: 4),
+  //                 Text('Click to change', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+  //                 const SizedBox(height: 8),
+  //                 if (hasNewFile && !hasExistingFile)
+  //                   ElevatedButton.icon(
+  //                     onPressed: () => _showFilePreview(context, fileName!, label),
+  //                     style: ElevatedButton.styleFrom(
+  //                       backgroundColor: Colors.blue,
+  //                       foregroundColor: Colors.white,
+  //                       minimumSize: const Size(120, 36),
+  //                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+  //                     ),
+  //                     icon: const Icon(Icons.preview, size: 16),
+  //                     label: const Text('Preview', style: TextStyle(fontSize: 12)),
+  //                   ),
+  //               ],
+  //             ),
+  //           )
+  //               : Column(
+  //             mainAxisAlignment: MainAxisAlignment.center,
+  //             children: [
+  //               Container(
+  //                 width: 32,
+  //                 height: 32,
+  //                 decoration: BoxDecoration(
+  //                   color: Colors.grey[100],
+  //                   borderRadius: BorderRadius.circular(8),
+  //                 ),
+  //                 child: const Icon(Icons.add, size: 24, color: Colors.grey),
+  //               ),
+  //               const SizedBox(height: 12),
+  //               Text(description, style: const TextStyle(fontSize: 14, color: Color(0xFF4A5568))),
+  //               const SizedBox(height: 4),
+  //               Text(fileTypes, style: const TextStyle(fontSize: 12, color: Color(0xFFA0AEC0))),
+  //             ],
+  //           ),
+  //         ),
+  //       ),
+  //     ],
+  //   );
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -623,250 +671,282 @@ class _CustomerMasterEntryScreenState extends State<CustomerMasterEntryScreen> {
       ),
       body: _isLoading
           ? const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('Loading...', style: TextStyle(fontSize: 16, color: Colors.grey)),
-          ],
-        ),
-      )
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text(
+                    'Loading...',
+                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                  ),
+                ],
+              ),
+            )
           : SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildInputField(
-                  label: 'Customer Name',
-                  hint: 'Enter customer full name',
-                  controller: _controllers['customerName']!,
-                  focusNode: _customerNameFocusNode,
-                  isRequired: true,
-                ),
-                const SizedBox(height: 20),
-
-                _buildInputField(
-                  label: 'GST Number',
-                  hint: '22AAAAA0000A1Z5',
-                  controller: _controllers['gstNumber']!,
-                ),
-                const SizedBox(height: 20),
-
-                _buildInputField(
-                  label: 'Address',
-                  hint: 'Enter complete address',
-                  controller: _controllers['address']!,
-                  isRequired: true,
-                  isTextArea: true,
-                ),
-                const SizedBox(height: 20),
-
-                _buildDropdownField(
-                  label: 'Area',
-                  items: _areas,
-                  selectedId: _selectedAreaId,
-                  isRequired: true,
-                  dropdownKey: _areaDropdownKey,
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedAreaId = value;
-                      print("Selected Area ID: $_selectedAreaId");
-                    });
-                  },
-                ),
-                const SizedBox(height: 20),
-
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildInputField(
-                        label: 'Mobile Number 1',
-                        hint: '9876543210',
-                        controller: _controllers['mobile1']!,
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildInputField(
+                        label: 'Customer Name',
+                        hint: 'Enter customer full name',
+                        controller: _controllers['customerName']!,
+                        focusNode: _customerNameFocusNode,
                         isRequired: true,
+                      ),
+                      const SizedBox(height: 20),
+
+                      _buildInputField(
+                        label: 'GST Number',
+                        hint: '22AAAAA0000A1Z5',
+                        controller: _controllers['gstNumber']!,
+                      ),
+                      const SizedBox(height: 20),
+
+                      _buildInputField(
+                        label: 'Address',
+                        hint: 'Enter complete address',
+                        controller: _controllers['address']!,
+                        isRequired: true,
+                        isTextArea: true,
+                      ),
+                      const SizedBox(height: 20),
+
+                      _buildDropdownField(
+                        label: 'Area',
+                        items: _areas,
+                        selectedId: _selectedAreaId,
+                        isRequired: true,
+                        dropdownKey: _areaDropdownKey,
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedAreaId = value;
+                            print("Selected Area ID: $_selectedAreaId");
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 20),
+
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildInputField(
+                              label: 'Mobile Number 1',
+                              hint: '9876543210',
+                              controller: _controllers['mobile1']!,
+                              isRequired: true,
+                              keyboardType: TextInputType.phone,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _buildInputField(
+                              label: 'Mobile Number 2',
+                              hint: '9876543210',
+                              controller: _controllers['mobile2']!,
+                              keyboardType: TextInputType.phone,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+
+                      _buildInputField(
+                        label: 'WhatsApp Number',
+                        hint: '9876543210',
+                        controller: _controllers['whatsapp']!,
                         keyboardType: TextInputType.phone,
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _buildInputField(
-                        label: 'Mobile Number 2',
-                        hint: '9876543210',
-                        controller: _controllers['mobile2']!,
-                        keyboardType: TextInputType.phone,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
+                      const SizedBox(height: 20),
 
-                _buildInputField(
-                  label: 'WhatsApp Number',
-                  hint: '9876543210',
-                  controller: _controllers['whatsapp']!,
-                  keyboardType: TextInputType.phone,
-                ),
-                const SizedBox(height: 20),
-
-                _buildDropdownField(
-                  label: 'Referred By Name',
-                  items: _refers,
-                  selectedId: _selectedReferId,
-                  isRequired: true,
-                  dropdownKey: _referDropdownKey,
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedReferId = value;
-                      print("Selected Refer ID: $_selectedReferId");
-                    });
-                  },
-                ),
-                const SizedBox(height: 20),
-
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildDropdownField(
-                        label: 'Incharge',
-                        items: _incharges,
-                        selectedId: _selectedInchargeId,
+                      _buildDropdownField(
+                        label: 'Referred By Name',
+                        items: _refers,
+                        selectedId: _selectedReferId,
                         isRequired: true,
-                        dropdownKey: _inchargeDropdownKey,
+                        dropdownKey: _referDropdownKey,
                         onChanged: (value) {
                           setState(() {
-                            _selectedInchargeId = value;
-                            print("Selected Incharge ID: $_selectedInchargeId");
+                            _selectedReferId = value;
+                            print("Selected Refer ID: $_selectedReferId");
                           });
                         },
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _buildDropdownField(
-                        label: 'Agent',
-                        items: _agents,
-                        selectedId: _selectedAgentId,
-                        isRequired: true,
-                        dropdownKey: _agentDropdownKey,
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedAgentId = value;
-                            print("Selected Agent ID: $_selectedAgentId");
-                          });
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
+                      const SizedBox(height: 20),
 
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildDropdownField(
-                        label: 'Sales Person',
-                        items: _salesPersons,
-                        selectedId: _selectedSalesPersonId,
-                        isRequired: true,
-                        dropdownKey: _salesPersonDropdownKey,
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedSalesPersonId = value;
-                            print("Selected Sales Person ID: $_selectedSalesPersonId");
-                          });
-                        },
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildDropdownField(
+                              label: 'Incharge',
+                              items: _incharges,
+                              selectedId: _selectedInchargeId,
+                              isRequired: true,
+                              dropdownKey: _inchargeDropdownKey,
+                              onChanged: (value) {
+                                setState(() {
+                                  _selectedInchargeId = value;
+                                  print(
+                                    "Selected Incharge ID: $_selectedInchargeId",
+                                  );
+                                });
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _buildDropdownField(
+                              label: 'Agent',
+                              items: _agents,
+                              selectedId: _selectedAgentId,
+                              isRequired: true,
+                              dropdownKey: _agentDropdownKey,
+                              onChanged: (value) {
+                                setState(() {
+                                  _selectedAgentId = value;
+                                  print("Selected Agent ID: $_selectedAgentId");
+                                });
+                              },
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _buildDropdownField(
-                        label: 'Occupation',
-                        items: _occupations,
-                        selectedId: _selectedOccupationId,
-                        isRequired: false,
-                        dropdownKey: _occupationDropdownKey,
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedOccupationId = value;
-                            print("Selected Occupation ID: $_selectedOccupationId");
-                          });
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 30),
+                      const SizedBox(height: 20),
 
-                // File upload section (uncomment and implement if needed)
-                // Row(
-                //   children: [
-                //     Expanded(
-                //       child: _buildUploadArea(
-                //         label: 'Aadhar Upload',
-                //         description: 'Click to upload Aadhar document',
-                //         fileTypes: 'JPG, PNG up to 5MB',
-                //         onTap: _pickAadharFile,
-                //         fileName: _aadharFileName,
-                //         fileUrl: widget.customer?.aadharurl,
-                //       ),
-                //     ),
-                //     const SizedBox(width: 16),
-                //     Expanded(
-                //       child: _buildUploadArea(
-                //         label: 'Photo Upload',
-                //         description: 'Click to upload customer photo',
-                //         fileTypes: 'JPG, PNG up to 5MB',
-                //         onTap: _pickPhotoFile,
-                //         fileName: _photoFileName,
-                //         fileUrl: widget.customer?.photourl,
-                //       ),
-                //     ),
-                //   ],
-                // ),
-                // const SizedBox(height: 30),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildDropdownField(
+                              label: 'Sales Person',
+                              items: _salesPersons,
+                              selectedId: _selectedSalesPersonId,
+                              isRequired: true,
+                              dropdownKey: _salesPersonDropdownKey,
+                              onChanged: (value) {
+                                setState(() {
+                                  _selectedSalesPersonId = value;
+                                  print(
+                                    "Selected Sales Person ID: $_selectedSalesPersonId",
+                                  );
+                                });
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _buildDropdownField(
+                              label: 'Occupation',
+                              items: _occupations,
+                              selectedId: _selectedOccupationId,
+                              isRequired: false,
+                              dropdownKey: _occupationDropdownKey,
+                              onChanged: (value) {
+                                setState(() {
+                                  _selectedOccupationId = value;
+                                  print(
+                                    "Selected Occupation ID: $_selectedOccupationId",
+                                  );
+                                });
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 30),
 
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    OutlinedButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                        side: BorderSide(color: Colors.grey[300]!),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      // File upload section (uncomment and implement if needed)
+                      // Row(
+                      //   children: [
+                      //     Expanded(
+                      //       child: _buildUploadArea(
+                      //         label: 'Aadhar Upload',
+                      //         description: 'Click to upload Aadhar document',
+                      //         fileTypes: 'JPG, PNG up to 5MB',
+                      //         onTap: _pickAadharFile,
+                      //         fileName: _aadharFileName,
+                      //         fileUrl: widget.customer?.aadharurl,
+                      //       ),
+                      //     ),
+                      //     const SizedBox(width: 16),
+                      //     Expanded(
+                      //       child: _buildUploadArea(
+                      //         label: 'Photo Upload',
+                      //         description: 'Click to upload customer photo',
+                      //         fileTypes: 'JPG, PNG up to 5MB',
+                      //         onTap: _pickPhotoFile,
+                      //         fileName: _photoFileName,
+                      //         fileUrl: widget.customer?.photourl,
+                      //       ),
+                      //     ),
+                      //   ],
+                      // ),
+                      // const SizedBox(height: 30),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          OutlinedButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 32,
+                                vertical: 12,
+                              ),
+                              side: BorderSide(color: Colors.grey[300]!),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: const Text(
+                              'Cancel',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xFF4A5568),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          ElevatedButton(
+                            onPressed: _submitForm,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF4318D1),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 32,
+                                vertical: 12,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              elevation: 2,
+                              shadowColor: const Color(
+                                0xFF4318D1,
+                              ).withOpacity(0.2),
+                            ),
+                            child: Text(
+                              _isEditMode
+                                  ? 'Update Customer'
+                                  : 'Create Customer',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      child: const Text('Cancel', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Color(0xFF4A5568))),
-                    ),
-                    const SizedBox(width: 16),
-                    ElevatedButton(
-                      onPressed: _submitForm,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF4318D1),
-                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        elevation: 2,
-                        shadowColor: const Color(0xFF4318D1).withOpacity(0.2),
-                      ),
-                      child: Text(
-                        _isEditMode ? 'Update Customer' : 'Create Customer',
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.white),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ],
+              ),
             ),
-          ),
-        ),
-      ),
     );
   }
 }
-
 
 // import 'dart:convert';
 // import 'dart:typed_data';

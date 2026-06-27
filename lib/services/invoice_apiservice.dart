@@ -281,9 +281,9 @@ class InvoiceModel {
 class InvoiceApiService {
   // Get next invoice number
   Future<String> getNextInvoiceNumber(
-      BuildContext context,
-      String companyid,
-      ) async {
+    BuildContext context,
+    String companyid,
+  ) async {
     try {
       final url = Uri.parse('$baseUrl/get_next_invoice_no.php');
       final response = await http.post(
@@ -456,23 +456,24 @@ class InvoiceApiService {
 
   // Save invoice - WITHOUT DISCOUNT
   Future<String> saveInvoice(
-      BuildContext context,
-      String invoiceNo,
-      String customerId,
-      String date,
-      List<Map<String, dynamic>> items,
-      String remarks,
-      String taxPercentage,
-      String subtotal,
-      String grandTotal,
-      int packingAmount,
-      ) async {
+    BuildContext context,
+    String invoiceNo,
+    String customerId,
+    String date,
+    List<Map<String, dynamic>> items,
+    String remarks,
+    String taxPercentage,
+    String subtotal,
+    String grandTotal,
+    int packingAmount,
+  ) async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       final companyid = prefs.getString('companyid') ?? '';
       final addedby = prefs.getString('id') ?? '';
 
       final url = Uri.parse("$baseUrl/save_invoice1.php");
+      // final url = Uri.parse("$baseUrl/test_saveinvoice.php");
 
       var data = {
         "invoiceno": invoiceNo,
@@ -485,6 +486,7 @@ class InvoiceApiService {
         "subtotal": subtotal,
         "grandtotal": grandTotal,
         "addedby": addedby,
+        "status": 'Draft',
         "packing_amount": packingAmount,
       };
 
@@ -525,18 +527,18 @@ class InvoiceApiService {
 
   // Update invoice - WITHOUT DISCOUNT
   Future<String> updateInvoice(
-      BuildContext context,
-      String invoiceId,
-      String invoiceNo,
-      String customerId,
-      String date,
-      List<Map<String, dynamic>> items,
-      String remarks,
-      String taxPercentage,
-      String subtotal,
-      String grandTotal,
-      int packingAmount,
-      ) async {
+    BuildContext context,
+    String invoiceId,
+    String invoiceNo,
+    String customerId,
+    String date,
+    List<Map<String, dynamic>> items,
+    String remarks,
+    String taxPercentage,
+    String subtotal,
+    String grandTotal,
+    int packingAmount,
+  ) async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       final companyid = prefs.getString('companyid') ?? '';
@@ -619,9 +621,9 @@ class InvoiceApiService {
 
   // Get invoice details
   Future<List<Map<String, dynamic>>> getInvoiceDetails(
-      BuildContext context,
-      String invoiceId,
-      ) async {
+    BuildContext context,
+    String invoiceId,
+  ) async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       final companyid = prefs.getString('companyid') ?? '';
@@ -684,10 +686,10 @@ class InvoiceApiService {
 
   // Update invoice status
   Future<String> updateInvoiceStatus(
-      BuildContext context,
-      String invoiceId,
-      String status,
-      ) async {
+    BuildContext context,
+    String invoiceId,
+    String status,
+  ) async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       final companyid = prefs.getString('companyid') ?? '';
@@ -721,10 +723,6 @@ class InvoiceApiService {
 
 // Singleton instance
 InvoiceApiService invoiceApiService() => InvoiceApiService();
-
-
-
-
 
 // import 'dart:convert';
 // import 'package:flutter/material.dart';

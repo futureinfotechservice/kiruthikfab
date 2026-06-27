@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:kiruthikfab/screens/product_based_sales_report.dart';
-
 import 'package:kiruthikfab/screens/product_master_screen.dart';
 import 'package:kiruthikfab/screens/refer_master_screen.dart';
 import 'package:kiruthikfab/screens/salesperson_master_screen.dart';
@@ -11,7 +10,6 @@ import 'package:kiruthikfab/screens/source_followup_report.dart';
 import 'package:kiruthikfab/screens/source_list_screen.dart';
 import 'package:kiruthikfab/screens/unit_master_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 
 import 'agent_master_screen.dart';
 import 'area_master_screen.dart';
@@ -148,30 +146,32 @@ class _CustomerManagementAppState extends State<CustomerManagementApp> {
 
       prefs.clear();
       id = (prefs.remove('id')).toString();
-      print('idempty' + id);
+      print('idempty$id');
       username = (prefs.remove('username')).toString();
-      print('username' + username);
+      print('username$username');
       password = (prefs.remove('password')).toString();
-      print('password' + password);
+      print('password$password');
       email = (prefs.remove('email')).toString();
-      print('email' + email);
+      print('email$email');
       user_type = (prefs.remove('user_type')).toString();
-      print('type' + user_type);
+      print('type$user_type');
       companyid = (prefs.remove('companyid')).toString();
-      print('companyid' + companyid);
+      print('companyid$companyid');
       activestatus = (prefs.remove('activestatus')).toString();
-      print('activestatus' + activestatus);
+      print('activestatus$activestatus');
 
       companyname = (prefs.remove('companyname')).toString();
-      print('companyname' + companyname);
+      print('companyname$companyname');
 
       logourl = (prefs.remove('logourl')).toString();
-      print('logourl' + logourl);
+      print('logourl$logourl');
     });
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const LoginScreen()),
-    );
+    if (mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+      );
+    }
   }
 
   // Method to perform logout
@@ -753,10 +753,10 @@ class MasterSectionScreen extends StatefulWidget {
   final ValueChanged<int>? onSubIndexChanged;
 
   const MasterSectionScreen({
-    Key? key,
+    super.key,
     this.initialSubIndex = 0,
     this.onSubIndexChanged,
-  }) : super(key: key);
+  });
 
   @override
   State<MasterSectionScreen> createState() => _MasterSectionScreenState();
@@ -891,10 +891,10 @@ class EntrySectionScreen extends StatefulWidget {
   final ValueChanged<int>? onSubIndexChanged;
 
   const EntrySectionScreen({
-    Key? key,
+    super.key,
     this.initialSubIndex = 0,
     this.onSubIndexChanged,
-  }) : super(key: key);
+  });
 
   @override
   State<EntrySectionScreen> createState() => _EntrySectionScreenState();
@@ -1008,10 +1008,10 @@ class ReportSectionScreen extends StatefulWidget {
   final ValueChanged<int>? onSubIndexChanged;
 
   const ReportSectionScreen({
-    Key? key,
+    super.key,
     this.initialSubIndex = 0,
     this.onSubIndexChanged,
-  }) : super(key: key);
+  });
 
   @override
   State<ReportSectionScreen> createState() => _ReportSectionScreenState();

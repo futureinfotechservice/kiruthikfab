@@ -1,13 +1,13 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../models/UnitMasterModel.dart';
 import 'config.dart';
 
 class UnitApiService {
-
   Future<String> insertUnit({
     required BuildContext context,
     required String unitname,
@@ -113,16 +113,17 @@ class UnitApiService {
       print("Fetch Response Body: ${response.body}");
 
       if (response.statusCode == 200) {
-        if (response.body.trim() == "No Data Found." || response.body.trim().isEmpty) {
+        if (response.body.trim() == "No Data Found." ||
+            response.body.trim().isEmpty) {
           return [];
         }
 
         try {
           List<dynamic> items = json.decode(response.body);
           print("Decoded items count: ${items.length}");
-          List<UnitMasterModel> units = items.map((item) =>
-              UnitMasterModel.fromJson(item)
-          ).toList();
+          List<UnitMasterModel> units = items
+              .map((item) => UnitMasterModel.fromJson(item))
+              .toList();
           return units;
         } catch (e) {
           print("JSON decode error: $e");
@@ -152,10 +153,7 @@ class UnitApiService {
       var response = await http.post(
         url,
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: {
-          'unitid': unitId,
-          'companyid': companyid,
-        },
+        body: {'unitid': unitId, 'companyid': companyid},
       );
 
       print("Delete Response: ${response.body}");

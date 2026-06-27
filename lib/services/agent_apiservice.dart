@@ -1,13 +1,13 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../models/AgentMasterModel.dart';
 import 'config.dart';
 
 class AgentApiService {
-
   Future<String> insertAgent({
     required BuildContext context,
     required String agentname,
@@ -113,16 +113,17 @@ class AgentApiService {
       print("Fetch Response Body: ${response.body}");
 
       if (response.statusCode == 200) {
-        if (response.body.trim() == "No Data Found." || response.body.trim().isEmpty) {
+        if (response.body.trim() == "No Data Found." ||
+            response.body.trim().isEmpty) {
           return [];
         }
 
         try {
           List<dynamic> items = json.decode(response.body);
           print("Decoded items count: ${items.length}");
-          List<AgentMasterModel> agents = items.map((item) =>
-              AgentMasterModel.fromJson(item)
-          ).toList();
+          List<AgentMasterModel> agents = items
+              .map((item) => AgentMasterModel.fromJson(item))
+              .toList();
           return agents;
         } catch (e) {
           print("JSON decode error: $e");
@@ -152,10 +153,7 @@ class AgentApiService {
       var response = await http.post(
         url,
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: {
-          'agentid': agentId,
-          'companyid': companyid,
-        },
+        body: {'agentid': agentId, 'companyid': companyid},
       );
 
       print("Delete Response: ${response.body}");

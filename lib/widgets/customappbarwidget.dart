@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
-class CustomAppBarWidget extends StatelessWidget implements PreferredSizeWidget {
+class CustomAppBarWidget extends StatelessWidget
+    implements PreferredSizeWidget {
   final String title;
   final String? subtitleDate;
   final String? initials;
@@ -9,13 +9,13 @@ class CustomAppBarWidget extends StatelessWidget implements PreferredSizeWidget 
   final List<Widget>? actions; // Add actions parameter
 
   const CustomAppBarWidget({
-    Key? key,
+    super.key,
     required this.title,
     this.subtitleDate,
     this.initials,
     this.showBackButton = false,
     this.actions, // Add this
-  }) : super(key: key);
+  });
 
   bool _isMobile(BuildContext context) {
     return MediaQuery.of(context).size.width < 600;
@@ -32,10 +32,13 @@ class CustomAppBarWidget extends StatelessWidget implements PreferredSizeWidget 
       automaticallyImplyLeading: false,
       leading: displayBackButton
           ? IconButton(
-        icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black),
-        onPressed: () => Navigator.of(context).pop(),
-        tooltip: 'Back',
-      )
+              icon: const Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: Colors.black,
+              ),
+              onPressed: () => Navigator.of(context).pop(),
+              tooltip: 'Back',
+            )
           : null,
       title: Text(
         title,
@@ -59,7 +62,7 @@ class CustomAppBarWidget extends StatelessWidget implements PreferredSizeWidget 
                     color: Colors.black,
                     fontWeight: FontWeight.bold,
                   ),
-                )
+                ),
               ],
             ),
           ),

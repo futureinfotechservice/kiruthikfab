@@ -1,13 +1,13 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../models/productmaster_model.dart';
 import 'config.dart';
 
 class ProductApiService {
-
   Future<String> insertProduct({
     required BuildContext context,
     required String productname,
@@ -113,16 +113,17 @@ class ProductApiService {
       print("Fetch Response Body: ${response.body}");
 
       if (response.statusCode == 200) {
-        if (response.body.trim() == "No Data Found." || response.body.trim().isEmpty) {
+        if (response.body.trim() == "No Data Found." ||
+            response.body.trim().isEmpty) {
           return [];
         }
 
         try {
           List<dynamic> items = json.decode(response.body);
           print("Decoded items count: ${items.length}");
-          List<ProductMasterModel> products = items.map((item) =>
-              ProductMasterModel.fromJson(item)
-          ).toList();
+          List<ProductMasterModel> products = items
+              .map((item) => ProductMasterModel.fromJson(item))
+              .toList();
           return products;
         } catch (e) {
           print("JSON decode error: $e");
@@ -152,10 +153,7 @@ class ProductApiService {
       var response = await http.post(
         url,
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: {
-          'productid': productId,
-          'companyid': companyid,
-        },
+        body: {'productid': productId, 'companyid': companyid},
       );
 
       print("Delete Response: ${response.body}");

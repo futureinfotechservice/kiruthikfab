@@ -1,13 +1,13 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../models/OccupationMasterModel.dart';
 import 'config.dart';
 
 class OccupationApiService {
-
   Future<String> insertOccupation({
     required BuildContext context,
     required String occupationname,
@@ -89,7 +89,9 @@ class OccupationApiService {
     }
   }
 
-  Future<List<OccupationMasterModel>> fetchOccupations(BuildContext context) async {
+  Future<List<OccupationMasterModel>> fetchOccupations(
+    BuildContext context,
+  ) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final companyid = prefs.getString('companyid') ?? '';
 
@@ -113,16 +115,17 @@ class OccupationApiService {
       print("Fetch Response Body: ${response.body}");
 
       if (response.statusCode == 200) {
-        if (response.body.trim() == "No Data Found." || response.body.trim().isEmpty) {
+        if (response.body.trim() == "No Data Found." ||
+            response.body.trim().isEmpty) {
           return [];
         }
 
         try {
           List<dynamic> items = json.decode(response.body);
           print("Decoded items count: ${items.length}");
-          List<OccupationMasterModel> occupations = items.map((item) =>
-              OccupationMasterModel.fromJson(item)
-          ).toList();
+          List<OccupationMasterModel> occupations = items
+              .map((item) => OccupationMasterModel.fromJson(item))
+              .toList();
           return occupations;
         } catch (e) {
           print("JSON decode error: $e");
@@ -138,7 +141,10 @@ class OccupationApiService {
     }
   }
 
-  Future<String> deleteOccupation(BuildContext context, String occupationId) async {
+  Future<String> deleteOccupation(
+    BuildContext context,
+    String occupationId,
+  ) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final companyid = prefs.getString('companyid') ?? '';
 
@@ -152,10 +158,7 @@ class OccupationApiService {
       var response = await http.post(
         url,
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: {
-          'occupationid': occupationId,
-          'companyid': companyid,
-        },
+        body: {'occupationid': occupationId, 'companyid': companyid},
       );
 
       print("Delete Response: ${response.body}");

@@ -1,5 +1,3 @@
-
-import 'package:cached_network_image/cached_network_image.dart';
 // import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -8,7 +6,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../widgets/loginscreenwidget.dart';
 import '../../services/login_apiservice.dart';
-
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -22,11 +19,10 @@ class _LoginScreenState extends State<LoginScreen> {
   final usernameController = TextEditingController();
   final passwordController = TextEditingController();
   bool obscurePassword = true;
-  String? logourlvalue ;
+  String? logourlvalue;
 
   String? companynamevalue;
   String? companyidvalue;
-
 
   Future<void> loadlogo() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -37,56 +33,54 @@ class _LoginScreenState extends State<LoginScreen> {
     final password = prefs.getString('password') ?? '';
     final email = prefs.getString('email') ?? '';
 
-
-
-if(companyid != ''){
-    if (kIsWeb) {
-      ApiService().login(
+    if (companyid != '') {
+      if (kIsWeb) {
+        ApiService().login(
           context,
           username.toString(),
           password.toString(),
           email.toString(),
           '',
-          '1');
-      print("Unsupported platform");
-    } else if (defaultTargetPlatform ==
-        TargetPlatform.android) {
-      // final deviceInfo = DeviceInfoPlugin();
-      // AndroidDeviceInfo androidInfo =
-      //     await deviceInfo.androidInfo;
-      // print(
-      //     "Android Device ID: ${androidInfo.androidId}");
-      ApiService().login(
+          '1',
+        );
+        print("Unsupported platform");
+      } else if (defaultTargetPlatform == TargetPlatform.android) {
+        // final deviceInfo = DeviceInfoPlugin();
+        // AndroidDeviceInfo androidInfo =
+        //     await deviceInfo.androidInfo;
+        // print(
+        //     "Android Device ID: ${androidInfo.androidId}");
+        ApiService().login(
           context,
           username.toString(),
           password.toString(),
           email.toString(),
           // "${androidInfo.androidId}",
           "",
-          "0");
-    } else if (defaultTargetPlatform ==
-        TargetPlatform.iOS) {
-      // final deviceInfo = DeviceInfoPlugin();
-      // IosDeviceInfo iosInfo =
-      //     await deviceInfo.iosInfo;
-      // print(
-      //     "iOS UUID: ${iosInfo.identifierForVendor}");
-      ApiService().login(
+          "0",
+        );
+      } else if (defaultTargetPlatform == TargetPlatform.iOS) {
+        // final deviceInfo = DeviceInfoPlugin();
+        // IosDeviceInfo iosInfo =
+        //     await deviceInfo.iosInfo;
+        // print(
+        //     "iOS UUID: ${iosInfo.identifierForVendor}");
+        ApiService().login(
           context,
           username.toString(),
           password.toString(),
           email.toString(),
           // "${iosInfo.identifierForVendor}",
           "",
-          "0");
-    }}
+          "0",
+        );
+      }
+    }
     setState(() {
       logourlvalue = logourl.toString();
       companynamevalue = companyname.toString();
       companyidvalue = companyid.toString();
     });
-
-
   }
 
   @override
@@ -121,39 +115,42 @@ if(companyid != ''){
               ),
               const SizedBox(height: 10),
 
-          CircleAvatar(
-            radius: 80,
-            backgroundColor: Colors.transparent,
-            child: ClipOval(
-              child: Image.network(
-                "https://futureinfotechservices.in/financeapi/getlogo.php?companyid="+companyidvalue.toString(),
-                fit: BoxFit.cover,
-                width: 160,
-                height: 160,
-                errorBuilder: (context, error, stackTrace) {
-                  return Image.asset(
-                    'assets/Homelogos/fItlogo.png',
+              CircleAvatar(
+                radius: 80,
+                backgroundColor: Colors.transparent,
+                child: ClipOval(
+                  child: Image.network(
+                    "https://futureinfotechservices.in/financeapi/getlogo.php?companyid=" +
+                        companyidvalue.toString(),
                     fit: BoxFit.cover,
                     width: 160,
                     height: 160,
-                  );
-                },
+                    errorBuilder: (context, error, stackTrace) {
+                      return Image.asset(
+                        'assets/Homelogos/fItlogo.png',
+                        fit: BoxFit.cover,
+                        width: 160,
+                        height: 160,
+                      );
+                    },
+                  ),
+                ),
               ),
-            ),
-          ),
-
 
               const SizedBox(height: 10),
               ShaderMask(
-                shaderCallback: (bounds) => LinearGradient(
-                  colors: [Colors.orange, Colors.red],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ).createShader(
-                    Rect.fromLTWH(0, 0, bounds.width, bounds.height)),
+                shaderCallback: (bounds) =>
+                    LinearGradient(
+                      colors: [Colors.orange, Colors.red],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ).createShader(
+                      Rect.fromLTWH(0, 0, bounds.width, bounds.height),
+                    ),
                 child: Text(
                   (companynamevalue != null && companynamevalue!.isNotEmpty)
-                      ? companynamevalue!.toUpperCase().toString():'FUTURE INFOTECH',
+                      ? companynamevalue!.toUpperCase().toString()
+                      : 'FUTURE INFOTECH',
                   style: GoogleFonts.poppins(
                     fontSize: 22.0,
                     fontWeight: FontWeight.bold,
@@ -190,10 +187,7 @@ if(companyid != ''){
                       const SizedBox(height: 6),
                       const Text(
                         'Login to access your account',
-                        style: TextStyle(
-                          color: Colors.black54,
-                          fontSize: 14,
-                        ),
+                        style: TextStyle(color: Colors.black54, fontSize: 14),
                       ),
                       const SizedBox(height: 20),
 
@@ -240,12 +234,13 @@ if(companyid != ''){
                                 passwordController.text != "") {
                               if (kIsWeb) {
                                 ApiService().login(
-                                 context,
-                                    usernameController.text.toString(),
-                                    passwordController.text.toString(),
-                                    emailController.text.toString(),
-                                    '',
-                                    '1');
+                                  context,
+                                  usernameController.text.toString(),
+                                  passwordController.text.toString(),
+                                  emailController.text.toString(),
+                                  '',
+                                  '1',
+                                );
                                 print("Unsupported platform");
                               } else if (defaultTargetPlatform ==
                                   TargetPlatform.android) {
@@ -256,12 +251,13 @@ if(companyid != ''){
                                 //     "Android Device ID: ${androidInfo.androidId}");
                                 ApiService().login(
                                   context,
-                                    usernameController.text.toString(),
-                                    passwordController.text.toString(),
-                                    emailController.text.toString(),
-                                    // "${androidInfo.androidId}",
-                                    "",
-                                    "0");
+                                  usernameController.text.toString(),
+                                  passwordController.text.toString(),
+                                  emailController.text.toString(),
+                                  // "${androidInfo.androidId}",
+                                  "",
+                                  "0",
+                                );
                               } else if (defaultTargetPlatform ==
                                   TargetPlatform.iOS) {
                                 // final deviceInfo = DeviceInfoPlugin();
@@ -271,12 +267,13 @@ if(companyid != ''){
                                 //     "iOS UUID: ${iosInfo.identifierForVendor}");
                                 ApiService().login(
                                   context,
-                                    usernameController.text.toString(),
-                                    passwordController.text.toString(),
-                                    emailController.text.toString(),
-                                    // "${iosInfo.identifierForVendor}",
-                                    "",
-                                    "0");
+                                  usernameController.text.toString(),
+                                  passwordController.text.toString(),
+                                  emailController.text.toString(),
+                                  // "${iosInfo.identifierForVendor}",
+                                  "",
+                                  "0",
+                                );
                               }
                               // Add login logic here
                             }
@@ -290,7 +287,7 @@ if(companyid != ''){
                             ),
                           ),
                         ),
-                      )
+                      ),
                     ],
                   ),
                 ),
@@ -302,6 +299,3 @@ if(companyid != ''){
     );
   }
 }
-
-
-

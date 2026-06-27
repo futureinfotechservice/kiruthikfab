@@ -1,13 +1,13 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../models/InchargeMasterModel.dart';
 import 'config.dart';
 
 class InchargeApiService {
-
   Future<String> insertIncharge({
     required BuildContext context,
     required String inchargetname,
@@ -113,16 +113,17 @@ class InchargeApiService {
       print("Fetch Response Body: ${response.body}");
 
       if (response.statusCode == 200) {
-        if (response.body.trim() == "No Data Found." || response.body.trim().isEmpty) {
+        if (response.body.trim() == "No Data Found." ||
+            response.body.trim().isEmpty) {
           return [];
         }
 
         try {
           List<dynamic> items = json.decode(response.body);
           print("Decoded items count: ${items.length}");
-          List<InchargeMasterModel> incharges = items.map((item) =>
-              InchargeMasterModel.fromJson(item)
-          ).toList();
+          List<InchargeMasterModel> incharges = items
+              .map((item) => InchargeMasterModel.fromJson(item))
+              .toList();
           return incharges;
         } catch (e) {
           print("JSON decode error: $e");
@@ -152,10 +153,7 @@ class InchargeApiService {
       var response = await http.post(
         url,
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: {
-          'inchargeid': inchargeId,
-          'companyid': companyid,
-        },
+        body: {'inchargeid': inchargeId, 'companyid': companyid},
       );
 
       print("Delete Response: ${response.body}");

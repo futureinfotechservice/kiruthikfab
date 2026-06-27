@@ -1,13 +1,13 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../models/modelmaster_model.dart';
 import 'config.dart';
 
 class ModelApiService {
-
   Future<String> insertModel({
     required BuildContext context,
     required String modelname,
@@ -113,16 +113,17 @@ class ModelApiService {
       print("Fetch Response Body: ${response.body}");
 
       if (response.statusCode == 200) {
-        if (response.body.trim() == "No Data Found." || response.body.trim().isEmpty) {
+        if (response.body.trim() == "No Data Found." ||
+            response.body.trim().isEmpty) {
           return [];
         }
 
         try {
           List<dynamic> items = json.decode(response.body);
           print("Decoded items count: ${items.length}");
-          List<ModelMasterModel> models = items.map((item) =>
-              ModelMasterModel.fromJson(item)
-          ).toList();
+          List<ModelMasterModel> models = items
+              .map((item) => ModelMasterModel.fromJson(item))
+              .toList();
           return models;
         } catch (e) {
           print("JSON decode error: $e");
@@ -152,10 +153,7 @@ class ModelApiService {
       var response = await http.post(
         url,
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: {
-          'modelid': modelId,
-          'companyid': companyid,
-        },
+        body: {'modelid': modelId, 'companyid': companyid},
       );
 
       print("Delete Response: ${response.body}");

@@ -44,9 +44,9 @@ class _SearchableTextBoxState extends State<SearchableTextBox> {
   Timer? _searchTimer;
 
   // New variables for scan detection
-  String _previousText = '';
-  DateTime _lastInputTime = DateTime.now();
-  bool _isScanning = false;
+  // String _previousText = '';
+  // DateTime _lastInputTime = DateTime.now();
+  // bool _isScanning = false;
 
   @override
   void initState() {
@@ -88,37 +88,30 @@ class _SearchableTextBoxState extends State<SearchableTextBox> {
           child: Material(
             elevation: 4,
             child: Container(
-              constraints: BoxConstraints(
-                maxHeight: 200,
-              ),
+              constraints: BoxConstraints(maxHeight: 200),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(8),
-                boxShadow: [
-                  BoxShadow(
-                    blurRadius: 4,
-                    color: Colors.black26,
-                  ),
-                ],
+                boxShadow: [BoxShadow(blurRadius: 4, color: Colors.black26)],
               ),
               child: _filteredItems.isEmpty
                   ? Padding(
-                padding: EdgeInsets.all(16),
-                child: Text('No items found'),
-              )
+                      padding: EdgeInsets.all(16),
+                      child: Text('No items found'),
+                    )
                   : ListView.builder(
-                shrinkWrap: true,
-                itemCount: _filteredItems.length,
-                itemBuilder: (context, index) {
-                  final item = _filteredItems[index];
-                  return ListTile(
-                    title: Text(item),
-                    onTap: () {
-                      _selectItem(item);
-                    },
-                  );
-                },
-              ),
+                      shrinkWrap: true,
+                      itemCount: _filteredItems.length,
+                      itemBuilder: (context, index) {
+                        final item = _filteredItems[index];
+                        return ListTile(
+                          title: Text(item),
+                          onTap: () {
+                            _selectItem(item);
+                          },
+                        );
+                      },
+                    ),
             ),
           ),
         ),
@@ -133,22 +126,22 @@ class _SearchableTextBoxState extends State<SearchableTextBox> {
     _overlayEntry = null;
   }
 
-  void _filterItems(String query) {
-    setState(() {
-      if (query.isEmpty) {
-        _filteredItems = widget.items;
-      } else {
-        _filteredItems = widget.items
-            .where((item) =>
-            item.toLowerCase().contains(query.toLowerCase()))
-            .toList();
-      }
-    });
-
-    if (_overlayEntry != null) {
-      _overlayEntry!.markNeedsBuild();
-    }
-  }
+  // void _filterItems(String query) {
+  //   setState(() {
+  //     if (query.isEmpty) {
+  //       _filteredItems = widget.items;
+  //     } else {
+  //       _filteredItems = widget.items
+  //           .where((item) =>
+  //           item.toLowerCase().contains(query.toLowerCase()))
+  //           .toList();
+  //     }
+  //   });
+  //
+  //   if (_overlayEntry != null) {
+  //     _overlayEntry!.markNeedsBuild();
+  //   }
+  // }
 
   void _selectItem(String item) {
     _controller.text = item;
@@ -171,109 +164,109 @@ class _SearchableTextBoxState extends State<SearchableTextBox> {
     });
   }
 
-  void _detectScan(String currentText) {
-    final now = DateTime.now();
-    final timeDiff = now.difference(_lastInputTime).inMilliseconds;
+  // void _detectScan(String currentText) {
+  //   final now = DateTime.now();
+  //   final timeDiff = now.difference(_lastInputTime).inMilliseconds;
+  //
+  //   // Detect rapid input (typical of barcode scanners)
+  //   if (currentText.length > _previousText.length) {
+  //     final newChars = currentText.length - _previousText.length;
+  //
+  //     // If multiple characters are added rapidly, it's likely a scan
+  //     if (newChars > 1 && timeDiff < 100) {
+  //       _isScanning = true;
+  //       print('Scan detected: $currentText');
+  //       _triggerAutoSubmit();
+  //     }
+  //     // If single characters are added very rapidly (faster than human typing)
+  //     else if (newChars == 1 && timeDiff < 50) {
+  //       _isScanning = true;
+  //       // Wait a bit to see if more characters come
+  //       _submitTimer?.cancel();
+  //       _submitTimer = Timer(Duration(milliseconds: 200), () {
+  //         if (_isScanning) {
+  //           print('Rapid input detected: $currentText');
+  //           _triggerAutoSubmit();
+  //         }
+  //       });
+  //     }
+  //   }
+  //
+  //   _previousText = currentText;
+  //   _lastInputTime = now;
+  // }
 
-    // Detect rapid input (typical of barcode scanners)
-    if (currentText.length > _previousText.length) {
-      final newChars = currentText.length - _previousText.length;
+  // void _onTextChanged(String text) {
+  //   // Cancel previous search timer
+  //   _searchTimer?.cancel();
+  //
+  //   // Start new search timer
+  //   _searchTimer = Timer(const Duration(milliseconds: 300), () {
+  //     _filterItems(text);
+  //   });
+  //
+  //   widget.onChanged?.call(text);
+  //
+  //   // Detect scanning patterns
+  //   _detectScan(text);
+  //
+  //   // Additional auto-submit triggers
+  //   if (_shouldAutoSubmit(text)) {
+  //     _triggerAutoSubmit();
+  //   }
+  // }
 
-      // If multiple characters are added rapidly, it's likely a scan
-      if (newChars > 1 && timeDiff < 100) {
-        _isScanning = true;
-        print('Scan detected: $currentText');
-        _triggerAutoSubmit();
-      }
-      // If single characters are added very rapidly (faster than human typing)
-      else if (newChars == 1 && timeDiff < 50) {
-        _isScanning = true;
-        // Wait a bit to see if more characters come
-        _submitTimer?.cancel();
-        _submitTimer = Timer(Duration(milliseconds: 200), () {
-          if (_isScanning) {
-            print('Rapid input detected: $currentText');
-            _triggerAutoSubmit();
-          }
-        });
-      }
-    }
+  // bool _shouldAutoSubmit(String text) {
+  //   // Auto-submit for common barcode patterns
+  //   if (text.length >= 8 && text.length <= 20) {
+  //     // Common barcode lengths
+  //     return true;
+  //   }
+  //
+  //   // Auto-submit if text matches specific patterns (numbers, uppercase, etc.)
+  //   if (_isLikelyBarcode(text)) {
+  //     return true;
+  //   }
+  //
+  //   // Auto-submit on Enter key equivalent (scanners often send Enter)
+  //   // This is handled in onFieldSubmitted
+  //
+  //   return false;
+  // }
 
-    _previousText = currentText;
-    _lastInputTime = now;
-  }
-
-  void _onTextChanged(String text) {
-    // Cancel previous search timer
-    _searchTimer?.cancel();
-
-    // Start new search timer
-    _searchTimer = Timer(const Duration(milliseconds: 300), () {
-      _filterItems(text);
-    });
-
-    widget.onChanged?.call(text);
-
-    // Detect scanning patterns
-    _detectScan(text);
-
-    // Additional auto-submit triggers
-    if (_shouldAutoSubmit(text)) {
-      _triggerAutoSubmit();
-    }
-  }
-
-  bool _shouldAutoSubmit(String text) {
-    // Auto-submit for common barcode patterns
-    if (text.length >= 8 && text.length <= 20) {
-      // Common barcode lengths
-      return true;
-    }
-
-    // Auto-submit if text matches specific patterns (numbers, uppercase, etc.)
-    if (_isLikelyBarcode(text)) {
-      return true;
-    }
-
-    // Auto-submit on Enter key equivalent (scanners often send Enter)
-    // This is handled in onFieldSubmitted
-
-    return false;
-  }
-
-  bool _isLikelyBarcode(String text) {
-    // Check if text looks like a barcode (mostly numbers, specific formats)
-    if (text.isEmpty) return false;
-
-    // Common barcode patterns
-    final numericRegex = RegExp(r'^\d+$');
-    final alphanumericRegex = RegExp(r'^[A-Z0-9]+$');
-
-    return numericRegex.hasMatch(text) ||
-        alphanumericRegex.hasMatch(text) ||
-        text.contains('-') || // UPC with dashes
-        text.length >= 10; // Long strings are likely scans
-  }
-
-  void _onFieldSubmitted(String value) {
-    _hideOverlay();
-    // Immediate submit on field submitted (when scanner sends Enter)
-    _submitTimer?.cancel();
-    if (widget.onAutoSubmit != null && value.isNotEmpty) {
-      widget.onAutoSubmit!();
-    }
-  }
-
-  void _onTap() {
-    if (!widget.isReadOnly) {
-      // Clear the field when tapped (convenient for multiple scans)
-      if (_controller.text.isNotEmpty) {
-        _controller.clear();
-        widget.onChanged?.call('');
-      }
-      _showOverlay();
-    }
-  }
+  // bool _isLikelyBarcode(String text) {
+  //   // Check if text looks like a barcode (mostly numbers, specific formats)
+  //   if (text.isEmpty) return false;
+  //
+  //   // Common barcode patterns
+  //   final numericRegex = RegExp(r'^\d+$');
+  //   final alphanumericRegex = RegExp(r'^[A-Z0-9]+$');
+  //
+  //   return numericRegex.hasMatch(text) ||
+  //       alphanumericRegex.hasMatch(text) ||
+  //       text.contains('-') || // UPC with dashes
+  //       text.length >= 10; // Long strings are likely scans
+  // }
+  //
+  // void _onFieldSubmitted(String value) {
+  //   _hideOverlay();
+  //   // Immediate submit on field submitted (when scanner sends Enter)
+  //   _submitTimer?.cancel();
+  //   if (widget.onAutoSubmit != null && value.isNotEmpty) {
+  //     widget.onAutoSubmit!();
+  //   }
+  // }
+  //
+  // void _onTap() {
+  //   if (!widget.isReadOnly) {
+  //     // Clear the field when tapped (convenient for multiple scans)
+  //     if (_controller.text.isNotEmpty) {
+  //       _controller.clear();
+  //       widget.onChanged?.call('');
+  //     }
+  //     _showOverlay();
+  //   }
+  // }
 
   @override
   void dispose() {
@@ -306,8 +299,9 @@ class _SearchableTextBoxState extends State<SearchableTextBox> {
             enabled: !widget.isReadOnly,
             decoration: (widget.decoration ?? InputDecoration()).copyWith(
               filled: true,
-              fillColor:
-              widget.isReadOnly ? const Color(0xFFF3F4F6) : const Color(0xFFF3F4F6),
+              fillColor: widget.isReadOnly
+                  ? const Color(0xFFF3F4F6)
+                  : const Color(0xFFF3F4F6),
               border: _border(),
               enabledBorder: _border(),
               focusedBorder: _border(),
@@ -324,11 +318,11 @@ class _SearchableTextBoxState extends State<SearchableTextBox> {
               ),
               suffixIcon: widget.showDropdownIcon
                   ? Icon(
-                Icons.arrow_drop_down,
-                color: widget.isReadOnly
-                    ? const Color(0xFF111827)
-                    : const Color(0xFF374151),
-              )
+                      Icons.arrow_drop_down,
+                      color: widget.isReadOnly
+                          ? const Color(0xFF111827)
+                          : const Color(0xFF374151),
+                    )
                   : null,
             ),
             // onChanged: _onTextChanged,
