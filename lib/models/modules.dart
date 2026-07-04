@@ -1,4 +1,4 @@
-class login_data {
+class LoginData {
   String id;
   String username;
   String password;
@@ -26,36 +26,37 @@ class login_data {
   // String settings;
   // String profile;
 
-  login_data(
-      {required this.id,
-        required this.username,
-        required this.password,
-        required this.unique_id,
-        required this.email,
-        required this.user_type,
-        required this.companyid,
-        required this.companystatus,
-        // required this.location_track,
-        // required this.attendance,
-        // required this.crm,
-        // required this.offer,
-        // required this.salesorder,
-        // required this.collection,
-        // required this.vehiclemaintenance,
-        // required this.roombooking,
-        // required this.purchase,
-        // required this.inventory,
-        // required this.task,
-        // required this.accounts,
-        required this.companyname,
-        required this.logourl,
-        // required this.general,
-        // required this.settings,
-        // required this.profile,
-        required this.activestatus});
+  LoginData({
+    required this.id,
+    required this.username,
+    required this.password,
+    required this.unique_id,
+    required this.email,
+    required this.user_type,
+    required this.companyid,
+    required this.companystatus,
+    // required this.location_track,
+    // required this.attendance,
+    // required this.crm,
+    // required this.offer,
+    // required this.salesorder,
+    // required this.collection,
+    // required this.vehiclemaintenance,
+    // required this.roombooking,
+    // required this.purchase,
+    // required this.inventory,
+    // required this.task,
+    // required this.accounts,
+    required this.companyname,
+    required this.logourl,
+    // required this.general,
+    // required this.settings,
+    // required this.profile,
+    required this.activestatus,
+  });
 
-  factory login_data.fromJson(Map<String, dynamic> json) {
-    return login_data(
+  factory LoginData.fromJson(Map<String, dynamic> json) {
+    return LoginData(
       id: json['id'],
       username: json['username'],
       password: json['password'],

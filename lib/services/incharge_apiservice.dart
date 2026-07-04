@@ -31,18 +31,14 @@ class InchargeApiService {
         'activestatus': '1',
       };
 
-      print("Sending insert request: $data");
-
       var response = await http.post(
         url,
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: data,
       );
 
-      print("Insert Response: ${response.body}");
       return _handleResponse(context, response.body);
     } catch (e) {
-      print("Insert Error: $e");
       _showError(context, "Error: $e");
       return "Failed";
     }
@@ -72,35 +68,31 @@ class InchargeApiService {
         'addedby': userid,
       };
 
-      print("Sending update request: $data");
-
       var response = await http.post(
         url,
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: data,
       );
 
-      print("Update Response: ${response.body}");
       return _handleResponse(context, response.body);
     } catch (e) {
-      print("Update Error: $e");
       _showError(context, "Error: $e");
       return "Failed";
     }
   }
 
-  Future<List<InchargeMasterModel>> fetchIncharges(BuildContext context) async {
+  Future<List<incharge_master_model>> fetchIncharges(
+    BuildContext context,
+  ) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final companyid = prefs.getString('companyid') ?? '';
 
     if (companyid.isEmpty) {
-      print("Company ID is empty");
       _showError(context, "Company ID not found. Please login again.");
       return [];
     }
 
     var url = Uri.parse('$baseUrl/incharge_fetch.php');
-    print("Fetching incharges for companyid: $companyid");
 
     try {
       var response = await http.post(
@@ -108,9 +100,6 @@ class InchargeApiService {
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: {'companyid': companyid},
       );
-
-      print("Fetch Response Status: ${response.statusCode}");
-      print("Fetch Response Body: ${response.body}");
 
       if (response.statusCode == 200) {
         if (response.body.trim() == "No Data Found." ||
@@ -120,20 +109,18 @@ class InchargeApiService {
 
         try {
           List<dynamic> items = json.decode(response.body);
-          print("Decoded items count: ${items.length}");
-          List<InchargeMasterModel> incharges = items
-              .map((item) => InchargeMasterModel.fromJson(item))
+
+          List<incharge_master_model> incharges = items
+              .map((item) => incharge_master_model.fromJson(item))
               .toList();
           return incharges;
         } catch (e) {
-          print("JSON decode error: $e");
           return [];
         }
       } else {
         throw Exception('Failed to load incharges: ${response.statusCode}');
       }
     } catch (e) {
-      print("Fetch Error: $e");
       _showError(context, "Error fetching incharges: $e");
       return [];
     }
@@ -156,8 +143,6 @@ class InchargeApiService {
         body: {'inchargeid': inchargeId, 'companyid': companyid},
       );
 
-      print("Delete Response: ${response.body}");
-
       var message = jsonDecode(response.body);
       if (message["status"] == "success") {
         return "Success";
@@ -166,7 +151,6 @@ class InchargeApiService {
         return "Failed";
       }
     } catch (e) {
-      print("Delete Error: $e");
       _showError(context, "Error: $e");
       return "Failed";
     }
@@ -182,8 +166,6 @@ class InchargeApiService {
         return "Failed";
       }
     } catch (e) {
-      print("Response Parse Error: $e");
-      print("Raw Response: $responseBody");
       if (responseBody.toLowerCase().contains("success")) {
         return "Success";
       } else {

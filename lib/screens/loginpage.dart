@@ -43,13 +43,12 @@ class _LoginScreenState extends State<LoginScreen> {
           '',
           '1',
         );
-        print("Unsupported platform");
+        // print("Unsupported platform");
       } else if (defaultTargetPlatform == TargetPlatform.android) {
         // final deviceInfo = DeviceInfoPlugin();
         // AndroidDeviceInfo androidInfo =
         //     await deviceInfo.androidInfo;
-        // print(
-        //     "Android Device ID: ${androidInfo.androidId}");
+
         ApiService().login(
           context,
           username.toString(),
@@ -63,8 +62,7 @@ class _LoginScreenState extends State<LoginScreen> {
         // final deviceInfo = DeviceInfoPlugin();
         // IosDeviceInfo iosInfo =
         //     await deviceInfo.iosInfo;
-        // print(
-        //     "iOS UUID: ${iosInfo.identifierForVendor}");
+
         ApiService().login(
           context,
           username.toString(),
@@ -85,7 +83,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     loadlogo();
   }
@@ -108,34 +105,30 @@ class _LoginScreenState extends State<LoginScreen> {
               // Future Info Tech Logo
               Align(
                 alignment: Alignment.topLeft,
-                child: Image.asset(
-                  'assets/Homelogos/fItlogo.png', // Add to assets
-                  height: 60,
-                ),
+                child: Image.asset('assets/Homelogos/fItlogo.png', height: 60),
               ),
               const SizedBox(height: 10),
-
-              CircleAvatar(
-                radius: 80,
-                backgroundColor: Colors.transparent,
-                child: ClipOval(
-                  child: Image.network(
-                    "https://futureinfotechservices.in/financeapi/getlogo.php?companyid=" +
-                        companyidvalue.toString(),
-                    fit: BoxFit.cover,
-                    width: 160,
-                    height: 160,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Image.asset(
-                        'assets/Homelogos/fItlogo.png',
-                        fit: BoxFit.cover,
-                        width: 160,
-                        height: 160,
-                      );
-                    },
+              if (companyidvalue != null && companyidvalue!.isNotEmpty)
+                CircleAvatar(
+                  radius: 80,
+                  backgroundColor: Colors.transparent,
+                  child: ClipOval(
+                    child: Image.network(
+                      "https://futureinfotechservices.in/financeapi/getlogo.php?companyid=$companyidvalue",
+                      fit: BoxFit.cover,
+                      width: 160,
+                      height: 160,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Image.asset(
+                          'assets/Homelogos/fItlogo.png',
+                          fit: BoxFit.cover,
+                          width: 160,
+                          height: 160,
+                        );
+                      },
+                    ),
                   ),
                 ),
-              ),
 
               const SizedBox(height: 10),
               ShaderMask(
@@ -197,7 +190,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         hintText: "Enter your email",
                         keyboardType: TextInputType.emailAddress,
                         prefixIcon: Icons.email,
-                        onChanged: (val) => print("Email: $val"),
+                        // onChanged: (val) => rint("Email: $val"),
                       ),
                       const SizedBox(height: 15),
                       CustomInputField(
@@ -205,7 +198,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         hintText: "User Name",
                         keyboardType: TextInputType.name,
                         prefixIcon: Icons.person,
-                        onChanged: (val) => print("Email: $val"),
+                        // onChanged: (val) => rint("Email: $val"),
                       ),
                       const SizedBox(height: 15),
                       CustomInputField(
@@ -213,7 +206,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         hintText: "Password",
                         isPassword: true,
                         prefixIcon: Icons.lock,
-                        onSubmitted: (val) => print("Submitted password: $val"),
+                        // onSubmitted: (val) => rint("Submitted password: $val"),
                       ),
                       const SizedBox(height: 25),
                       // Login Button
@@ -222,7 +215,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         height: 48,
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFF3869EB).withOpacity(0.8),
+                            backgroundColor: Color(
+                              0xFF3869EB,
+                            ).withValues(alpha: 0.8),
                             // Blue with 70% opacity
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(6),
@@ -241,14 +236,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                   '',
                                   '1',
                                 );
-                                print("Unsupported platform");
+                                // print("Unsupported platform");
                               } else if (defaultTargetPlatform ==
                                   TargetPlatform.android) {
                                 // final deviceInfo = DeviceInfoPlugin();
                                 // AndroidDeviceInfo androidInfo =
                                 //     await deviceInfo.androidInfo;
-                                // print(
-                                //     "Android Device ID: ${androidInfo.androidId}");
+
                                 ApiService().login(
                                   context,
                                   usernameController.text.toString(),
@@ -263,8 +257,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 // final deviceInfo = DeviceInfoPlugin();
                                 // IosDeviceInfo iosInfo =
                                 //     await deviceInfo.iosInfo;
-                                // print(
-                                //     "iOS UUID: ${iosInfo.identifierForVendor}");
+
                                 ApiService().login(
                                   context,
                                   usernameController.text.toString(),

@@ -1,6 +1,16 @@
+import 'customer_interest_model.dart';
 
+class CallRegisterResponse {
+  final List<CallRegisterModel> data;
+  final bool hasMore;
+  final int total;
 
-import 'CustomerInterestModel.dart';
+  CallRegisterResponse({
+    required this.data,
+    required this.hasMore,
+    required this.total,
+  });
+}
 
 class CallRegisterModel {
   final int id;

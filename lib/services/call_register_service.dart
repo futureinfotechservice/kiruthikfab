@@ -3,10 +3,9 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../models/call_register_model.dart';
-
+import '../models/call_register_model.dart';
+import '../models/source_call_history_model.dart';
 import 'config.dart';
-// const String baseUrl = 'http://localhost:5000';
 
 class CallRegisterService {
   Future<Map<String, dynamic>> deleteCallRegister(int id) async {
@@ -22,9 +21,9 @@ class CallRegisterService {
     required int id,
     required int sourceId,
     required int callById,
-    // required String date,
-    // required String from,
-    // required String to,
+    required String date,
+    required String from,
+    required String to,
     required String feedback,
     required String notes,
     required String followupDate,
@@ -36,9 +35,9 @@ class CallRegisterService {
         'id': id.toString(),
         'source_id': sourceId.toString(),
         'call_by_id': callById.toString(),
-        // 'date': date,
-        // 'from': from,
-        // 'to': to,
+        'date': date,
+        'from': from,
+        'to': to,
         'feedback': feedback,
         'notes': notes,
         'followup_date': followupDate.toString(),
@@ -49,17 +48,59 @@ class CallRegisterService {
     return jsonDecode(response.body);
   }
 
-  Future<List<CallRegisterModel>> fetchRecords(int companyId) async {
-    const String url = "$baseUrl/get_call_registers1.php";
+  Future<CallRegisterResponse> fetchRecordsLimit(
+    int companyId, {
+    int page = 1,
+    int limit = 100,
+    String search = '',
+    String? fromDate,
+    String? toDate,
+    String? callById,
+  }) async {
+    const String url = "$baseUrl/get_call_registers1_limit.php";
+
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        body: {
+          "companyid": companyId.toString(),
+          "page": page.toString(),
+          "limit": limit.toString(),
+          "search": search,
+          "from_date": fromDate ?? '',
+          "to_date": toDate ?? '',
+          "call_by_id": callById ?? '',
+        },
+      );
+
+      final jsonData = jsonDecode(response.body);
+
+      return CallRegisterResponse(
+        total: jsonData['total'] ?? 0,
+        hasMore: jsonData['hasMore'] ?? false,
+        data: (jsonData['data'] as List)
+            .map((e) => CallRegisterModel.fromJson(e))
+            .toList(),
+      );
+    } catch (e) {
+      return CallRegisterResponse(total: 0, hasMore: false, data: []);
+    }
+  }
+
+  Future<List<SourceCallHistoryModel>> fetchCallHistory(
+    String companyId,
+    String id,
+  ) async {
+    const String url = "$baseUrl/fetch_source_call_history.php";
     final response = await http.post(
       Uri.parse(url),
-      body: {"companyid": companyId.toString()},
+      body: {"companyid": companyId, "id": id},
     );
 
     final json = jsonDecode(response.body);
-    print(json);
+
     return (json['data'] as List)
-        .map((e) => CallRegisterModel.fromJson(e))
+        .map((e) => SourceCallHistoryModel.fromJson(e))
         .toList();
   }
 
@@ -74,10 +115,44 @@ class CallRegisterService {
     );
 
     final json = jsonDecode(response.body);
-    print(json);
+
     return (json['data'] as List)
         .map((e) => CallRegisterModel.fromJson(e))
         .toList();
+  }
+
+  Future<CallRegisterResponse> fetchRecordsByCallByIdLimit(
+    int companyId,
+    String callById, {
+    int page = 1,
+    int limit = 100,
+    String search = '',
+    String? fromDate,
+    String? toDate,
+  }) async {
+    const String url = "$baseUrl/get_call_registers_by_call_id_limit.php";
+    final response = await http.post(
+      Uri.parse(url),
+      body: {
+        "companyid": companyId.toString(),
+        "call_by_id": callById,
+        "page": page.toString(),
+        "limit": limit.toString(),
+        "search": search,
+        "from_date": fromDate ?? '',
+        "to_date": toDate ?? '',
+      },
+    );
+
+    final jsonData = jsonDecode(response.body);
+
+    return CallRegisterResponse(
+      total: jsonData['total'] ?? 0,
+      hasMore: jsonData['hasMore'] ?? false,
+      data: (jsonData['data'] as List)
+          .map((e) => CallRegisterModel.fromJson(e))
+          .toList(),
+    );
   }
 
   Future<Map<String, dynamic>> fetchCallRegister() async {

@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../models/CustomerMasterModel.dart';
 import 'config.dart';
 
@@ -19,10 +21,7 @@ class CustomerApiService {
 
     var url = Uri.parse('$baseUrl/fetch_agent.php');
     try {
-      var response = await http.post(
-        url,
-        body: {'companyid': companyid},
-      );
+      var response = await http.post(url, body: {'companyid': companyid});
 
       if (response.statusCode == 200) {
         var data = json.decode(response.body);
@@ -32,7 +31,6 @@ class CustomerApiService {
       }
       return [];
     } catch (e) {
-      print("Error fetching agents: $e");
       return [];
     }
   }
@@ -47,10 +45,7 @@ class CustomerApiService {
 
     var url = Uri.parse('$baseUrl/fetch_area.php');
     try {
-      var response = await http.post(
-        url,
-        body: {'companyid': companyid},
-      );
+      var response = await http.post(url, body: {'companyid': companyid});
 
       if (response.statusCode == 200) {
         var data = json.decode(response.body);
@@ -60,12 +55,13 @@ class CustomerApiService {
       }
       return [];
     } catch (e) {
-      print("Error fetching areas: $e");
       return [];
     }
   }
 
-  Future<List<Map<String, dynamic>>> fetchIncharges(BuildContext context) async {
+  Future<List<Map<String, dynamic>>> fetchIncharges(
+    BuildContext context,
+  ) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final companyid = prefs.getString('companyid') ?? '';
 
@@ -75,10 +71,7 @@ class CustomerApiService {
 
     var url = Uri.parse('$baseUrl/fetch_incharge.php');
     try {
-      var response = await http.post(
-        url,
-        body: {'companyid': companyid},
-      );
+      var response = await http.post(url, body: {'companyid': companyid});
 
       if (response.statusCode == 200) {
         var data = json.decode(response.body);
@@ -88,12 +81,13 @@ class CustomerApiService {
       }
       return [];
     } catch (e) {
-      print("Error fetching incharges: $e");
       return [];
     }
   }
 
-  Future<List<Map<String, dynamic>>> fetchOccupations(BuildContext context) async {
+  Future<List<Map<String, dynamic>>> fetchOccupations(
+    BuildContext context,
+  ) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final companyid = prefs.getString('companyid') ?? '';
 
@@ -103,10 +97,7 @@ class CustomerApiService {
 
     var url = Uri.parse('$baseUrl/fetch_occupation.php');
     try {
-      var response = await http.post(
-        url,
-        body: {'companyid': companyid},
-      );
+      var response = await http.post(url, body: {'companyid': companyid});
 
       if (response.statusCode == 200) {
         var data = json.decode(response.body);
@@ -116,7 +107,6 @@ class CustomerApiService {
       }
       return [];
     } catch (e) {
-      print("Error fetching occupations: $e");
       return [];
     }
   }
@@ -131,10 +121,7 @@ class CustomerApiService {
 
     var url = Uri.parse('$baseUrl/fetch_refer.php');
     try {
-      var response = await http.post(
-        url,
-        body: {'companyid': companyid},
-      );
+      var response = await http.post(url, body: {'companyid': companyid});
 
       if (response.statusCode == 200) {
         var data = json.decode(response.body);
@@ -144,12 +131,13 @@ class CustomerApiService {
       }
       return [];
     } catch (e) {
-      print("Error fetching refers: $e");
       return [];
     }
   }
 
-  Future<List<Map<String, dynamic>>> fetchSalesPersons(BuildContext context) async {
+  Future<List<Map<String, dynamic>>> fetchSalesPersons(
+    BuildContext context,
+  ) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final companyid = prefs.getString('companyid') ?? '';
 
@@ -159,10 +147,7 @@ class CustomerApiService {
 
     var url = Uri.parse('$baseUrl/fetch_salesperson.php');
     try {
-      var response = await http.post(
-        url,
-        body: {'companyid': companyid},
-      );
+      var response = await http.post(url, body: {'companyid': companyid});
 
       if (response.statusCode == 200) {
         var data = json.decode(response.body);
@@ -172,7 +157,6 @@ class CustomerApiService {
       }
       return [];
     } catch (e) {
-      print("Error fetching salespersons: $e");
       return [];
     }
   }
@@ -186,7 +170,7 @@ class CustomerApiService {
     required String whatsapp,
     required String address,
     required String area,
-    required String areaId,  // Changed from areaid
+    required String areaId, // Changed from areaid
     required String gstNo,
     required String refer,
     required String referId,
@@ -208,68 +192,73 @@ class CustomerApiService {
     final userid = prefs.getString('id') ?? '';
 
     if (companyid.isEmpty) {
-      _showError(context, "Company ID not found. Please login again.");
+      if (context.mounted)
+        _showError(context, "Company ID not found. Please login again.");
       return "Failed";
     }
 
     var url = Uri.parse('$baseUrl/customer_insert1.php');
 
-    if (kIsWeb) {
-      return _insertCustomerWeb(
-        context: context,
-        url: url,
-        companyid: companyid,
-        userid: userid,
-        customername: customername,
-        mobile1: mobile1,
-        mobile2: mobile2,
-        whatsapp: whatsapp,
-        address: address,
-        area: area,
-        areaId: areaId,
-        gstNo: gstNo,
-        refer: refer,
-        referId: referId,
-        incharge: incharge,
-        inchargeId: inchargeId,
-        agent: agent,
-        agentId: agentId,
-        salesperson: salesperson,
-        salespersonId: salespersonId,
-        occupation: occupation,
-        occupationId: occupationId,
-        aadharFile: aadharFile,
-        photoFile: photoFile,
-        aadharFileName: aadharFileName,
-        photoFileName: photoFileName,
-      );
+    if (context.mounted) {
+      if (kIsWeb) {
+        return _insertCustomerWeb(
+          context: context,
+          url: url,
+          companyid: companyid,
+          userid: userid,
+          customername: customername,
+          mobile1: mobile1,
+          mobile2: mobile2,
+          whatsapp: whatsapp,
+          address: address,
+          area: area,
+          areaId: areaId,
+          gstNo: gstNo,
+          refer: refer,
+          referId: referId,
+          incharge: incharge,
+          inchargeId: inchargeId,
+          agent: agent,
+          agentId: agentId,
+          salesperson: salesperson,
+          salespersonId: salespersonId,
+          occupation: occupation,
+          occupationId: occupationId,
+          aadharFile: aadharFile,
+          photoFile: photoFile,
+          aadharFileName: aadharFileName,
+          photoFileName: photoFileName,
+        );
+      } else {
+        return _insertCustomerMobile(
+          context: context,
+          url: url,
+          companyid: companyid,
+          userid: userid,
+          customername: customername,
+          mobile1: mobile1,
+          mobile2: mobile2,
+          whatsapp: whatsapp,
+          address: address,
+          area: area,
+          areaId: areaId,
+          gstNo: gstNo,
+          refer: refer,
+          referId: referId,
+          incharge: incharge,
+          inchargeId: inchargeId,
+          agent: agent,
+          agentId: agentId,
+          salesperson: salesperson,
+          salespersonId: salespersonId,
+          occupation: occupation,
+          occupationId: occupationId,
+          aadharFile: aadharFile,
+          photoFile: photoFile,
+        );
+      }
     } else {
-      return _insertCustomerMobile(
-        context: context,
-        url: url,
-        companyid: companyid,
-        userid: userid,
-        customername: customername,
-        mobile1: mobile1,
-        mobile2: mobile2,
-        whatsapp: whatsapp,
-        address: address,
-        area: area,
-        areaId: areaId,
-        gstNo: gstNo,
-        refer: refer,
-        referId: referId,
-        incharge: incharge,
-        inchargeId: inchargeId,
-        agent: agent,
-        agentId: agentId,
-        salesperson: salesperson,
-        salespersonId: salespersonId,
-        occupation: occupation,
-        occupationId: occupationId,
-        aadharFile: aadharFile,
-        photoFile: photoFile,
-      );
+      return '';
     }
   }
 
@@ -325,17 +314,17 @@ class CustomerApiService {
       request.fields['addedby'] = userid;
       request.fields['activestatus'] = '1';
 
-      print("Sending mobile request with companyid: $companyid");
-
       // Add Aadhar file if exists
       if (aadharFile != null && aadharFile.isNotEmpty) {
         var file = File(aadharFile);
         if (await file.exists()) {
-          request.files.add(await http.MultipartFile.fromPath(
-            'aadharfile',
-            aadharFile,
-            filename: 'aadhar_${DateTime.now().millisecondsSinceEpoch}.jpg',
-          ));
+          request.files.add(
+            await http.MultipartFile.fromPath(
+              'aadharfile',
+              aadharFile,
+              filename: 'aadhar_${DateTime.now().millisecondsSinceEpoch}.jpg',
+            ),
+          );
         }
       }
 
@@ -343,22 +332,26 @@ class CustomerApiService {
       if (photoFile != null && photoFile.isNotEmpty) {
         var file = File(photoFile);
         if (await file.exists()) {
-          request.files.add(await http.MultipartFile.fromPath(
-            'photofile',
-            photoFile,
-            filename: 'photo_${DateTime.now().millisecondsSinceEpoch}.jpg',
-          ));
+          request.files.add(
+            await http.MultipartFile.fromPath(
+              'photofile',
+              photoFile,
+              filename: 'photo_${DateTime.now().millisecondsSinceEpoch}.jpg',
+            ),
+          );
         }
       }
 
       var response = await request.send();
       var responseBody = await response.stream.bytesToString();
-      print("Mobile Response: $responseBody");
 
-      return _handleResponse(context, responseBody);
+      if (context.mounted) {
+        return _handleResponse(context, responseBody);
+      } else {
+        return '';
+      }
     } catch (e) {
-      print("Mobile Error: $e");
-      _showError(context, "Error: $e");
+      if (context.mounted) _showError(context, "Error: $e");
       return "Failed";
     }
   }
@@ -417,23 +410,24 @@ class CustomerApiService {
         'platform': 'web',
       };
 
-      print("Sending web request with companyid: $companyid");
-
       if (aadharFile != null && aadharFile.isNotEmpty) {
         data['aadhar_base64'] = aadharFile;
-        data['aadhar_filename'] = aadharFileName ?? 'aadhar_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        data['aadhar_filename'] =
+            aadharFileName ??
+            'aadhar_${DateTime.now().millisecondsSinceEpoch}.jpg';
       }
 
       if (photoFile != null && photoFile.isNotEmpty) {
         data['photo_base64'] = photoFile;
-        data['photo_filename'] = photoFileName ?? 'photo_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        data['photo_filename'] =
+            photoFileName ??
+            'photo_${DateTime.now().millisecondsSinceEpoch}.jpg';
       }
 
       var response = await http.post(url, body: data);
-      print("Web Response: ${response.body}");
+
       return _handleResponse(context, response.body);
     } catch (e) {
-      print("Web Error: $e");
       _showError(context, "Error: $e");
       return "Failed";
     }
@@ -593,14 +587,18 @@ class CustomerApiService {
       if (aadharFile != null && aadharFile.isNotEmpty) {
         var file = File(aadharFile);
         if (await file.exists()) {
-          request.files.add(await http.MultipartFile.fromPath('aadharfile', aadharFile));
+          request.files.add(
+            await http.MultipartFile.fromPath('aadharfile', aadharFile),
+          );
         }
       }
 
       if (photoFile != null && photoFile.isNotEmpty) {
         var file = File(photoFile);
         if (await file.exists()) {
-          request.files.add(await http.MultipartFile.fromPath('photofile', photoFile));
+          request.files.add(
+            await http.MultipartFile.fromPath('photofile', photoFile),
+          );
         }
       }
 
@@ -608,7 +606,6 @@ class CustomerApiService {
       var responseBody = await response.stream.bytesToString();
       return _handleResponse(context, responseBody);
     } catch (e) {
-      print("Update Error: $e");
       _showError(context, "Error: $e");
       return "Failed";
     }
@@ -671,18 +668,21 @@ class CustomerApiService {
 
       if (aadharFile != null && aadharFile.isNotEmpty) {
         data['aadhar_base64'] = aadharFile;
-        data['aadhar_filename'] = aadharFileName ?? 'aadhar_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        data['aadhar_filename'] =
+            aadharFileName ??
+            'aadhar_${DateTime.now().millisecondsSinceEpoch}.jpg';
       }
 
       if (photoFile != null && photoFile.isNotEmpty) {
         data['photo_base64'] = photoFile;
-        data['photo_filename'] = photoFileName ?? 'photo_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        data['photo_filename'] =
+            photoFileName ??
+            'photo_${DateTime.now().millisecondsSinceEpoch}.jpg';
       }
 
       var response = await http.post(url, body: data);
       return _handleResponse(context, response.body);
     } catch (e) {
-      print("Update Web Error: $e");
       _showError(context, "Error: $e");
       return "Failed";
     }
@@ -694,13 +694,11 @@ class CustomerApiService {
     final companyid = prefs.getString('companyid') ?? '';
 
     if (companyid.isEmpty) {
-      print("Company ID is empty");
       _showError(context, "Company ID not found. Please login again.");
       return [];
     }
 
     var url = Uri.parse('$baseUrl/customer_fetch.php');
-    print("Fetching customers for companyid: $companyid");
 
     try {
       var response = await http.post(
@@ -709,9 +707,6 @@ class CustomerApiService {
         body: {'companyid': companyid},
       );
 
-      print("Fetch Response Status: ${response.statusCode}");
-      print("Fetch Response Body: ${response.body}");
-
       if (response.statusCode == 200) {
         if (response.body.trim() == "No Data Found.") {
           return [];
@@ -719,20 +714,18 @@ class CustomerApiService {
 
         try {
           List<dynamic> items = json.decode(response.body);
-          print("Decoded items count: ${items.length}");
-          List<CustomerMasterModel> customers = items.map((item) =>
-              CustomerMasterModel.fromJson(item)
-          ).toList();
+
+          List<CustomerMasterModel> customers = items
+              .map((item) => CustomerMasterModel.fromJson(item))
+              .toList();
           return customers;
         } catch (e) {
-          print("JSON decode error: $e");
           return [];
         }
       } else {
         throw Exception('Failed to load customers: ${response.statusCode}');
       }
     } catch (e) {
-      print("Fetch Error: $e");
       _showError(context, "Error fetching customers: $e");
       return [];
     }
@@ -752,13 +745,8 @@ class CustomerApiService {
       var response = await http.post(
         url,
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: {
-          'customerid': customerId,
-          'companyid': companyid,
-        },
+        body: {'customerid': customerId, 'companyid': companyid},
       );
-
-      print("Delete Response: ${response.body}");
 
       var message = jsonDecode(response.body);
       if (message["status"] == "success") {
@@ -768,7 +756,6 @@ class CustomerApiService {
         return "Failed";
       }
     } catch (e) {
-      print("Delete Error: $e");
       _showError(context, "Error: $e");
       return "Failed";
     }
@@ -784,8 +771,6 @@ class CustomerApiService {
         return "Failed";
       }
     } catch (e) {
-      print("Response Parse Error: $e");
-      print("Raw Response: $responseBody");
       if (responseBody.toLowerCase().contains("success")) {
         return "Success";
       } else {
@@ -939,7 +924,7 @@ class CustomerApiService {
 //       request.fields['addedby'] = userid;
 //       request.fields['activestatus'] = '1';
 //
-//       print("Sending mobile request with companyid: $companyid");
+//
 //
 //       // Add Aadhar file if exists
 //       if (aadharFile != null && aadharFile.isNotEmpty) {
@@ -967,11 +952,11 @@ class CustomerApiService {
 //
 //       var response = await request.send();
 //       var responseBody = await response.stream.bytesToString();
-//       print("Mobile Response: $responseBody");
+//
 //
 //       return _handleResponse(context, responseBody);
 //     } catch (e) {
-//       print("Mobile Error: $e");
+//
 //       _showError(context, "Error: $e");
 //       return "Failed";
 //     }
@@ -1021,7 +1006,6 @@ class CustomerApiService {
 //         'platform': 'web',
 //       };
 //
-//       print("Sending web request with companyid: $companyid");
 //
 //       if (aadharFile != null && aadharFile.isNotEmpty) {
 //         data['aadhar_base64'] = aadharFile;
@@ -1034,10 +1018,10 @@ class CustomerApiService {
 //       }
 //
 //       var response = await http.post(url, body: data);
-//       print("Web Response: ${response.body}");
+//
 //       return _handleResponse(context, response.body);
 //     } catch (e) {
-//       print("Web Error: $e");
+//
 //       _showError(context, "Error: $e");
 //       return "Failed";
 //     }
@@ -1186,7 +1170,7 @@ class CustomerApiService {
 //       var responseBody = await response.stream.bytesToString();
 //       return _handleResponse(context, responseBody);
 //     } catch (e) {
-//       print("Update Error: $e");
+//
 //       _showError(context, "Error: $e");
 //       return "Failed";
 //     }
@@ -1250,7 +1234,7 @@ class CustomerApiService {
 //       var response = await http.post(url, body: data);
 //       return _handleResponse(context, response.body);
 //     } catch (e) {
-//       print("Update Web Error: $e");
+//
 //       _showError(context, "Error: $e");
 //       return "Failed";
 //     }
@@ -1261,13 +1245,12 @@ class CustomerApiService {
 //     final companyid = prefs.getString('companyid') ?? '';
 //
 //     if (companyid.isEmpty) {
-//       print("Company ID is empty");
+//
 //       _showError(context, "Company ID not found. Please login again.");
 //       return [];
 //     }
 //
 //     var url = Uri.parse('$baseUrl/customer_fetch.php');
-//     print("Fetching customers for companyid: $companyid");
 //
 //     try {
 //       var response = await http.post(
@@ -1276,8 +1259,6 @@ class CustomerApiService {
 //         body: {'companyid': companyid},
 //       );
 //
-//       print("Fetch Response Status: ${response.statusCode}");
-//       print("Fetch Response Body: ${response.body}");
 //
 //       if (response.statusCode == 200) {
 //         if (response.body.trim() == "No Data Found.") {
@@ -1286,20 +1267,20 @@ class CustomerApiService {
 //
 //         try {
 //           List<dynamic> items = json.decode(response.body);
-//           print("Decoded items count: ${items.length}");
+//
 //           List<CustomerMasterModel> customers = items.map((item) =>
 //               CustomerMasterModel.fromJson(item)
 //           ).toList();
 //           return customers;
 //         } catch (e) {
-//           print("JSON decode error: $e");
+//
 //           return [];
 //         }
 //       } else {
 //         throw Exception('Failed to load customers: ${response.statusCode}');
 //       }
 //     } catch (e) {
-//       print("Fetch Error: $e");
+//
 //       _showError(context, "Error fetching customers: $e");
 //       return [];
 //     }
@@ -1325,7 +1306,7 @@ class CustomerApiService {
 //         },
 //       );
 //
-//       print("Delete Response: ${response.body}");
+//
 //
 //       var message = jsonDecode(response.body);
 //       if (message["status"] == "success") {
@@ -1335,7 +1316,7 @@ class CustomerApiService {
 //         return "Failed";
 //       }
 //     } catch (e) {
-//       print("Delete Error: $e");
+//
 //       _showError(context, "Error: $e");
 //       return "Failed";
 //     }
@@ -1351,8 +1332,7 @@ class CustomerApiService {
 //         return "Failed";
 //       }
 //     } catch (e) {
-//       print("Response Parse Error: $e");
-//       print("Raw Response: $responseBody");
+//
 //       if (responseBody.toLowerCase().contains("success")) {
 //         return "Success";
 //       } else {

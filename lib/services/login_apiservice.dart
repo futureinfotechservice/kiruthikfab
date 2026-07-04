@@ -6,12 +6,12 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../models/modules.dart';
-import '../../screens/home.dart';
+import '../home/home.dart';
 import 'auth_service.dart';
 import 'config.dart';
 
 class ApiService {
-  List<login_data> loginlist = [];
+  List<LoginData> loginlist = [];
 
   Future login(
     BuildContext context,
@@ -22,15 +22,7 @@ class ApiService {
     String platform,
   ) async {
     final url = Uri.parse('$baseUrl/login1.php');
-    print(
-      json.encode({
-        'username': username,
-        'password': password,
-        'email': mailid,
-        'platform': platform.toString(),
-        'unique_id': unique_id.toString(),
-      }),
-    );
+
     final response = await http.post(
       url,
       body: json.encode({
@@ -86,7 +78,7 @@ class ApiService {
     final items = json.decode(response.body);
 
     items.forEach((api) {
-      final ab = login_data(
+      final ab = LoginData(
         id: api['id'],
         username: api['username'],
         password: api['password'],

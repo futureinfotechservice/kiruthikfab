@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../models/AgentMasterModel.dart';
+import '../models/agent_master_model.dart';
 import 'config.dart';
 
 class AgentApiService {
@@ -31,18 +31,14 @@ class AgentApiService {
         'activestatus': '1',
       };
 
-      print("Sending insert request: $data");
-
       var response = await http.post(
         url,
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: data,
       );
 
-      print("Insert Response: ${response.body}");
       return _handleResponse(context, response.body);
     } catch (e) {
-      print("Insert Error: $e");
       _showError(context, "Error: $e");
       return "Failed";
     }
@@ -72,18 +68,14 @@ class AgentApiService {
         'addedby': userid,
       };
 
-      print("Sending update request: $data");
-
       var response = await http.post(
         url,
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: data,
       );
 
-      print("Update Response: ${response.body}");
       return _handleResponse(context, response.body);
     } catch (e) {
-      print("Update Error: $e");
       _showError(context, "Error: $e");
       return "Failed";
     }
@@ -94,13 +86,11 @@ class AgentApiService {
     final companyid = prefs.getString('companyid') ?? '';
 
     if (companyid.isEmpty) {
-      print("Company ID is empty");
       _showError(context, "Company ID not found. Please login again.");
       return [];
     }
 
     var url = Uri.parse('$baseUrl/agent_fetch.php');
-    print("Fetching agents for companyid: $companyid");
 
     try {
       var response = await http.post(
@@ -108,9 +98,6 @@ class AgentApiService {
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: {'companyid': companyid},
       );
-
-      print("Fetch Response Status: ${response.statusCode}");
-      print("Fetch Response Body: ${response.body}");
 
       if (response.statusCode == 200) {
         if (response.body.trim() == "No Data Found." ||
@@ -120,20 +107,18 @@ class AgentApiService {
 
         try {
           List<dynamic> items = json.decode(response.body);
-          print("Decoded items count: ${items.length}");
+
           List<AgentMasterModel> agents = items
               .map((item) => AgentMasterModel.fromJson(item))
               .toList();
           return agents;
         } catch (e) {
-          print("JSON decode error: $e");
           return [];
         }
       } else {
         throw Exception('Failed to load agents: ${response.statusCode}');
       }
     } catch (e) {
-      print("Fetch Error: $e");
       _showError(context, "Error fetching agents: $e");
       return [];
     }
@@ -156,8 +141,6 @@ class AgentApiService {
         body: {'agentid': agentId, 'companyid': companyid},
       );
 
-      print("Delete Response: ${response.body}");
-
       var message = jsonDecode(response.body);
       if (message["status"] == "success") {
         return "Success";
@@ -166,7 +149,6 @@ class AgentApiService {
         return "Failed";
       }
     } catch (e) {
-      print("Delete Error: $e");
       _showError(context, "Error: $e");
       return "Failed";
     }
@@ -182,8 +164,6 @@ class AgentApiService {
         return "Failed";
       }
     } catch (e) {
-      print("Response Parse Error: $e");
-      print("Raw Response: $responseBody");
       if (responseBody.toLowerCase().contains("success")) {
         return "Success";
       } else {

@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import '../models/delivery_model.dart';
 import 'config.dart';
 
 class DeliveryManagementApiService {
@@ -12,6 +13,16 @@ class DeliveryManagementApiService {
     await http.post(
       Uri.parse("$baseUrl/update_delivery.php"),
       body: {"detailid": detailId.toString(), "isChecked": isChecked},
+    );
+  }
+
+  Future<void> updatePartner({
+    required String invoiceNo,
+    required String partnerName,
+  }) async {
+    await http.post(
+      Uri.parse("$baseUrl/update_delivery_partner_name.php"),
+      body: {"invoice_no": invoiceNo, "partner_name": partnerName},
     );
   }
 
@@ -106,6 +117,47 @@ class DeliveryManagementApiService {
       }
 
       return {};
+    } catch (e) {
+      throw Exception("Fetch Error : $e");
+    }
+  }
+
+  Future<DeliveryRecordResponse> getAllProductsLimit({
+    required String companyId,
+    int page = 1,
+    int limit = 100,
+    String search = '',
+    String? fromDate,
+    String? toDate,
+    required String selectedStatus,
+  }) async {
+    try {
+      var request = await http
+          .post(
+            Uri.parse("$baseUrl/get_all_delivery_management_limit.php"),
+            body: {
+              "companyid": companyId,
+              "page": page.toString(),
+              "limit": limit.toString(),
+              "search": search,
+              "from_date": fromDate ?? '',
+              "to_date": toDate ?? '',
+              "selectedStatus": selectedStatus,
+            },
+          )
+          .timeout(const Duration(seconds: 30));
+
+      var responseString = request.body;
+
+      final jsonData = jsonDecode(responseString);
+
+      return DeliveryRecordResponse(
+        total: jsonData['total'] ?? 0,
+        hasMore: jsonData['hasMore'] ?? false,
+        data: (jsonData['delivery_items'] as List)
+            .map((e) => DeliveryRecord.fromJson(e))
+            .toList(),
+      );
     } catch (e) {
       throw Exception("Fetch Error : $e");
     }

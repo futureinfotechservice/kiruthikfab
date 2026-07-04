@@ -104,11 +104,14 @@ class _SearchableTextBoxState extends State<SearchableTextBox> {
                       itemCount: _filteredItems.length,
                       itemBuilder: (context, index) {
                         final item = _filteredItems[index];
-                        return ListTile(
-                          title: Text(item),
-                          onTap: () {
-                            _selectItem(item);
-                          },
+                        return Material(
+                          color: Colors.transparent,
+                          child: ListTile(
+                            title: Text(item),
+                            onTap: () {
+                              _selectItem(item);
+                            },
+                          ),
                         );
                       },
                     ),
@@ -175,7 +178,7 @@ class _SearchableTextBoxState extends State<SearchableTextBox> {
   //     // If multiple characters are added rapidly, it's likely a scan
   //     if (newChars > 1 && timeDiff < 100) {
   //       _isScanning = true;
-  //       print('Scan detected: $currentText');
+  //
   //       _triggerAutoSubmit();
   //     }
   //     // If single characters are added very rapidly (faster than human typing)
@@ -185,7 +188,7 @@ class _SearchableTextBoxState extends State<SearchableTextBox> {
   //       _submitTimer?.cancel();
   //       _submitTimer = Timer(Duration(milliseconds: 200), () {
   //         if (_isScanning) {
-  //           print('Rapid input detected: $currentText');
+  //
   //           _triggerAutoSubmit();
   //         }
   //       });

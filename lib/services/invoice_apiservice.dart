@@ -297,7 +297,6 @@ class InvoiceApiService {
       }
       return '1';
     } catch (e) {
-      print('Error getting next invoice number: $e');
       return '1';
     }
   }
@@ -321,9 +320,7 @@ class InvoiceApiService {
           list.add(Customer.fromJson(item));
         }
       }
-    } catch (e) {
-      print('Error loading customers: $e');
-    }
+    } catch (e) {}
     return list;
   }
 
@@ -349,7 +346,6 @@ class InvoiceApiService {
       }
       return null;
     } catch (e) {
-      print('Error loading company details: $e');
       return null;
     }
   }
@@ -373,9 +369,7 @@ class InvoiceApiService {
           list.add(Product.fromJson(item));
         }
       }
-    } catch (e) {
-      print('Error loading products: $e');
-    }
+    } catch (e) {}
     return list;
   }
 
@@ -398,9 +392,7 @@ class InvoiceApiService {
           list.add(Model.fromJson(item));
         }
       }
-    } catch (e) {
-      print('Error loading models: $e');
-    }
+    } catch (e) {}
     return list;
   }
 
@@ -423,9 +415,7 @@ class InvoiceApiService {
           list.add(ProductSize.fromJson(item));
         }
       }
-    } catch (e) {
-      print('Error loading sizes: $e');
-    }
+    } catch (e) {}
     return list;
   }
 
@@ -448,9 +438,7 @@ class InvoiceApiService {
           list.add(Unit.fromJson(item));
         }
       }
-    } catch (e) {
-      print('Error loading units: $e');
-    }
+    } catch (e) {}
     return list;
   }
 
@@ -486,7 +474,7 @@ class InvoiceApiService {
         "subtotal": subtotal,
         "grandtotal": grandTotal,
         "addedby": addedby,
-        "status": 'Draft',
+        "status": 'Pending',
         "packing_amount": packingAmount,
       };
 
@@ -497,7 +485,6 @@ class InvoiceApiService {
       );
 
       var message = json.decode(response.body);
-      print('Save response: $message');
 
       if (message['success'] == true) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -517,7 +504,6 @@ class InvoiceApiService {
         return "Failed";
       }
     } catch (e) {
-      print('Error saving invoice: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
       );
@@ -566,7 +552,6 @@ class InvoiceApiService {
       );
 
       var message = json.decode(response.body);
-      print('Update response: $message');
 
       if (message['success'] == true) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -586,7 +571,6 @@ class InvoiceApiService {
         return "Failed";
       }
     } catch (e) {
-      print('Error updating invoice: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
       );
@@ -613,9 +597,7 @@ class InvoiceApiService {
           list.add(InvoiceModel.fromJson(item));
         }
       }
-    } catch (e) {
-      print('Error loading invoices: $e');
-    }
+    } catch (e) {}
     return list;
   }
 
@@ -641,7 +623,6 @@ class InvoiceApiService {
       }
       return [];
     } catch (e) {
-      print('Error loading invoice details: $e');
       return [];
     }
   }
@@ -676,7 +657,6 @@ class InvoiceApiService {
         return "Failed";
       }
     } catch (e) {
-      print('Error deleting invoice: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
       );
@@ -715,7 +695,6 @@ class InvoiceApiService {
         throw Exception(message['message'] ?? 'Failed to update status');
       }
     } catch (e) {
-      print('Error updating status: $e');
       throw Exception('Error updating status: $e');
     }
   }
@@ -1016,7 +995,6 @@ InvoiceApiService invoiceApiService() => InvoiceApiService();
 //       }
 //       return '1';
 //     } catch (e) {
-//       print('Error getting next invoice number: $e');
 //       return '1';
 //     }
 //   }
@@ -1041,7 +1019,6 @@ InvoiceApiService invoiceApiService() => InvoiceApiService();
 //         }
 //       }
 //     } catch (e) {
-//       print('Error loading customers: $e');
 //     }
 //     return list;
 //   }
@@ -1068,7 +1045,6 @@ InvoiceApiService invoiceApiService() => InvoiceApiService();
 //       }
 //       return null;
 //     } catch (e) {
-//       print('Error loading company details: $e');
 //       return null;
 //     }
 //   }
@@ -1094,7 +1070,6 @@ InvoiceApiService invoiceApiService() => InvoiceApiService();
 //         }
 //       }
 //     } catch (e) {
-//       print('Error loading products: $e');
 //     }
 //     return list;
 //   }
@@ -1119,7 +1094,6 @@ InvoiceApiService invoiceApiService() => InvoiceApiService();
 //         }
 //       }
 //     } catch (e) {
-//       print('Error loading models: $e');
 //     }
 //     return list;
 //   }
@@ -1144,7 +1118,6 @@ InvoiceApiService invoiceApiService() => InvoiceApiService();
 //         }
 //       }
 //     } catch (e) {
-//       print('Error loading sizes: $e');
 //     }
 //     return list;
 //   }
@@ -1169,7 +1142,6 @@ InvoiceApiService invoiceApiService() => InvoiceApiService();
 //         }
 //       }
 //     } catch (e) {
-//       print('Error loading units: $e');
 //     }
 //     return list;
 //   }
@@ -1213,7 +1185,6 @@ InvoiceApiService invoiceApiService() => InvoiceApiService();
 //       );
 //
 //       var message = json.decode(response.body);
-//       print('Save response: $message');
 //
 //       if (message['success'] == true) {
 //         ScaffoldMessenger.of(context).showSnackBar(
@@ -1233,7 +1204,6 @@ InvoiceApiService invoiceApiService() => InvoiceApiService();
 //         return "Failed";
 //       }
 //     } catch (e) {
-//       print('Error saving invoice: $e');
 //       ScaffoldMessenger.of(context).showSnackBar(
 //         SnackBar(
 //           content: Text('Error: $e'),
@@ -1283,7 +1253,7 @@ InvoiceApiService invoiceApiService() => InvoiceApiService();
 //       );
 //
 //       var message = json.decode(response.body);
-//       print('Update response: $message');
+//
 //
 //       if (message['success'] == true) {
 //         ScaffoldMessenger.of(context).showSnackBar(
@@ -1303,7 +1273,7 @@ InvoiceApiService invoiceApiService() => InvoiceApiService();
 //         return "Failed";
 //       }
 //     } catch (e) {
-//       print('Error updating invoice: $e');
+//
 //       ScaffoldMessenger.of(context).showSnackBar(
 //         SnackBar(
 //           content: Text('Error: $e'),
@@ -1334,7 +1304,7 @@ InvoiceApiService invoiceApiService() => InvoiceApiService();
 //         }
 //       }
 //     } catch (e) {
-//       print('Error loading invoices: $e');
+//
 //     }
 //     return list;
 //   }
@@ -1364,7 +1334,7 @@ InvoiceApiService invoiceApiService() => InvoiceApiService();
 //       }
 //       return [];
 //     } catch (e) {
-//       print('Error loading invoice details: $e');
+//
 //       return [];
 //     }
 //   }
@@ -1402,7 +1372,7 @@ InvoiceApiService invoiceApiService() => InvoiceApiService();
 //         return "Failed";
 //       }
 //     } catch (e) {
-//       print('Error deleting invoice: $e');
+//
 //       ScaffoldMessenger.of(context).showSnackBar(
 //         SnackBar(
 //           content: Text('Error: $e'),
@@ -1444,7 +1414,7 @@ InvoiceApiService invoiceApiService() => InvoiceApiService();
 //         throw Exception(message['message'] ?? 'Failed to update status');
 //       }
 //     } catch (e) {
-//       print('Error updating status: $e');
+//
 //       throw Exception('Error updating status: $e');
 //     }
 //   }

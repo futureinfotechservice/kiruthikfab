@@ -35,18 +35,14 @@ class SalesPersonApiService {
         'user_type': usertype,
       };
 
-      print("Sending insert request: $data");
-
       var response = await http.post(
         url,
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: data,
       );
 
-      print("Insert Response: ${response.body}");
       return _handleResponse(context, response.body);
     } catch (e) {
-      print("Insert Error: $e");
       _showError(context, "Error: $e");
       return "Failed";
     }
@@ -78,37 +74,31 @@ class SalesPersonApiService {
         'user_type': usertype,
       };
 
-      print("Sending update request: $data");
-
       var response = await http.post(
         url,
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: data,
       );
 
-      print("Update Response: ${response.body}");
       return _handleResponse(context, response.body);
     } catch (e) {
-      print("Update Error: $e");
       _showError(context, "Error: $e");
       return "Failed";
     }
   }
 
   Future<List<SalesPersonMasterModel>> fetchSalesPersons(
-      BuildContext context,
-      ) async {
+    BuildContext context,
+  ) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final companyid = prefs.getString('companyid') ?? '';
 
     if (companyid.isEmpty) {
-      print("Company ID is empty");
       _showError(context, "Company ID not found. Please login again.");
       return [];
     }
 
     var url = Uri.parse('$baseUrl/salesperson_fetch.php');
-    print("Fetching sales persons for companyid: $companyid");
 
     try {
       var response = await http.post(
@@ -116,9 +106,6 @@ class SalesPersonApiService {
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: {'companyid': companyid},
       );
-
-      print("Fetch Response Status: ${response.statusCode}");
-      print("Fetch Response Body: ${response.body}");
 
       if (response.statusCode == 200) {
         if (response.body.trim() == "No Data Found." ||
@@ -128,29 +115,27 @@ class SalesPersonApiService {
 
         try {
           List<dynamic> items = json.decode(response.body);
-          print("Decoded items count: ${items.length}");
+
           List<SalesPersonMasterModel> salesPersons = items
               .map((item) => SalesPersonMasterModel.fromJson(item))
               .toList();
           return salesPersons;
         } catch (e) {
-          print("JSON decode error: $e");
           return [];
         }
       } else {
         throw Exception('Failed to load sales persons: ${response.statusCode}');
       }
     } catch (e) {
-      print("Fetch Error: $e");
       _showError(context, "Error fetching sales persons: $e");
       return [];
     }
   }
 
   Future<String> deleteSalesPerson(
-      BuildContext context,
-      String salesPersonId,
-      ) async {
+    BuildContext context,
+    String salesPersonId,
+  ) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final companyid = prefs.getString('companyid') ?? '';
 
@@ -167,8 +152,6 @@ class SalesPersonApiService {
         body: {'salespersonid': salesPersonId, 'companyid': companyid},
       );
 
-      print("Delete Response: ${response.body}");
-
       var message = jsonDecode(response.body);
       if (message["status"] == "success") {
         return "Success";
@@ -177,7 +160,6 @@ class SalesPersonApiService {
         return "Failed";
       }
     } catch (e) {
-      print("Delete Error: $e");
       _showError(context, "Error: $e");
       return "Failed";
     }
@@ -193,8 +175,6 @@ class SalesPersonApiService {
         return "Failed";
       }
     } catch (e) {
-      print("Response Parse Error: $e");
-      print("Raw Response: $responseBody");
       if (responseBody.toLowerCase().contains("success")) {
         return "Success";
       } else {
@@ -214,8 +194,6 @@ class SalesPersonApiService {
     );
   }
 }
-
-
 
 // import 'dart:convert';
 // import 'package:flutter/foundation.dart';

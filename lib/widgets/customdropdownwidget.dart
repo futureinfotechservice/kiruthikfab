@@ -135,7 +135,7 @@ class _CustomDropdownSearchState extends State<CustomDropdownSearch> {
           items: (filter, loadProps) => widget.items,
           selectedItem: widget.selectedItem,
           enabled: !widget.isReadOnly,
-          onChanged: widget.isReadOnly
+          onSelected: widget.isReadOnly
               ? null
               : (value) {
                   if (widget.isRequired && (value == null || value.isEmpty)) {
@@ -183,7 +183,7 @@ class _CustomDropdownSearchState extends State<CustomDropdownSearch> {
                   vertical: 12,
                 ),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  // borderRadius: BorderRadius.circular(8),
                 ),
                 suffixIcon: IconButton(
                   icon: const Icon(Icons.clear, size: 20),
@@ -195,7 +195,7 @@ class _CustomDropdownSearchState extends State<CustomDropdownSearch> {
               onSubmitted: _handleEnterKeySelection,
             ),
             menuProps: MenuProps(
-              borderRadius: BorderRadius.circular(12),
+              // borderRadius: BorderRadius.circular(12),
               elevation: 6,
               color: Colors.white,
               backgroundColor: Colors.white,
@@ -247,7 +247,7 @@ class CustomDropdownSearchonlybox extends StatelessWidget {
         items: (filter, loadProps) => items,
         selectedItem: selectedItem,
         enabled: !isReadOnly,
-        onChanged: isReadOnly
+        onSelected: isReadOnly
             ? null
             : (value) {
                 if (isRequired && (value == null || value.isEmpty)) {
@@ -312,12 +312,12 @@ class CustomDropdownSearchonlybox extends StatelessWidget {
                 vertical: 8,
               ),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(6),
+                // borderRadius: BorderRadius.circular(6),
               ),
             ),
           ),
           menuProps: MenuProps(
-            borderRadius: BorderRadius.circular(8),
+            // borderRadius: BorderRadius.circular(8),
             elevation: 6,
             color: Colors.white,
           ),

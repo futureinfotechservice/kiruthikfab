@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../models/AreaMasterModel.dart';
+import '../models/area_master_model.dart';
 import 'config.dart';
 
 class AreaApiService {
@@ -17,7 +17,9 @@ class AreaApiService {
     final userid = prefs.getString('id') ?? '';
 
     if (companyid.isEmpty) {
-      _showError(context, "Company ID not found. Please login again.");
+      if (context.mounted) {
+        _showError(context, "Company ID not found. Please login again.");
+      }
       return "Failed";
     }
 
@@ -31,19 +33,19 @@ class AreaApiService {
         'activestatus': '1',
       };
 
-      print("Sending insert request: $data");
-
       var response = await http.post(
         url,
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: data,
       );
 
-      print("Insert Response: ${response.body}");
-      return _handleResponse(context, response.body);
+      if (context.mounted) {
+        return _handleResponse(context, response.body);
+      } else {
+        return '';
+      }
     } catch (e) {
-      print("Insert Error: $e");
-      _showError(context, "Error: $e");
+      if (context.mounted) _showError(context, "Error: $e");
       return "Failed";
     }
   }
@@ -58,7 +60,9 @@ class AreaApiService {
     final userid = prefs.getString('id') ?? '';
 
     if (companyid.isEmpty) {
-      _showError(context, "Company ID not found. Please login again.");
+      if (context.mounted) {
+        _showError(context, "Company ID not found. Please login again.");
+      }
       return "Failed";
     }
 
@@ -72,19 +76,19 @@ class AreaApiService {
         'addedby': userid,
       };
 
-      print("Sending update request: $data");
-
       var response = await http.post(
         url,
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: data,
       );
 
-      print("Update Response: ${response.body}");
-      return _handleResponse(context, response.body);
+      if (context.mounted) {
+        return _handleResponse(context, response.body);
+      } else {
+        return '';
+      }
     } catch (e) {
-      print("Update Error: $e");
-      _showError(context, "Error: $e");
+      if (context.mounted) _showError(context, "Error: $e");
       return "Failed";
     }
   }
@@ -94,13 +98,13 @@ class AreaApiService {
     final companyid = prefs.getString('companyid') ?? '';
 
     if (companyid.isEmpty) {
-      print("Company ID is empty");
-      _showError(context, "Company ID not found. Please login again.");
+      if (context.mounted) {
+        _showError(context, "Company ID not found. Please login again.");
+      }
       return [];
     }
 
     var url = Uri.parse('$baseUrl/area_fetch.php');
-    print("Fetching areas for companyid: $companyid");
 
     try {
       var response = await http.post(
@@ -108,9 +112,6 @@ class AreaApiService {
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: {'companyid': companyid},
       );
-
-      print("Fetch Response Status: ${response.statusCode}");
-      print("Fetch Response Body: ${response.body}");
 
       if (response.statusCode == 200) {
         if (response.body.trim() == "No Data Found." ||
@@ -120,21 +121,19 @@ class AreaApiService {
 
         try {
           List<dynamic> items = json.decode(response.body);
-          print("Decoded items count: ${items.length}");
+
           List<AreaMasterModel> areas = items
               .map((item) => AreaMasterModel.fromJson(item))
               .toList();
           return areas;
         } catch (e) {
-          print("JSON decode error: $e");
           return [];
         }
       } else {
         throw Exception('Failed to load areas: ${response.statusCode}');
       }
     } catch (e) {
-      print("Fetch Error: $e");
-      _showError(context, "Error fetching areas: $e");
+      if (context.mounted) _showError(context, "Error fetching areas: $e");
       return [];
     }
   }
@@ -144,7 +143,9 @@ class AreaApiService {
     final companyid = prefs.getString('companyid') ?? '';
 
     if (companyid.isEmpty) {
-      _showError(context, "Company ID not found. Please login again.");
+      if (context.mounted) {
+        _showError(context, "Company ID not found. Please login again.");
+      }
       return "Failed";
     }
 
@@ -156,18 +157,17 @@ class AreaApiService {
         body: {'areaid': areaId, 'companyid': companyid},
       );
 
-      print("Delete Response: ${response.body}");
-
       var message = jsonDecode(response.body);
       if (message["status"] == "success") {
         return "Success";
       } else {
-        _showError(context, message["message"] ?? "Delete failed");
+        if (context.mounted) {
+          _showError(context, message["message"] ?? "Delete failed");
+        }
         return "Failed";
       }
     } catch (e) {
-      print("Delete Error: $e");
-      _showError(context, "Error: $e");
+      if (context.mounted) _showError(context, "Error: $e");
       return "Failed";
     }
   }
@@ -182,8 +182,6 @@ class AreaApiService {
         return "Failed";
       }
     } catch (e) {
-      print("Response Parse Error: $e");
-      print("Raw Response: $responseBody");
       if (responseBody.toLowerCase().contains("success")) {
         return "Success";
       } else {

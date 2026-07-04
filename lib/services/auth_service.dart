@@ -1,5 +1,4 @@
 // lib/services/auth_service.dart
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -67,30 +66,31 @@ class AuthService {
   }
 }
 
-
 class LogoutService {
   static Future<void> logout(BuildContext context) async {
     try {
       // Show confirmation dialog
-      bool shouldLogout = await showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: Text('Logout'),
-            content: Text('Are you sure you want to logout?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                child: Text('Logout'),
-              ),
-            ],
-          );
-        },
-      ) ?? false;
+      bool shouldLogout =
+          await showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: Text('Logout'),
+                content: Text('Are you sure you want to logout?'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: Text('Cancel'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(true),
+                    child: Text('Logout'),
+                  ),
+                ],
+              );
+            },
+          ) ??
+          false;
 
       if (shouldLogout) {
         // Clear login state
@@ -99,7 +99,7 @@ class LogoutService {
         // Navigate to login screen and clear all routes
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => LoginScreen()),
-              (Route<dynamic> route) => false,
+          (Route<dynamic> route) => false,
         );
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -110,12 +110,8 @@ class LogoutService {
         );
       }
     } catch (e) {
-      print('Logout error: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Logout failed'),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text('Logout failed'), backgroundColor: Colors.red),
       );
     }
   }
@@ -127,10 +123,10 @@ class LogoutService {
 
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (context) => LoginScreen()),
-            (Route<dynamic> route) => false,
+        (Route<dynamic> route) => false,
       );
     } catch (e) {
-      print('Complete logout error: $e');
+      debugPrint('Complete logout error: $e');
     }
-  }}
-
+  }
+}

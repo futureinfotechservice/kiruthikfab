@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:kiruthikfab/screens/loginpage.dart';
+import 'package:kiruthikfab/screens/navigation_provider.dart';
+import 'package:provider/provider.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(
+      providers: [ChangeNotifierProvider(create: (_) => NavigationProvider())],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -23,4 +30,3 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-

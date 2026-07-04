@@ -31,18 +31,14 @@ class OccupationApiService {
         'activestatus': '1',
       };
 
-      print("Sending insert request: $data");
-
       var response = await http.post(
         url,
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: data,
       );
 
-      print("Insert Response: ${response.body}");
       return _handleResponse(context, response.body);
     } catch (e) {
-      print("Insert Error: $e");
       _showError(context, "Error: $e");
       return "Failed";
     }
@@ -72,18 +68,14 @@ class OccupationApiService {
         'addedby': userid,
       };
 
-      print("Sending update request: $data");
-
       var response = await http.post(
         url,
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: data,
       );
 
-      print("Update Response: ${response.body}");
       return _handleResponse(context, response.body);
     } catch (e) {
-      print("Update Error: $e");
       _showError(context, "Error: $e");
       return "Failed";
     }
@@ -96,13 +88,11 @@ class OccupationApiService {
     final companyid = prefs.getString('companyid') ?? '';
 
     if (companyid.isEmpty) {
-      print("Company ID is empty");
       _showError(context, "Company ID not found. Please login again.");
       return [];
     }
 
     var url = Uri.parse('$baseUrl/occupation_fetch.php');
-    print("Fetching occupations for companyid: $companyid");
 
     try {
       var response = await http.post(
@@ -110,9 +100,6 @@ class OccupationApiService {
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: {'companyid': companyid},
       );
-
-      print("Fetch Response Status: ${response.statusCode}");
-      print("Fetch Response Body: ${response.body}");
 
       if (response.statusCode == 200) {
         if (response.body.trim() == "No Data Found." ||
@@ -122,20 +109,17 @@ class OccupationApiService {
 
         try {
           List<dynamic> items = json.decode(response.body);
-          print("Decoded items count: ${items.length}");
           List<OccupationMasterModel> occupations = items
               .map((item) => OccupationMasterModel.fromJson(item))
               .toList();
           return occupations;
         } catch (e) {
-          print("JSON decode error: $e");
           return [];
         }
       } else {
         throw Exception('Failed to load occupations: ${response.statusCode}');
       }
     } catch (e) {
-      print("Fetch Error: $e");
       _showError(context, "Error fetching occupations: $e");
       return [];
     }
@@ -161,8 +145,6 @@ class OccupationApiService {
         body: {'occupationid': occupationId, 'companyid': companyid},
       );
 
-      print("Delete Response: ${response.body}");
-
       var message = jsonDecode(response.body);
       if (message["status"] == "success") {
         return "Success";
@@ -171,7 +153,6 @@ class OccupationApiService {
         return "Failed";
       }
     } catch (e) {
-      print("Delete Error: $e");
       _showError(context, "Error: $e");
       return "Failed";
     }
@@ -187,8 +168,6 @@ class OccupationApiService {
         return "Failed";
       }
     } catch (e) {
-      print("Response Parse Error: $e");
-      print("Raw Response: $responseBody");
       if (responseBody.toLowerCase().contains("success")) {
         return "Success";
       } else {

@@ -1,80 +1,60 @@
 import 'dart:convert';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/source_master_model.dart';
 import 'config.dart';
 
 class SourceApiService {
-  // Fetch Districts
-  Future<List<Map<String, dynamic>>> fetchDistricts(
-      BuildContext context,
-      ) async {
-    var url = Uri.parse('$baseUrl/fetch_districts.php');
-    try {
-      var response = await http.post(url);
-      if (response.statusCode == 200) {
-        var data = json.decode(response.body);
-        if (data['status'] == 'success') {
-          return List<Map<String, dynamic>>.from(data['data']);
-        }
-      }
-      return [];
-    } catch (e) {
-      print("Error fetching districts: $e");
-      return [];
-    }
-  }
+  final dio = Dio();
 
-  // Fetch Sourcing Modes
   Future<List<Map<String, dynamic>>> fetchSourcingModes(
-      BuildContext context,
-      ) async {
+    BuildContext context,
+  ) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final companyid = prefs.getString('companyid') ?? '';
 
     if (companyid.isEmpty) return [];
 
-    var url = Uri.parse('$baseUrl/fetch_sourcingmode.php');
+    var url = '$baseUrl/sourcingmode_fetch.php';
     try {
-      var response = await http.post(url, body: {'companyid': companyid});
+      var response = await dio.post(url, data: {'companyid': companyid});
       if (response.statusCode == 200) {
-        var data = json.decode(response.body);
+        var data = (response.data);
         if (data['status'] == 'success') {
+          print(data['data']);
           return List<Map<String, dynamic>>.from(data['data']);
         }
       }
       return [];
     } catch (e) {
-      print("Error fetching sourcing modes: $e");
       return [];
     }
   }
 
   // Fetch Entry Persons
   Future<List<Map<String, dynamic>>> fetchEntryPersons(
-      BuildContext context,
-      ) async {
+    BuildContext context,
+  ) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final companyid = prefs.getString('companyid') ?? '';
 
     if (companyid.isEmpty) return [];
 
-    var url = Uri.parse('$baseUrl/fetch_salesperson.php');
+    var url = '$baseUrl/fetch_salesperson.php';
     try {
-      var response = await http.post(url, body: {'companyid': companyid});
+      var response = await dio.post(url, data: {'companyid': companyid});
       if (response.statusCode == 200 || response.statusCode == 200) {
-        var data = json.decode(response.body);
-        print(data);
+        var data = (response.data);
+
         if (data['status'] == 'success') {
           return List<Map<String, dynamic>>.from(data['data']);
         }
       }
       return [];
     } catch (e) {
-      print("Error fetching entry persons: $e");
       return [];
     }
   }
@@ -86,43 +66,44 @@ class SourceApiService {
 
     if (companyid.isEmpty) return [];
 
-    var url = Uri.parse('$baseUrl/fetch_area.php');
+    var url = '$baseUrl/fetch_area.php';
+
     try {
-      var response = await http.post(url, body: {'companyid': companyid});
+      var response = await dio.post(url, data: {'companyid': companyid});
+
       if (response.statusCode == 200) {
-        var data = json.decode(response.body);
+        var data = (response.data);
+
         if (data['status'] == 'success') {
           return List<Map<String, dynamic>>.from(data['data']);
         }
       }
       return [];
     } catch (e) {
-      print("Error fetching areas: $e");
       return [];
     }
   }
 
   // Fetch Occupations (reusing existing)
   Future<List<Map<String, dynamic>>> fetchOccupations(
-      BuildContext context,
-      ) async {
+    BuildContext context,
+  ) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final companyid = prefs.getString('companyid') ?? '';
 
     if (companyid.isEmpty) return [];
 
-    var url = Uri.parse('$baseUrl/fetch_occupation.php');
+    var url = '$baseUrl/fetch_occupation.php';
     try {
-      var response = await http.post(url, body: {'companyid': companyid});
+      var response = await dio.post(url, data: {'companyid': companyid});
       if (response.statusCode == 200) {
-        var data = json.decode(response.body);
+        var data = (response.data);
         if (data['status'] == 'success') {
           return List<Map<String, dynamic>>.from(data['data']);
         }
       }
       return [];
     } catch (e) {
-      print("Error fetching occupations: $e");
       return [];
     }
   }
@@ -134,18 +115,17 @@ class SourceApiService {
 
     if (companyid.isEmpty) return [];
 
-    var url = Uri.parse('$baseUrl/fetch_refer.php');
+    var url = '$baseUrl/fetch_refer.php';
     try {
-      var response = await http.post(url, body: {'companyid': companyid});
+      var response = await dio.post(url, data: {'companyid': companyid});
       if (response.statusCode == 200) {
-        var data = json.decode(response.body);
+        var data = (response.data);
         if (data['status'] == 'success') {
           return List<Map<String, dynamic>>.from(data['data']);
         }
       }
       return [];
     } catch (e) {
-      print("Error fetching refers: $e");
       return [];
     }
   }
@@ -157,43 +137,41 @@ class SourceApiService {
 
     if (companyid.isEmpty) return [];
 
-    var url = Uri.parse('$baseUrl/fetch_agent.php');
+    var url = '$baseUrl/fetch_agent.php';
     try {
-      var response = await http.post(url, body: {'companyid': companyid});
+      var response = await dio.post(url, data: {'companyid': companyid});
       if (response.statusCode == 200) {
-        var data = json.decode(response.body);
+        var data = (response.data);
         if (data['status'] == 'success') {
           return List<Map<String, dynamic>>.from(data['data']);
         }
       }
       return [];
     } catch (e) {
-      print("Error fetching agents: $e");
       return [];
     }
   }
 
   // Fetch Sales Persons (reusing existing)
   Future<List<Map<String, dynamic>>> fetchSalesPersons(
-      BuildContext context,
-      ) async {
+    BuildContext context,
+  ) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final companyid = prefs.getString('companyid') ?? '';
 
     if (companyid.isEmpty) return [];
 
-    var url = Uri.parse('$baseUrl/fetch_salesperson.php');
+    var url = '$baseUrl/fetch_salesperson.php';
     try {
-      var response = await http.post(url, body: {'companyid': companyid});
+      var response = await dio.post(url, data: {'companyid': companyid});
       if (response.statusCode == 200) {
-        var data = json.decode(response.body);
+        var data = (response.data);
         if (data['status'] == 'success') {
           return List<Map<String, dynamic>>.from(data['data']);
         }
       }
       return [];
     } catch (e) {
-      print("Error fetching sales persons: $e");
       return [];
     }
   }
@@ -236,7 +214,7 @@ class SourceApiService {
       return "Failed";
     }
 
-    var url = Uri.parse('$baseUrl/source_insert.php');
+    var url = '$baseUrl/source_insert.php';
 
     try {
       var data = {
@@ -270,11 +248,9 @@ class SourceApiService {
         'activestatus': '1',
       };
 
-      var response = await http.post(url, body: data);
-      print("Insert Response: ${response.body}");
-      return _handleResponse(context, response.body);
+      var response = await dio.post(url, data: data);
+      return _handleResponse(context, response.data);
     } catch (e) {
-      print("Insert Error: $e");
       _showError(context, "Error: $e");
       return "Failed";
     }
@@ -319,7 +295,7 @@ class SourceApiService {
       return "Failed";
     }
 
-    var url = Uri.parse('$baseUrl/source_update.php');
+    var url = '$baseUrl/source_update.php';
 
     try {
       var data = {
@@ -353,22 +329,20 @@ class SourceApiService {
         'addedby': userid,
       };
 
-      var response = await http.post(url, body: data);
-      print("Update Response: ${response.body}");
-      return _handleResponse(context, response.body);
+      var response = await dio.post(url, data: data);
+      return _handleResponse(context, response.data);
     } catch (e) {
-      print("Update Error: $e");
       _showError(context, "Error: $e");
       return "Failed";
     }
   }
 
   Future<SourceResponse> fetchSources1(
-      BuildContext context, {
-        required int page,
-        required int limit,
-        String search = '',
-      }) async {
+    BuildContext context, {
+    required int page,
+    required int limit,
+    String search = '',
+  }) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
     final companyid = prefs.getString('companyid') ?? '';
@@ -385,13 +359,16 @@ class SourceApiService {
       );
     }
 
-    var url = Uri.parse('$baseUrl/source_fetch1.php');
+    var url = '$baseUrl/source_fetch1.php';
 
     try {
-      var response = await http.post(
+      dio.options.headers = {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      };
+
+      var response = await dio.post(
         url,
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: {
+        data: {
           "companyid": companyid,
           "page": page.toString(),
           "limit": limit.toString(),
@@ -400,7 +377,7 @@ class SourceApiService {
       );
 
       if (response.statusCode == 200) {
-        if (response.body.trim().isEmpty) {
+        if (response.data.isEmpty) {
           return SourceResponse(
             page: page,
             limit: limit,
@@ -411,12 +388,10 @@ class SourceApiService {
         }
 
         try {
-          final Map<String, dynamic> jsonData = json.decode(response.body);
+          final Map<String, dynamic> jsonData = (response.data);
 
           return SourceResponse.fromJson(jsonData);
         } catch (e) {
-          debugPrint("JSON Decode Error: $e");
-
           return SourceResponse(
             page: page,
             limit: limit,
@@ -429,8 +404,6 @@ class SourceApiService {
         throw Exception('Failed to load sources: ${response.statusCode}');
       }
     } catch (e) {
-      debugPrint("Fetch Error: $e");
-
       _showError(context, "Error fetching sources: $e");
 
       return SourceResponse(
@@ -443,61 +416,6 @@ class SourceApiService {
     }
   }
 
-  // // Fetch Sources
-  // Future<List<SourceMasterModel>> fetchSources(
-  //   BuildContext context, {
-  //   required int page,
-  //   required int limit,
-  //   String search = '',
-  // }) async {
-  //   SharedPreferences prefs = await SharedPreferences.getInstance();
-  //   final companyid = prefs.getString('companyid') ?? '';
-  //
-  //   if (companyid.isEmpty) {
-  //     _showError(context, "Company ID not found. Please login again.");
-  //     return [];
-  //   }
-  //
-  //   var url = Uri.parse('$baseUrl/source_fetch1.php');
-  //
-  //   try {
-  //     var response = await http.post(
-  //       url,
-  //       headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-  //       body: {
-  //         "companyid": companyid,
-  //         "page": page,
-  //         "limit": limit,
-  //         "search": search,
-  //       },
-  //     );
-  //
-  //     // print("Fetch Response: ${response.body}");
-  //
-  //     if (response.statusCode == 200) {
-  //       if (response.body.trim().isEmpty || response.body.trim() == "[]") {
-  //         return [];
-  //       }
-  //
-  //       try {
-  //         List<dynamic> items = json.decode(response.body);
-  //         List<SourceMasterModel> sources = items
-  //             .map((item) => SourceMasterModel.fromJson(item))
-  //             .toList();
-  //         return sources;
-  //       } catch (e) {
-  //         print("JSON decode error: $e");
-  //         return [];
-  //       }
-  //     } else {
-  //       throw Exception('Failed to load sources: ${response.statusCode}');
-  //     }
-  //   } catch (e) {
-  //     print("Fetch Error: $e");
-  //     _showError(context, "Error fetching sources: $e");
-  //     return [];
-  //   }
-  // }
   Future<List<SourceMasterModel>> fetchSources(BuildContext context) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final companyid = prefs.getString('companyid') ?? '';
@@ -507,35 +425,33 @@ class SourceApiService {
       return [];
     }
 
-    var url = Uri.parse('$baseUrl/source_fetch.php');
+    var url = '$baseUrl/source_fetch.php';
 
     try {
-      var response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: {'companyid': companyid},
-      );
+      dio.options.headers = {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      };
+
+      var response = await dio.post(url, data: {'companyid': companyid});
 
       if (response.statusCode == 200) {
-        if (response.body.trim().isEmpty || response.body.trim() == "[]") {
+        if (response.data.isEmpty || response.data == "[]") {
           return [];
         }
 
         try {
-          List<dynamic> items = json.decode(response.body);
+          List<dynamic> items = (response.data);
           List<SourceMasterModel> sources = items
               .map((item) => SourceMasterModel.fromJson(item))
               .toList();
           return sources;
         } catch (e) {
-          print("JSON decode error: $e");
           return [];
         }
       } else {
         throw Exception('Failed to load sources: ${response.statusCode}');
       }
     } catch (e) {
-      print("Fetch Error: $e");
       _showError(context, "Error fetching sources: $e");
       return [];
     }
@@ -551,17 +467,18 @@ class SourceApiService {
       return "Failed";
     }
 
-    var url = Uri.parse('$baseUrl/source_delete.php');
+    var url = '$baseUrl/source_delete.php';
     try {
-      var response = await http.post(
+      dio.options.headers = {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      };
+
+      var response = await dio.post(
         url,
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: {'source_id': sourceId, 'companyid': companyid},
+        data: {'source_id': sourceId, 'companyid': companyid},
       );
 
-      print("Delete Response: ${response.body}");
-
-      var message = jsonDecode(response.body);
+      var message = jsonDecode(response.data);
       if (message["status"] == "success") {
         return "Success";
       } else {
@@ -569,7 +486,6 @@ class SourceApiService {
         return "Failed";
       }
     } catch (e) {
-      print("Delete Error: $e");
       _showError(context, "Error: $e");
       return "Failed";
     }
@@ -582,18 +498,17 @@ class SourceApiService {
 
     if (companyid.isEmpty) return "SRC-000001";
 
-    var url = Uri.parse('$baseUrl/get_next_sourcenumber.php');
+    var url = '$baseUrl/get_next_sourcenumber.php';
     try {
-      var response = await http.post(url, body: {'companyid': companyid});
+      var response = await dio.post(url, data: {'companyid': companyid});
       if (response.statusCode == 200) {
-        var data = json.decode(response.body);
+        var data = (response.data);
         if (data['status'] == 'success') {
           return data['source_no'];
         }
       }
       return "SRC-000001";
     } catch (e) {
-      print("Error getting next source number: $e");
       return "SRC-000001";
     }
   }
@@ -608,7 +523,6 @@ class SourceApiService {
         return "Failed";
       }
     } catch (e) {
-      print("Response Parse Error: $e");
       if (responseBody.toLowerCase().contains("success")) {
         return "Success";
       } else {
@@ -629,12 +543,64 @@ class SourceApiService {
   }
 }
 
-
-
-
+// // Fetch Sources
+// Future<List<SourceMasterModel>> fetchSources(
+//   BuildContext context, {
+//   required int page,
+//   required int limit,
+//   String search = '',
+// }) async {
+//   SharedPreferences prefs = await SharedPreferences.getInstance();
+//   final companyid = prefs.getString('companyid') ?? '';
+//
+//   if (companyid.isEmpty) {
+//     _showError(context, "Company ID not found. Please login again.");
+//     return [];
+//   }
+//
+//   var url =  '$baseUrl/source_fetch1.php');
+//
+//   try {
+//     var response = await dio.post(
+//       url,
+//       headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+//       data: {
+//         "companyid": companyid,
+//         "page": page,
+//         "limit": limit,
+//         "search": search,
+//       },
+//     );
+//
+//
+//
+//     if (response.statusCode == 200) {
+//       if (response.data .isEmpty || response.data  == "[]") {
+//         return [];
+//       }
+//
+//       try {
+//         List<dynamic> items =   (response.data);
+//         List<SourceMasterModel> sources = items
+//             .map((item) => SourceMasterModel.fromJson(item))
+//             .toList();
+//         return sources;
+//       } catch (e) {
+//
+//         return [];
+//       }
+//     } else {
+//       throw Exception('Failed to load sources: ${response.statusCode}');
+//     }
+//   } catch (e) {
+//
+//     _showError(context, "Error fetching sources: $e");
+//     return [];
+//   }
+// }
 // import 'dart:convert';
 // import 'package:flutter/material.dart';
-// import 'package:http/http.dart' as http;
+// import 'package:dio/dio.dart' as dio;
 // import 'package:shared_preferences/shared_preferences.dart';
 // import '../models/source_master_model.dart';
 // import 'config.dart';
@@ -642,18 +608,18 @@ class SourceApiService {
 // class SourceApiService {
 //   // Fetch Districts
 //   Future<List<Map<String, dynamic>>> fetchDistricts(BuildContext context) async {
-//     var url = Uri.parse('$baseUrl/fetch_districts.php');
+//     var url =  '$baseUrl/fetch_districts.php');
 //     try {
-//       var response = await http.post(url);
+//       var response = await dio.post(url);
 //       if (response.statusCode == 200) {
-//         var data = json.decode(response.body);
+//         var data =   (response.data);
 //         if (data['status'] == 'success') {
 //           return List<Map<String, dynamic>>.from(data['data']);
 //         }
 //       }
 //       return [];
 //     } catch (e) {
-//       print("Error fetching districts: $e");
+//
 //       return [];
 //     }
 //   }
@@ -665,18 +631,18 @@ class SourceApiService {
 //
 //     if (companyid.isEmpty) return [];
 //
-//     var url = Uri.parse('$baseUrl/fetch_sourcingmode.php');
+//     var url =  '$baseUrl/fetch_sourcingmode.php');
 //     try {
-//       var response = await http.post(url, body: {'companyid': companyid});
+//       var response = await dio.post(url, data: {'companyid': companyid});
 //       if (response.statusCode == 200) {
-//         var data = json.decode(response.body);
+//         var data =   (response.data);
 //         if (data['status'] == 'success') {
 //           return List<Map<String, dynamic>>.from(data['data']);
 //         }
 //       }
 //       return [];
 //     } catch (e) {
-//       print("Error fetching sourcing modes: $e");
+//
 //       return [];
 //     }
 //   }
@@ -688,18 +654,18 @@ class SourceApiService {
 //
 //     if (companyid.isEmpty) return [];
 //
-//     var url = Uri.parse('$baseUrl/fetch_entryperson.php');
+//     var url =  '$baseUrl/fetch_entryperson.php');
 //     try {
-//       var response = await http.post(url, body: {'companyid': companyid});
+//       var response = await dio.post(url, data: {'companyid': companyid});
 //       if (response.statusCode == 200) {
-//         var data = json.decode(response.body);
+//         var data =   (response.data);
 //         if (data['status'] == 'success') {
 //           return List<Map<String, dynamic>>.from(data['data']);
 //         }
 //       }
 //       return [];
 //     } catch (e) {
-//       print("Error fetching entry persons: $e");
+//
 //       return [];
 //     }
 //   }
@@ -711,18 +677,18 @@ class SourceApiService {
 //
 //     if (companyid.isEmpty) return [];
 //
-//     var url = Uri.parse('$baseUrl/fetch_area.php');
+//     var url =  '$baseUrl/fetch_area.php');
 //     try {
-//       var response = await http.post(url, body: {'companyid': companyid});
+//       var response = await dio.post(url, data: {'companyid': companyid});
 //       if (response.statusCode == 200) {
-//         var data = json.decode(response.body);
+//         var data =   (response.data);
 //         if (data['status'] == 'success') {
 //           return List<Map<String, dynamic>>.from(data['data']);
 //         }
 //       }
 //       return [];
 //     } catch (e) {
-//       print("Error fetching areas: $e");
+//
 //       return [];
 //     }
 //   }
@@ -734,18 +700,18 @@ class SourceApiService {
 //
 //     if (companyid.isEmpty) return [];
 //
-//     var url = Uri.parse('$baseUrl/fetch_occupation.php');
+//     var url =  '$baseUrl/fetch_occupation.php');
 //     try {
-//       var response = await http.post(url, body: {'companyid': companyid});
+//       var response = await dio.post(url, data: {'companyid': companyid});
 //       if (response.statusCode == 200) {
-//         var data = json.decode(response.body);
+//         var data =   (response.data);
 //         if (data['status'] == 'success') {
 //           return List<Map<String, dynamic>>.from(data['data']);
 //         }
 //       }
 //       return [];
 //     } catch (e) {
-//       print("Error fetching occupations: $e");
+//
 //       return [];
 //     }
 //   }
@@ -757,18 +723,18 @@ class SourceApiService {
 //
 //     if (companyid.isEmpty) return [];
 //
-//     var url = Uri.parse('$baseUrl/fetch_refer.php');
+//     var url =  '$baseUrl/fetch_refer.php');
 //     try {
-//       var response = await http.post(url, body: {'companyid': companyid});
+//       var response = await dio.post(url, data: {'companyid': companyid});
 //       if (response.statusCode == 200) {
-//         var data = json.decode(response.body);
+//         var data =   (response.data);
 //         if (data['status'] == 'success') {
 //           return List<Map<String, dynamic>>.from(data['data']);
 //         }
 //       }
 //       return [];
 //     } catch (e) {
-//       print("Error fetching refers: $e");
+//
 //       return [];
 //     }
 //   }
@@ -780,18 +746,18 @@ class SourceApiService {
 //
 //     if (companyid.isEmpty) return [];
 //
-//     var url = Uri.parse('$baseUrl/fetch_agent.php');
+//     var url =  '$baseUrl/fetch_agent.php');
 //     try {
-//       var response = await http.post(url, body: {'companyid': companyid});
+//       var response = await dio.post(url, data: {'companyid': companyid});
 //       if (response.statusCode == 200) {
-//         var data = json.decode(response.body);
+//         var data =   (response.data);
 //         if (data['status'] == 'success') {
 //           return List<Map<String, dynamic>>.from(data['data']);
 //         }
 //       }
 //       return [];
 //     } catch (e) {
-//       print("Error fetching agents: $e");
+//
 //       return [];
 //     }
 //   }
@@ -803,18 +769,18 @@ class SourceApiService {
 //
 //     if (companyid.isEmpty) return [];
 //
-//     var url = Uri.parse('$baseUrl/fetch_salesperson.php');
+//     var url =  '$baseUrl/fetch_salesperson.php');
 //     try {
-//       var response = await http.post(url, body: {'companyid': companyid});
+//       var response = await dio.post(url, data: {'companyid': companyid});
 //       if (response.statusCode == 200) {
-//         var data = json.decode(response.body);
+//         var data =   (response.data);
 //         if (data['status'] == 'success') {
 //           return List<Map<String, dynamic>>.from(data['data']);
 //         }
 //       }
 //       return [];
 //     } catch (e) {
-//       print("Error fetching sales persons: $e");
+//
 //       return [];
 //     }
 //   }
@@ -857,7 +823,7 @@ class SourceApiService {
 //       return "Failed";
 //     }
 //
-//     var url = Uri.parse('$baseUrl/source_insert.php');
+//     var url =  '$baseUrl/source_insert.php');
 //
 //     try {
 //       var data = {
@@ -891,11 +857,11 @@ class SourceApiService {
 //         'activestatus': '1',
 //       };
 //
-//       var response = await http.post(url, body: data);
-//       print("Insert Response: ${response.body}");
-//       return _handleResponse(context, response.body);
+//       var response = await dio.post(url, data: data);
+//
+//       return _handleResponse(context, response.data);
 //     } catch (e) {
-//       print("Insert Error: $e");
+//
 //       _showError(context, "Error: $e");
 //       return "Failed";
 //     }
@@ -940,7 +906,7 @@ class SourceApiService {
 //       return "Failed";
 //     }
 //
-//     var url = Uri.parse('$baseUrl/source_update.php');
+//     var url =  '$baseUrl/source_update.php');
 //
 //     try {
 //       var data = {
@@ -974,11 +940,11 @@ class SourceApiService {
 //         'addedby': userid,
 //       };
 //
-//       var response = await http.post(url, body: data);
-//       print("Update Response: ${response.body}");
-//       return _handleResponse(context, response.body);
+//       var response = await dio.post(url, data: data);
+//
+//       return _handleResponse(context, response.data);
 //     } catch (e) {
-//       print("Update Error: $e");
+//
 //       _showError(context, "Error: $e");
 //       return "Failed";
 //     }
@@ -994,37 +960,36 @@ class SourceApiService {
 //       return [];
 //     }
 //
-//     var url = Uri.parse('$baseUrl/source_fetch.php');
+//     var url =  '$baseUrl/source_fetch.php');
 //
 //     try {
-//       var response = await http.post(
+//       var response = await dio.post(
 //         url,
 //         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-//         body: {'companyid': companyid},
+//         data: {'companyid': companyid},
 //       );
 //
-//       print("Fetch Response: ${response.body}");
 //
 //       if (response.statusCode == 200) {
-//         if (response.body.trim().isEmpty || response.body.trim() == "[]") {
+//         if (response.data .isEmpty || response.data  == "[]") {
 //           return [];
 //         }
 //
 //         try {
-//           List<dynamic> items = json.decode(response.body);
+//           List<dynamic> items =   (response.data);
 //           List<SourceMasterModel> sources = items.map((item) =>
 //               SourceMasterModel.fromJson(item)
 //           ).toList();
 //           return sources;
 //         } catch (e) {
-//           print("JSON decode error: $e");
+//
 //           return [];
 //         }
 //       } else {
 //         throw Exception('Failed to load sources: ${response.statusCode}');
 //       }
 //     } catch (e) {
-//       print("Fetch Error: $e");
+//
 //       _showError(context, "Error fetching sources: $e");
 //       return [];
 //     }
@@ -1040,20 +1005,20 @@ class SourceApiService {
 //       return "Failed";
 //     }
 //
-//     var url = Uri.parse('$baseUrl/source_delete.php');
+//     var url =  '$baseUrl/source_delete.php');
 //     try {
-//       var response = await http.post(
+//       var response = await dio.post(
 //         url,
 //         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-//         body: {
+//         data: {
 //           'source_id': sourceId,
 //           'companyid': companyid,
 //         },
 //       );
 //
-//       print("Delete Response: ${response.body}");
 //
-//       var message = jsonDecode(response.body);
+//
+//       var message = jsonDecode(response.data);
 //       if (message["status"] == "success") {
 //         return "Success";
 //       } else {
@@ -1061,7 +1026,7 @@ class SourceApiService {
 //         return "Failed";
 //       }
 //     } catch (e) {
-//       print("Delete Error: $e");
+//
 //       _showError(context, "Error: $e");
 //       return "Failed";
 //     }
@@ -1074,18 +1039,18 @@ class SourceApiService {
 //
 //     if (companyid.isEmpty) return "SRC-000001";
 //
-//     var url = Uri.parse('$baseUrl/get_next_sourcenumber.php');
+//     var url =  '$baseUrl/get_next_sourcenumber.php');
 //     try {
-//       var response = await http.post(url, body: {'companyid': companyid});
+//       var response = await dio.post(url, data: {'companyid': companyid});
 //       if (response.statusCode == 200) {
-//         var data = json.decode(response.body);
+//         var data =   (response.data);
 //         if (data['status'] == 'success') {
 //           return data['source_no'];
 //         }
 //       }
 //       return "SRC-000001";
 //     } catch (e) {
-//       print("Error getting next source number: $e");
+//
 //       return "SRC-000001";
 //     }
 //   }
@@ -1100,7 +1065,7 @@ class SourceApiService {
 //         return "Failed";
 //       }
 //     } catch (e) {
-//       print("Response Parse Error: $e");
+//
 //       if (responseBody.toLowerCase().contains("success")) {
 //         return "Success";
 //       } else {
@@ -1120,3 +1085,24 @@ class SourceApiService {
 //     );
 //   }
 // }
+
+// Fetch Districts
+// Future<List<Map<String, dynamic>>> fetchDistricts(
+//   BuildContext context,
+// ) async {
+//   var url =  '$baseUrl/fetch_districts.php');
+//   try {
+//     var response = await dio.post(url);
+//     if (response.statusCode == 200) {
+//       var data =   (response.data);
+//       if (data['status'] == 'success') {
+//         return List<Map<String, dynamic>>.from(data['data']);
+//       }
+//     }
+//     return [];
+//   } catch (e) {
+//     return [];
+//   }
+// }
+
+// Fetch Sourcing Modes

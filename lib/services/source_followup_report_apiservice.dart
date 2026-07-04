@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:printing/printing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../models/source_followup_report_model.dart';
@@ -81,6 +82,36 @@ class SourceFollowupReportApiservice {
             .toList(),
       );
     }
+
+    throw Exception("Failed");
+  }
+
+  Future<SourceFollowupResponse> fetchAllReport() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    final companyid = prefs.getString('companyid') ?? '';
+
+    final url =
+        "$baseUrl/source_followup_pdf_all_solution3.php?companyid=$companyid";
+
+    final response = await http.get(Uri.parse(url));
+
+    await Printing.layoutPdf(onLayout: (_) async => response.bodyBytes);
+
+    throw Exception("Failed");
+  }
+
+  Future<SourceFollowupResponse> fetchAllUserReport({
+    required String id,
+  }) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    final companyid = prefs.getString('companyid') ?? '';
+    final url =
+        "$baseUrl/source_followup_pdf_id.php?companyid=$companyid&id=$id";
+    final response = await http.get(Uri.parse(url));
+
+    await Printing.layoutPdf(onLayout: (_) async => response.bodyBytes);
 
     throw Exception("Failed");
   }

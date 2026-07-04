@@ -7,9 +7,9 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
-import '../../../screens/invoice_print_helper_stub.dart'
-    if (dart.library.html) '../../screens/invoice_print_helper_web.dart';
 import '../../../services/invoice_apiservice.dart';
+import '../screens/entry/invoice_print_helper_stub.dart'
+    if (dart.library.html) '../screens/entry/invoice_print_helper_web.dart';
 
 class InvoicePrintHelper {
   static Future<void> printInvoice({
@@ -58,7 +58,6 @@ class InvoicePrintHelper {
         await Printing.layoutPdf(onLayout: (format) async => pdf);
       }
     } catch (e) {
-      print('Error printing: $e');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -476,7 +475,7 @@ class InvoicePrintHelper {
                 pw.Expanded(
                   flex: 1,
                   child: pw.Text(
-                    '${rate.toStringAsFixed(2)}',
+                    rate.toStringAsFixed(2),
                     textAlign: pw.TextAlign.right,
                     style: const pw.TextStyle(fontSize: 9),
                   ),
@@ -484,7 +483,7 @@ class InvoicePrintHelper {
                 pw.Expanded(
                   flex: 1,
                   child: pw.Text(
-                    '${amount.toStringAsFixed(2)}',
+                    amount.toStringAsFixed(2),
                     textAlign: pw.TextAlign.right,
                     style: const pw.TextStyle(fontSize: 9),
                   ),
@@ -492,7 +491,7 @@ class InvoicePrintHelper {
               ],
             ),
           );
-        }).toList(),
+        }),
 
         pw.SizedBox(height: 12),
 
@@ -797,13 +796,13 @@ class InvoicePrintHelper {
     if (rupees == 0 && paise == 0) return 'Zero Rupees Only';
 
     String rupeesWord = _numberToWords(rupees);
-    String result = rupeesWord + ' Rupees';
+    String result = '$rupeesWord Rupees';
 
     if (paise > 0) {
       result += ' and ${_numberToWords(paise)} Paise';
     }
 
-    return result + ' Only';
+    return '$result Only';
   }
 
   static String _numberToWords(int number) {
@@ -851,22 +850,14 @@ class InvoicePrintHelper {
           (number % 10 != 0 ? ' ${units[number % 10]}' : '');
     }
     if (number < 1000) {
-      return units[number ~/ 100] +
-          ' Hundred' +
-          (number % 100 != 0 ? ' ${_numberToWords(number % 100)}' : '');
+      return '${units[number ~/ 100]} Hundred${number % 100 != 0 ? ' ${_numberToWords(number % 100)}' : ''}';
     }
     if (number < 100000) {
-      return _numberToWords(number ~/ 1000) +
-          ' Thousand' +
-          (number % 1000 != 0 ? ' ${_numberToWords(number % 1000)}' : '');
+      return '${_numberToWords(number ~/ 1000)} Thousand${number % 1000 != 0 ? ' ${_numberToWords(number % 1000)}' : ''}';
     }
     if (number < 10000000) {
-      return _numberToWords(number ~/ 100000) +
-          ' Lakh' +
-          (number % 100000 != 0 ? ' ${_numberToWords(number % 100000)}' : '');
+      return '${_numberToWords(number ~/ 100000)} Lakh${number % 100000 != 0 ? ' ${_numberToWords(number % 100000)}' : ''}';
     }
-    return _numberToWords(number ~/ 10000000) +
-        ' Crore' +
-        (number % 10000000 != 0 ? ' ${_numberToWords(number % 10000000)}' : '');
+    return '${_numberToWords(number ~/ 10000000)} Crore${number % 10000000 != 0 ? ' ${_numberToWords(number % 10000000)}' : ''}';
   }
 }

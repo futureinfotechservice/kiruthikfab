@@ -28,7 +28,6 @@ class KYCApiService {
       }
       return [];
     } catch (e) {
-      print("Error fetching customers: $e");
       return [];
     }
   }
@@ -51,7 +50,6 @@ class KYCApiService {
       }
       return [];
     } catch (e) {
-      print("Error fetching products: $e");
       return [];
     }
   }
@@ -69,45 +67,28 @@ class KYCApiService {
       }
       return [];
     } catch (e) {
-      print("Error fetching genders: $e");
       return [];
     }
   }
 
   // Fetch Relations
-  Future<List<Map<String, dynamic>>> fetchRelations(
-    BuildContext context,
-  ) async {
-    var url = Uri.parse('$baseUrl/fetch_relations.php');
-    try {
-      var response = await http.post(url);
-      if (response.statusCode == 200) {
-        var data = json.decode(response.body);
-        if (data['status'] == 'success') {
-          return List<Map<String, dynamic>>.from(data['data']);
-        }
-      }
-      return [];
-    } catch (e) {
-      print("Error fetching relations: $e");
-      return [];
-    }
-  }
 
   // Fetch Sizes
   Future<List<Map<String, dynamic>>> fetchSizes(BuildContext context) async {
-    var url = Uri.parse('$baseUrl/fetch_sizes.php');
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    final companyid = prefs.getString('companyid') ?? '';
+
+    if (companyid.isEmpty) return [];
+    var url = Uri.parse('$baseUrl/size_fetch.php');
     try {
-      var response = await http.post(url);
+      var response = await http.post(url, body: {'companyid': companyid});
       if (response.statusCode == 200) {
         var data = json.decode(response.body);
-        if (data['status'] == 'success') {
-          return List<Map<String, dynamic>>.from(data['data']);
-        }
+
+        return List<Map<String, dynamic>>.from(data);
       }
       return [];
     } catch (e) {
-      print("Error fetching sizes: $e");
       return [];
     }
   }
@@ -132,7 +113,6 @@ class KYCApiService {
       }
       return [];
     } catch (e) {
-      print("Error fetching occupations: $e");
       return [];
     }
   }
@@ -169,10 +149,8 @@ class KYCApiService {
       };
 
       var response = await http.post(url, body: data);
-      print("Insert Response: ${response.body}");
       return _handleResponse(context, response.body);
     } catch (e) {
-      print("Insert Error: $e");
       _showError(context, "Error: $e");
       return "Failed";
     }
@@ -212,10 +190,8 @@ class KYCApiService {
       };
 
       var response = await http.post(url, body: data);
-      print("Update Response: ${response.body}");
       return _handleResponse(context, response.body);
     } catch (e) {
-      print("Update Error: $e");
       _showError(context, "Error: $e");
       return "Failed";
     }
@@ -240,8 +216,6 @@ class KYCApiService {
         body: {'companyid': companyid},
       );
 
-      print("Fetch Response: ${response.body}");
-
       if (response.statusCode == 200) {
         if (response.body.trim().isEmpty || response.body.trim() == "[]") {
           return [];
@@ -254,14 +228,12 @@ class KYCApiService {
               .toList();
           return kycList;
         } catch (e) {
-          print("JSON decode error: $e");
           return [];
         }
       } else {
         throw Exception('Failed to load KYC: ${response.statusCode}');
       }
     } catch (e) {
-      print("Fetch Error: $e");
       _showError(context, "Error fetching KYC: $e");
       return [];
     }
@@ -293,7 +265,6 @@ class KYCApiService {
       }
       return null;
     } catch (e) {
-      print("Fetch Detail Error: $e");
       return null;
     }
   }
@@ -316,8 +287,6 @@ class KYCApiService {
         body: {'kyc_id': kycId, 'companyid': companyid},
       );
 
-      print("Delete Response: ${response.body}");
-
       var message = jsonDecode(response.body);
       if (message["status"] == "success") {
         return "Success";
@@ -326,7 +295,6 @@ class KYCApiService {
         return "Failed";
       }
     } catch (e) {
-      print("Delete Error: $e");
       _showError(context, "Error: $e");
       return "Failed";
     }
@@ -342,7 +310,6 @@ class KYCApiService {
         return "Failed";
       }
     } catch (e) {
-      print("Response Parse Error: $e");
       if (responseBody.toLowerCase().contains("success")) {
         return "Success";
       } else {

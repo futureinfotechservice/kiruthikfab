@@ -1,4 +1,4 @@
-import 'CustomerInterestModel.dart';
+import 'customer_interest_model.dart';
 
 class SourceFollowupResponse {
   final List<SourceFollowupReportModel> data;
