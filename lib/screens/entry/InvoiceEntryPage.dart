@@ -11,6 +11,8 @@ import '../../../../../widgets/customtextfield.dart';
 import '../../../models/invoice_print_helper.dart';
 import '../../../services/invoice_apiservice.dart';
 import '../../../services/kyc_apiservice.dart';
+import '../../models/delivery_partner_master_model.dart';
+import '../../services/delivery_partner_api_service.dart';
 
 class InvoiceEntryPage extends StatefulWidget {
   final dynamic invoice;
@@ -30,6 +32,7 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
   final TextEditingController _packingAmountController = TextEditingController(
     text: '0',
   );
+  final TextEditingController _gstNoController = TextEditingController();
 
   String _subtotal = '0.00';
   String _taxAmount = '0.00';
@@ -67,6 +70,8 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
   final List<GlobalKey<DropdownSearchState<String>>> _modelDropdownKeys = [];
   final List<GlobalKey<DropdownSearchState<String>>> _sizeDropdownKeys = [];
   final List<GlobalKey<DropdownSearchState<String>>> _unitDropdownKeys = [];
+  List<DeliveryPartnerMasterModel> deliveryPartners = [];
+  DeliveryPartnerMasterModel? selectedDeliveryPartner;
 
   bool get isEditMode => widget.invoice != null && !widget.isViewMode;
 
@@ -128,6 +133,13 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
     setState(() {});
   }
 
+  Future<void> loadDeliveryPartners() async {
+    deliveryPartners = await DeliveryPartnerApiService().fetchDeliveryPartners(
+      context,
+    );
+    setState(() {});
+  }
+
   @override
   void initState() {
     super.initState();
@@ -141,6 +153,7 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
       loadModels(),
       loadSizes(),
       loadUnits(),
+      loadDeliveryPartners(),
     ]);
     // SharedPreferences prefs = await SharedPreferences.getInstance();
     // usertype = prefs.getString('user_type') ?? '';
@@ -164,7 +177,8 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
 
   void _prefillForm() {
     final invoice = actualInvoice!;
-
+    print('invoice.deliveryPartner');
+    print(invoice.deliveryPartner);
     setState(() {
       _billNoController.text = invoice.invoiceNo;
       _billDateController.text = DateFormat(
@@ -179,6 +193,14 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
       _subtotal = invoice.subtotal;
       _grandTotal = invoice.grandTotal;
       _packingAmountController.text = invoice.packingAmount.toString();
+      _gstNoController.text = invoice.gstNo.toString();
+      if (invoice.deliveryPartner.isNotEmpty &&
+          invoice.deliveryPartner != 'null') {
+        selectedDeliveryPartner = deliveryPartners.firstWhere(
+          (element) => element.id == invoice.deliveryPartner,
+        );
+        print(selectedDeliveryPartner?.name);
+      }
       _loadInvoiceDetails(invoice.id);
     });
   }
@@ -524,6 +546,8 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
               _subtotal,
               _grandTotal,
               int.parse(_packingAmountController.text),
+              _gstNoController.text,
+              selectedDeliveryPartner!.id,
             )
             .then((result) {
               if (result == "Success") {
@@ -556,6 +580,8 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
               _subtotal,
               _grandTotal,
               int.parse(_packingAmountController.text),
+              _gstNoController.text,
+              selectedDeliveryPartner?.id ?? '',
             )
             .then((result) {
               if (result == "Success") {
@@ -577,7 +603,10 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
     }
   }
 
-  void _printInvoice() {
+  Future<void> _printInvoice() async {
+    Company? company;
+    if (mounted) company = await invoiceApiService().getCompanyDetails(context);
+
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => InvoicePrintPreview(
@@ -589,6 +618,7 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
           taxPercentage: _taxPercentage.toString(),
           grandTotal: _grandTotal,
           packingAmount: _packingAmountController.text,
+          company: company,
         ),
       ),
     );
@@ -1479,6 +1509,54 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
+                      'GST No:',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    TextFormField(
+                      controller: _gstNoController,
+                      keyboardType: TextInputType.emailAddress,
+
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 8,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                CustomDropdownSearch(
+                  selectedItem: selectedDeliveryPartner?.name,
+                  label: 'Delivery Partners',
+                  items: deliveryPartners.map<String>((invoice) {
+                    return invoice.name;
+                  }).toList(),
+                  onChanged: (value) {
+                    if (value == null) return;
+
+                    setState(() {
+                      selectedDeliveryPartner =
+                          deliveryPartners.firstWhere(
+                                (element) =>
+                                    element.name.toLowerCase() ==
+                                    value.toString().toLowerCase(),
+                              )
+                              as DeliveryPartnerMasterModel?;
+                    });
+                  },
+                ),
+                const SizedBox(height: 8),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
                       'Packing Amount:',
                       style: TextStyle(
                         fontSize: 14,
@@ -1530,31 +1608,84 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Packing Amount:',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.black,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      TextFormField(
-                        onChanged: (val) {
-                          _calculateTotals();
-                        },
-                        controller: _packingAmountController,
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                        ],
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 8,
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'GST No:',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black,
+                            ),
                           ),
-                        ),
+                          const SizedBox(height: 4),
+                          TextFormField(
+                            controller: _gstNoController,
+                            keyboardType: TextInputType.emailAddress,
+
+                            decoration: const InputDecoration(
+                              border: OutlineInputBorder(),
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 8,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      CustomDropdownSearch(
+                        selectedItem: selectedDeliveryPartner?.name,
+                        label: 'Delivery Partners',
+                        items: deliveryPartners.map<String>((invoice) {
+                          return invoice.name;
+                        }).toList(),
+                        onChanged: (value) {
+                          if (value == null) return;
+
+                          setState(() {
+                            selectedDeliveryPartner =
+                                deliveryPartners.firstWhere(
+                                      (element) =>
+                                          element.name.toLowerCase() ==
+                                          value.toString().toLowerCase(),
+                                    )
+                                    as DeliveryPartnerMasterModel?;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Packing Amount:',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          TextFormField(
+                            onChanged: (val) {
+                              _calculateTotals();
+                            },
+                            controller: _packingAmountController,
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                            ],
+                            decoration: const InputDecoration(
+                              border: OutlineInputBorder(),
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 8,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),

@@ -368,7 +368,7 @@ class _DistrictMasterScreenState extends State<DistrictMasterScreen> {
                           controller: _districtNameController,
                           decoration: InputDecoration(
                             hintText:
-                                'Enter district name (e.g., Business, Service, Student, Housewife, etc.)',
+                                'Enter district name (e.g., Chennai, Madurai, Thoothukudi, etc.)',
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 16,
                             ),

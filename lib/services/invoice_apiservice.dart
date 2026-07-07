@@ -134,8 +134,10 @@ class Company {
   final String contactNo;
   final String address;
   final String emailId;
+  final String showEmailId;
   final String logoUrl;
   final String activeStatus;
+  final String website;
 
   Company({
     required this.id,
@@ -146,6 +148,8 @@ class Company {
     required this.emailId,
     required this.logoUrl,
     required this.activeStatus,
+    required this.showEmailId,
+    required this.website,
   });
 
   factory Company.fromJson(Map<String, dynamic> json) {
@@ -156,6 +160,8 @@ class Company {
       contactNo: json['contactno'] ?? '',
       address: json['address'] ?? '',
       emailId: json['email_id'] ?? '',
+      showEmailId: json['show_email_id'] ?? '',
+      website: json['website'] ?? '',
       logoUrl: json['logourl'] ?? '',
       activeStatus: json['activestatus'] ?? '1',
     );
@@ -230,8 +236,11 @@ class InvoiceModel {
   final String grandTotal;
   final String addedby;
   final String createdAt;
+  final String gstNo;
+  final String deliveryPartner;
   final int? totalItems;
   final int? packingAmount;
+  final String deliveryPartnerName;
 
   InvoiceModel({
     required this.id,
@@ -251,6 +260,9 @@ class InvoiceModel {
     required this.createdAt,
     this.totalItems,
     this.packingAmount,
+    required this.gstNo,
+    required this.deliveryPartner,
+    required this.deliveryPartnerName,
   });
 
   factory InvoiceModel.fromJson(Map<String, dynamic> json) {
@@ -271,6 +283,9 @@ class InvoiceModel {
       addedby: json['addedby'] ?? '',
       createdAt: json['created_at'] ?? '',
       packingAmount: int.parse(json['packing_amount'].toString()),
+      gstNo: json['gst_no'].toString(),
+      deliveryPartner: json['delivery_partner'].toString(),
+      deliveryPartnerName: json['delivery_partner_name'].toString(),
       totalItems: json['total_items'] != null
           ? int.tryParse(json['total_items'].toString())
           : null,
@@ -454,13 +469,15 @@ class InvoiceApiService {
     String subtotal,
     String grandTotal,
     int packingAmount,
+    String gstNo,
+    String deliveryPartner,
   ) async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       final companyid = prefs.getString('companyid') ?? '';
       final addedby = prefs.getString('id') ?? '';
 
-      final url = Uri.parse("$baseUrl/save_invoice1.php");
+      final url = Uri.parse("$baseUrl/save_invoice2.php");
       // final url = Uri.parse("$baseUrl/test_saveinvoice.php");
 
       var data = {
@@ -476,6 +493,8 @@ class InvoiceApiService {
         "addedby": addedby,
         "status": 'Pending',
         "packing_amount": packingAmount,
+        "gst_no": gstNo,
+        "delivery_partner": deliveryPartner,
       };
 
       var response = await http.post(
@@ -524,12 +543,14 @@ class InvoiceApiService {
     String subtotal,
     String grandTotal,
     int packingAmount,
+    String gstNo,
+    String deliveryPartner,
   ) async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       final companyid = prefs.getString('companyid') ?? '';
 
-      final url = Uri.parse("$baseUrl/update_invoice1.php");
+      final url = Uri.parse("$baseUrl/update_invoice2.php");
 
       var data = {
         "invoiceid": invoiceId,
@@ -543,6 +564,8 @@ class InvoiceApiService {
         "subtotal": subtotal,
         "grandtotal": grandTotal,
         "packing_amount": packingAmount,
+        "gst_no": gstNo,
+        "delivery_partner": deliveryPartner,
       };
 
       var response = await http.post(

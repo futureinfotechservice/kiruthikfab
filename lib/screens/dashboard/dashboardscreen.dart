@@ -313,6 +313,13 @@ class _DashboardScreenState extends State<DashboardScreen>
     // Build stat models with better null safety
     final statModels = [
       _StatModel(
+        onTap: () {
+          final navProvider = Provider.of<NavigationProvider>(
+            context,
+            listen: false,
+          );
+          navProvider.updateIndex(selectedIndex: 1, reportSubIndex: 0);
+        },
         'Source',
         counts.source,
         Icons.layers_outlined,
@@ -321,6 +328,13 @@ class _DashboardScreenState extends State<DashboardScreen>
         'Total sources available',
       ),
       _StatModel(
+        onTap: () {
+          final navProvider = Provider.of<NavigationProvider>(
+            context,
+            listen: false,
+          );
+          navProvider.updateIndex(selectedIndex: 2, entrySubIndex: 2);
+        },
         'Called',
         counts.called,
         Icons.phone_outlined,
@@ -329,6 +343,13 @@ class _DashboardScreenState extends State<DashboardScreen>
         'Number of calls made',
       ),
       _StatModel(
+        onTap: () {
+          final navProvider = Provider.of<NavigationProvider>(
+            context,
+            listen: false,
+          );
+          navProvider.updateIndex(selectedIndex: 2, entrySubIndex: 2);
+        },
         'Not Called',
         counts.notCalled,
         Icons.phone_missed_outlined,
@@ -337,6 +358,13 @@ class _DashboardScreenState extends State<DashboardScreen>
         'Pending calls to make',
       ),
       _StatModel(
+        onTap: () {
+          final navProvider = Provider.of<NavigationProvider>(
+            context,
+            listen: false,
+          );
+          navProvider.updateIndex(selectedIndex: 2, entrySubIndex: 1);
+        },
         'KYC Filled',
         counts.kyc,
         Icons.verified_outlined,
@@ -345,6 +373,13 @@ class _DashboardScreenState extends State<DashboardScreen>
         'KYC completed',
       ),
       _StatModel(
+        onTap: () {
+          final navProvider = Provider.of<NavigationProvider>(
+            context,
+            listen: false,
+          );
+          navProvider.updateIndex(selectedIndex: 2, entrySubIndex: 0);
+        },
         'Total Value',
         counts.value,
         Icons.currency_rupee_rounded,
@@ -678,6 +713,7 @@ class _StatModel {
   final Color color;
   final Color bgColor;
   final String sub;
+  final GestureTapCallback onTap;
 
   const _StatModel(
     this.label,
@@ -685,8 +721,9 @@ class _StatModel {
     this.icon,
     this.color,
     this.bgColor,
-    this.sub,
-  );
+    this.sub, {
+    required this.onTap,
+  });
 }
 
 class _StatCard extends StatelessWidget {
@@ -710,59 +747,62 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: stat.bgColor,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: stat.color.withValues(alpha: 0.15)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: stat.color.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(10),
+    return InkWell(
+      onTap: stat.onTap,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: stat.bgColor,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: stat.color.withValues(alpha: 0.15)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: stat.color.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(stat.icon, color: stat.color, size: 20),
             ),
-            child: Icon(stat.icon, color: stat.color, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  formatAmount(stat.value),
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
-                    letterSpacing: -0.5,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    formatAmount(stat.value),
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textPrimary,
+                      letterSpacing: -0.5,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 1),
-                Text(
-                  stat.label,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: stat.color,
-                    letterSpacing: 0.3,
+                  const SizedBox(height: 1),
+                  Text(
+                    stat.label,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: stat.color,
+                      letterSpacing: 0.3,
+                    ),
                   ),
-                ),
-                Text(
-                  stat.sub,
-                  style: const TextStyle(
-                    fontSize: 10,
-                    color: AppColors.textMuted,
+                  Text(
+                    stat.sub,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      color: AppColors.textMuted,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

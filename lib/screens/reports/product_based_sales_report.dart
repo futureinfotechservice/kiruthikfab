@@ -3,7 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:kiruthikfab/models/ProductBasedSalesReportModel.dart';
+import 'package:kiruthikfab/models/source_master_model.dart';
+import 'package:kiruthikfab/services/kyc_apiservice.dart';
 import 'package:kiruthikfab/services/productBasedReportApiService.dart';
+import 'package:kiruthikfab/services/source_apiservice.dart';
 import 'package:kiruthikfab/widgets/customdropdownwidget.dart';
 
 import 'generate_sales_pdf.dart';
@@ -28,7 +31,7 @@ class _ProductBasedSalesReportState extends State<ProductBasedSalesReport> {
   // Pagination variables
   int _currentPage = 1;
   int _totalItems = 0;
-  int _limit = 50;
+  final int _limit = 50;
   bool _hasMore = true;
   bool _isLoading = false;
   bool _isInitialLoad = true;
@@ -38,12 +41,86 @@ class _ProductBasedSalesReportState extends State<ProductBasedSalesReport> {
 
   // Debounce for search
   Timer? _debounceTimer;
+  SourceMasterModel? selectedSource;
+  List<SourceMasterModel> sources = [];
+  Map<String, dynamic>? selectedAgent;
+  Map<String, dynamic>? selectedProduct;
 
+  List<Map<String, dynamic>> agents = [];
+  List<Map<String, dynamic>> products = [];
+  final SourceApiService _apiService = SourceApiService();
+  final KYCApiService _kycService = KYCApiService();
+
+  void _clearData() {
+    setState(() {
+      _fromDate = null;
+      _toDate = null;
+      _searchController.clear();
+      selectedProduct = {};
+      selectedAgent = {};
+      selectedSource = null;
+      _isReportGenerated = false;
+    });
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 500), () {
+      _loadInitialData();
+    });
+  }
+
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   _loadInitialData();
+  //   _scrollController.addListener(_onScroll);
+  // }
   @override
   void initState() {
     super.initState();
-    _loadInitialData();
+
+    _loadReport();
+    _loadDropdowns();
+
     _scrollController.addListener(_onScroll);
+  }
+
+  Future<void> _loadDropdowns() async {
+    try {
+      final responses = await Future.wait([
+        _apiService.fetchSources(context),
+        _apiService.fetchEntryPersons(context),
+        _kycService.fetchProducts(context),
+      ]);
+
+      if (!mounted) return;
+
+      setState(() {
+        sources = responses[0] as List<SourceMasterModel>;
+        agents = responses[1] as List<Map<String, dynamic>>;
+        products = responses[2] as List<Map<String, dynamic>>;
+      });
+    } catch (_) {}
+  }
+
+  Future<void> _loadReport() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    final response = await ProductBasedSalesReportService().fetchCall(
+      page: 1,
+      limit: _limit,
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      _salesData = response.data;
+      _filteredData = response.data;
+      _totalItems = response.total;
+      _hasMore = response.hasMore;
+      _currentPage = response.page;
+      _isLoading = false;
+    });
   }
 
   @override
@@ -71,6 +148,15 @@ class _ProductBasedSalesReportState extends State<ProductBasedSalesReport> {
     });
 
     try {
+      final responses = await Future.wait([
+        _apiService.fetchSources(context),
+        _apiService.fetchEntryPersons(context),
+        _kycService.fetchProducts(context),
+      ]);
+      sources = responses[0] as List<SourceMasterModel>;
+      agents = responses[1] as List<Map<String, dynamic>>;
+      products = responses[2] as List<Map<String, dynamic>>;
+
       final response = await ProductBasedSalesReportService().fetchCall(
         page: _currentPage,
         limit: _limit,
@@ -81,6 +167,9 @@ class _ProductBasedSalesReportState extends State<ProductBasedSalesReport> {
         toDate: _toDate != null
             ? DateFormat('yyyy-MM-dd').format(_toDate!)
             : null,
+        source: selectedSource?.id ?? '',
+        product: selectedProduct?['id'] ?? "",
+        salesPerson: selectedAgent?['id'] ?? '',
       );
 
       setState(() {
@@ -90,7 +179,6 @@ class _ProductBasedSalesReportState extends State<ProductBasedSalesReport> {
           _totalItems = response.total;
           _hasMore = response.hasMore;
           _currentPage = response.page;
-          _isReportGenerated = true;
         } else {
           _showErrorSnackBar(response.message);
         }
@@ -124,6 +212,9 @@ class _ProductBasedSalesReportState extends State<ProductBasedSalesReport> {
         toDate: _toDate != null
             ? DateFormat('yyyy-MM-dd').format(_toDate!)
             : null,
+        source: selectedSource?.id ?? '',
+        product: selectedProduct?['id'] ?? "",
+        salesPerson: selectedAgent?['id'] ?? '',
       );
 
       setState(() {
@@ -161,6 +252,7 @@ class _ProductBasedSalesReportState extends State<ProductBasedSalesReport> {
     _fromDate = null;
     _toDate = null;
     _isReportGenerated = false;
+
     _loadInitialData();
   }
 
@@ -170,9 +262,11 @@ class _ProductBasedSalesReportState extends State<ProductBasedSalesReport> {
       _fromDate = null;
       _toDate = null;
       _searchController.clear();
+      selectedProduct = {};
+      selectedAgent = {};
+      selectedSource = null;
       _isReportGenerated = false;
     });
-    _loadInitialData();
   }
 
   Future<void> _selectDate(BuildContext context, bool isFromDate) async {
@@ -194,15 +288,12 @@ class _ProductBasedSalesReportState extends State<ProductBasedSalesReport> {
   }
 
   void _generateReport() {
-    if (_fromDate != null && _toDate != null) {
-      // Reload with date filter
-      _loadInitialData();
-    } else {
-      _loadInitialData();
-    }
+    setState(() {
+      _isReportGenerated = true;
+    });
   }
 
-  void _filterData(String query) {
+  void _filterData() {
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 500), () {
       _loadInitialData();
@@ -263,10 +354,265 @@ class _ProductBasedSalesReportState extends State<ProductBasedSalesReport> {
                           ),
                           const SizedBox(width: 16),
                           Expanded(
-                            child: TextFormField(
-                              onChanged: (val) {
-                                _filterData(val);
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 6.0),
+                                  child: RichText(
+                                    text: TextSpan(
+                                      text: 'Search',
+                                      style: TextStyle(
+                                        color: const Color(0xFF374151),
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                TextFormField(
+                                  controller: _searchController,
+                                  decoration: InputDecoration(
+                                    hintText: 'Search by name and products',
+                                    prefixIcon: const Icon(Icons.search),
+                                    filled: true,
+                                    fillColor: Colors.white,
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 12,
+                                    ),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide.none,
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                        color: Colors.grey.shade300,
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: const BorderSide(
+                                        color: Colors.blue,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    suffixIcon:
+                                        _searchController.text.isNotEmpty
+                                        ? IconButton(
+                                            icon: const Icon(Icons.clear),
+                                            onPressed: () {
+                                              _searchController.clear();
+                                            },
+                                          )
+                                        : null,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.center,
+
+                        children: [
+                          Expanded(
+                            child: Stack(
+                              children: [
+                                CustomDropdownSearch(
+                                  label: "Source",
+                                  isRequired: false,
+                                  items: List<String>.from(
+                                    sources.map((item) => item.name),
+                                  ),
+                                  selectedItem: selectedSource?.name,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      if (value != null && value.isNotEmpty) {
+                                        selectedSource = sources.firstWhere(
+                                          (item) =>
+                                              item.name.toLowerCase() ==
+                                              value.toLowerCase(),
+                                          orElse: () => SourceMasterModel(
+                                            id: '',
+                                            companyid: '',
+                                            sourceNo: '',
+                                            sourceDate: '',
+                                            sourceDateDisplay: '',
+                                            branch: '',
+                                            name: '',
+                                            companyName: '',
+                                            mobileNo: '',
+                                            contactNo: '',
+                                            whatsappNo: '',
+                                            area: '',
+                                            areaId: '',
+                                            address: '',
+                                            occupation: '',
+                                            occupationId: '',
+                                            referBy: '',
+                                            referById: '',
+                                            agent: '',
+                                            agentId: '',
+                                            sourcingMode: '',
+                                            sourcingModeId: '',
+                                            entryPerson: '',
+                                            entryPersonId: '',
+                                            backgroundNetwork: '',
+                                            customerInterest: '',
+                                            notes: '',
+                                            salesPerson: '',
+                                            salesPersonId: '',
+                                            addedby: '',
+                                            activestatus: '',
+                                            createdAt: '',
+                                          ),
+                                        );
+                                      } else {
+                                        selectedSource = null;
+                                      }
+                                    });
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: CustomDropdownSearch(
+                              label: "Products",
+                              isRequired: false,
+                              items: products
+                                  .map((p) => p['name'] as String)
+                                  .toList(),
+                              selectedItem: selectedProduct?['name'],
+                              // hint: hint,
+                              onChanged: (value) {
+                                if (value != null && value.isNotEmpty) {
+                                  selectedProduct = products.firstWhere(
+                                    (item) =>
+                                        item['name'].toString().toLowerCase() ==
+                                        value.toLowerCase(),
+                                    orElse: () => {},
+                                  );
+                                }
                               },
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: CustomDropdownSearch(
+                              label: "Sales Person",
+                              isRequired: false,
+                              items: agents.map((e) {
+                                return e['name'].toString();
+                              }).toList(),
+                              selectedItem: selectedAgent?['name'],
+                              // hint: hint,
+                              onChanged: (value) {
+                                if (value != null && value.isNotEmpty) {
+                                  selectedAgent = agents.firstWhere(
+                                    (item) =>
+                                        item['name'].toString().toLowerCase() ==
+                                        value.toLowerCase(),
+                                    orElse: () => {},
+                                  );
+                                }
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text("Filter"),
+                              const SizedBox(height: 10),
+                              IconButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.blue.shade700,
+                                  foregroundColor: Colors.white,
+                                  fixedSize: const Size(50, 30),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                ),
+                                color: Colors.red,
+                                onPressed: _filterData,
+                                icon: const Icon(Icons.filter_alt),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(width: 16),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text("Clear"),
+                              const SizedBox(height: 10),
+                              IconButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red,
+                                  foregroundColor: Colors.white,
+                                  fixedSize: const Size(50, 30),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                ),
+                                color: Colors.red,
+                                onPressed: _clearData,
+                                icon: const Icon(Icons.clear),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ],
+                  )
+                : Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: _buildDateField(
+                          context,
+                          label: 'From Date',
+                          date: _fromDate,
+                          onTap: () => _selectDate(context, true),
+                          isSmallScreen: isSmallScreen,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _buildDateField(
+                          context,
+                          label: 'To Date',
+                          date: _toDate,
+                          onTap: () => _selectDate(context, false),
+                          isSmallScreen: isSmallScreen,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 6.0),
+                              child: RichText(
+                                text: TextSpan(
+                                  text: 'Search',
+                                  style: TextStyle(
+                                    color: const Color(0xFF374151),
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            TextFormField(
                               controller: _searchController,
                               decoration: InputDecoration(
                                 hintText: 'Search by name and products',
@@ -299,157 +645,74 @@ class _ProductBasedSalesReportState extends State<ProductBasedSalesReport> {
                                         icon: const Icon(Icons.clear),
                                         onPressed: () {
                                           _searchController.clear();
-                                          _loadInitialData();
                                         },
                                       )
                                     : null,
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: CustomDropdownSearch(
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Stack(
+                          children: [
+                            CustomDropdownSearch(
                               label: "Source",
                               isRequired: false,
-                              items: [],
-                              selectedItem: null,
-                              // hint: hint,
-                              onChanged: (value) {
-                                if (value != null && value.isNotEmpty) {
-                                  final selectedItem = [].firstWhere(
-                                    (item) => item['name'] == value,
-                                    orElse: () => {},
-                                  );
-                                }
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: CustomDropdownSearch(
-                              label: "Products",
-                              isRequired: false,
-                              items: [],
-                              selectedItem: null,
-                              // hint: hint,
-                              onChanged: (value) {
-                                if (value != null && value.isNotEmpty) {
-                                  final selectedItem = [].firstWhere(
-                                    (item) => item['name'] == value,
-                                    orElse: () => {},
-                                  );
-                                }
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: CustomDropdownSearch(
-                              label: "Sales Person",
-                              isRequired: false,
-                              items: [],
-                              selectedItem: null,
-                              // hint: hint,
-                              onChanged: (value) {
-                                if (value != null && value.isNotEmpty) {
-                                  final selectedItem = [].firstWhere(
-                                    (item) => item['name'] == value,
-                                    orElse: () => {},
-                                  );
-                                }
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  )
-                : Row(
-                    children: [
-                      Expanded(
-                        child: _buildDateField(
-                          context,
-                          label: 'From Date',
-                          date: _fromDate,
-                          onTap: () => _selectDate(context, true),
-                          isSmallScreen: isSmallScreen,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _buildDateField(
-                          context,
-                          label: 'To Date',
-                          date: _toDate,
-                          onTap: () => _selectDate(context, false),
-                          isSmallScreen: isSmallScreen,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: TextFormField(
-                          onChanged: (val) {
-                            _filterData(val);
-                          },
-                          controller: _searchController,
-                          decoration: InputDecoration(
-                            hintText: 'Search by name and products',
-                            prefixIcon: const Icon(Icons.search),
-                            filled: true,
-                            fillColor: Colors.white,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
-                                color: Colors.grey.shade300,
+                              items: List<String>.from(
+                                sources.map((item) => item.name),
                               ),
+                              selectedItem: selectedSource?.name,
+                              onChanged: (value) {
+                                setState(() {
+                                  if (value != null && value.isNotEmpty) {
+                                    selectedSource = sources.firstWhere(
+                                      (item) =>
+                                          item.name.toLowerCase() ==
+                                          value.toLowerCase(),
+                                      orElse: () => SourceMasterModel(
+                                        id: '',
+                                        companyid: '',
+                                        sourceNo: '',
+                                        sourceDate: '',
+                                        sourceDateDisplay: '',
+                                        branch: '',
+                                        name: '',
+                                        companyName: '',
+                                        mobileNo: '',
+                                        contactNo: '',
+                                        whatsappNo: '',
+                                        area: '',
+                                        areaId: '',
+                                        address: '',
+                                        occupation: '',
+                                        occupationId: '',
+                                        referBy: '',
+                                        referById: '',
+                                        agent: '',
+                                        agentId: '',
+                                        sourcingMode: '',
+                                        sourcingModeId: '',
+                                        entryPerson: '',
+                                        entryPersonId: '',
+                                        backgroundNetwork: '',
+                                        customerInterest: '',
+                                        notes: '',
+                                        salesPerson: '',
+                                        salesPersonId: '',
+                                        addedby: '',
+                                        activestatus: '',
+                                        createdAt: '',
+                                      ),
+                                    );
+                                  } else {
+                                    selectedSource = null;
+                                  }
+                                });
+                              },
                             ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(
-                                color: Colors.blue,
-                                width: 2,
-                              ),
-                            ),
-                            suffixIcon: _searchController.text.isNotEmpty
-                                ? IconButton(
-                                    icon: const Icon(Icons.clear),
-                                    onPressed: () {
-                                      _searchController.clear();
-                                      _loadInitialData();
-                                    },
-                                  )
-                                : null,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: CustomDropdownSearch(
-                          label: "Source",
-                          isRequired: false,
-                          items: [],
-                          selectedItem: null,
-                          // hint: hint,
-                          onChanged: (value) {
-                            if (value != null && value.isNotEmpty) {
-                              final selectedItem = [].firstWhere(
-                                (item) => item['name'] == value,
-                                orElse: () => {},
-                              );
-                            }
-                          },
+                          ],
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -457,13 +720,17 @@ class _ProductBasedSalesReportState extends State<ProductBasedSalesReport> {
                         child: CustomDropdownSearch(
                           label: "Products",
                           isRequired: false,
-                          items: [],
-                          selectedItem: null,
+                          items: products
+                              .map((p) => p['name'] as String)
+                              .toList(),
+                          selectedItem: selectedProduct?['name'],
                           // hint: hint,
                           onChanged: (value) {
                             if (value != null && value.isNotEmpty) {
-                              final selectedItem = [].firstWhere(
-                                (item) => item['name'] == value,
+                              selectedProduct = products.firstWhere(
+                                (item) =>
+                                    item['name'].toString().toLowerCase() ==
+                                    value.toLowerCase(),
                                 orElse: () => {},
                               );
                             }
@@ -475,18 +742,65 @@ class _ProductBasedSalesReportState extends State<ProductBasedSalesReport> {
                         child: CustomDropdownSearch(
                           label: "Sales Person",
                           isRequired: false,
-                          items: [],
-                          selectedItem: null,
+                          items: agents.map((e) {
+                            return e['name'].toString();
+                          }).toList(),
+                          selectedItem: selectedAgent?['name'],
                           // hint: hint,
                           onChanged: (value) {
                             if (value != null && value.isNotEmpty) {
-                              final selectedItem = [].firstWhere(
-                                (item) => item['name'] == value,
+                              selectedAgent = agents.firstWhere(
+                                (item) =>
+                                    item['name'].toString().toLowerCase() ==
+                                    value.toLowerCase(),
                                 orElse: () => {},
                               );
                             }
                           },
                         ),
+                      ),
+                      const SizedBox(width: 16),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text("Filter"),
+                          const SizedBox(height: 10),
+                          IconButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue.shade700,
+                              foregroundColor: Colors.white,
+                              fixedSize: const Size(50, 30),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                            color: Colors.red,
+                            onPressed: _filterData,
+                            icon: const Icon(Icons.filter_alt),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(width: 16),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text("Clear"),
+                          const SizedBox(height: 10),
+                          IconButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                              foregroundColor: Colors.white,
+                              fixedSize: const Size(50, 30),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                            color: Colors.red,
+                            onPressed: _clearData,
+                            icon: const Icon(Icons.clear),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -496,57 +810,121 @@ class _ProductBasedSalesReportState extends State<ProductBasedSalesReport> {
             // Action buttons row
             Row(
               children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: _filteredData.isEmpty
-                        ? null
-                        : () async {
-                            await generatePdf(
-                              _filteredData,
-                              context,
-                              title: 'Product Based Sales Report',
-                            );
-                          },
-                    icon: const Icon(Icons.file_download),
-                    label: const Text('Export Selected'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green[700],
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
+                ElevatedButton(
+                  onPressed: _filteredData.isEmpty
+                      ? null
+                      : () async {
+                          await generatePdf(
+                            _filteredData,
+                            context,
+                            title: 'Product Based Sales Report',
+                          );
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green[700],
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
                     ),
+                    fixedSize: Size(isSmallScreen ? 105 : 130, 50),
+                  ),
+
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (!isSmallScreen) const Icon(Icons.file_download),
+                      const Text('PDF\nSelected'),
+                    ],
                   ),
                 ),
                 const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: _salesData.isEmpty
-                        ? null
-                        : () async {
-                            await generatePdf(
-                              _salesData,
-                              context,
-                              title: 'Product Based Sales Report',
-                            );
-                          },
-                    icon: const Icon(Icons.print),
-                    label: const Text('Print Report'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue[700],
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
+                ElevatedButton(
+                  onPressed: _salesData.isEmpty
+                      ? null
+                      : () async {
+                          await generatePdf(
+                            _salesData,
+                            context,
+                            title: 'Product Based Sales Report',
+                          );
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue[700],
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
                     ),
+                    fixedSize: Size(isSmallScreen ? 75 : 100, 50),
+                  ),
+
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (!isSmallScreen) const Icon(Icons.print),
+                      const Text('PDF\nAll'),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                ElevatedButton(
+                  onPressed: _filteredData.isEmpty
+                      ? null
+                      : () async {
+                          await generatePdf(
+                            _filteredData,
+                            context,
+                            title: 'Product Based Sales Report',
+                          );
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green[700],
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    fixedSize: Size(isSmallScreen ? 105 : 130, 50),
+                  ),
+
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (!isSmallScreen) const Icon(Icons.file_download),
+                      const Text('Excel\nSelected'),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                ElevatedButton(
+                  onPressed: _salesData.isEmpty
+                      ? null
+                      : () async {
+                          await generatePdf(
+                            _salesData,
+                            context,
+                            title: 'Product Based Sales Report',
+                          );
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue[700],
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    fixedSize: Size(isSmallScreen ? 82 : 100, 50),
+                  ),
+
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (!isSmallScreen) const Icon(Icons.print),
+                      const Text('Excel\nAll'),
+                    ],
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    "Total: ${_totalItems}",
+                    "Total: $_totalItems",
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
@@ -671,33 +1049,51 @@ class _ProductBasedSalesReportState extends State<ProductBasedSalesReport> {
   }) {
     return InkWell(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey[400]!),
-          borderRadius: BorderRadius.circular(8),
-          color: Colors.white,
-        ),
-        child: Row(
-          children: [
-            Icon(
-              Icons.calendar_today,
-              size: isSmallScreen ? 16 : 20,
-              color: Colors.grey[700],
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                date != null ? _dateFormat.format(date) : label,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6.0),
+            child: RichText(
+              text: TextSpan(
+                text: label,
                 style: TextStyle(
-                  fontSize: isSmallScreen ? 13 : 15,
-                  color: date != null ? Colors.black87 : Colors.grey[600],
+                  color: const Color(0xFF374151),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
                 ),
-                overflow: TextOverflow.ellipsis,
               ),
             ),
-          ],
-        ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey[400]!),
+              borderRadius: BorderRadius.circular(8),
+              color: Colors.white,
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.calendar_today,
+                  size: isSmallScreen ? 16 : 20,
+                  color: Colors.grey[700],
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    date != null ? _dateFormat.format(date) : label,
+                    style: TextStyle(
+                      fontSize: isSmallScreen ? 13 : 15,
+                      color: date != null ? Colors.black87 : Colors.grey[600],
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

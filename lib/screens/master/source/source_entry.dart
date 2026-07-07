@@ -357,10 +357,6 @@ class _SourceEntryScreenState extends State<SourceEntryScreen> {
     bool isRequired = true,
     String? hint,
   }) {
-    print('object');
-    print(items.length);
-    print(items.length);
-    print(selectedId != null && selectedId.isNotEmpty && items.isNotEmpty);
     String? selectedName =
         selectedId != null && selectedId.isNotEmpty && items.isNotEmpty
         ? _getDistNameById(items, selectedId)

@@ -55,7 +55,7 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     userType = prefs.getString('user_type') ?? '';
 
-    if(mounted)_invoices = await invoiceApiService().getInvoiceList(context);
+    if (mounted) _invoices = await invoiceApiService().getInvoiceList(context);
     _extractUniqueValues();
     _filterInvoices();
     setState(() {});
@@ -145,12 +145,9 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
     );
 
     if (confirm == true) {
-      String result='';
-      if(mounted) {
-        result= await invoiceApiService().deleteInvoice(
-        context,
-        invoiceId,
-      );
+      String result = '';
+      if (mounted) {
+        result = await invoiceApiService().deleteInvoice(context, invoiceId);
       }
       if (result == "Success") {
         _loadInvoices();
@@ -191,8 +188,8 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
     );
 
     // Load company details
-    Company? company ;
-    if(mounted)company= await invoiceApiService().getCompanyDetails(context);
+    Company? company;
+    if (mounted) company = await invoiceApiService().getCompanyDetails(context);
 
     if (details.isNotEmpty) {
       // Calculate tax amount from invoice data
@@ -232,19 +229,20 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
         return {...item, 'formattedDescription': descriptionParts.join(' | ')};
       }).toList();
 
-      if(mounted) {
+      if (mounted) {
         await InvoicePrintHelper.printInvoice(
-        context: context,
-        invoice: invoice, // Now includes customer details
-        items: formattedItems,
-        customerName: invoice.customerName,
-        subtotal: invoice.subtotal,
-        taxAmount: taxAmount.toStringAsFixed(2),
-        taxPercentage: invoice.taxPercentage,
-        grandTotal: invoice.grandTotal,
-        company: company,
-        packingAmount: invoice.packingAmount.toString(),
-      );
+          context: context,
+          invoice: invoice,
+          // Now includes customer details
+          items: formattedItems,
+          customerName: invoice.customerName,
+          subtotal: invoice.subtotal,
+          taxAmount: taxAmount.toStringAsFixed(2),
+          taxPercentage: invoice.taxPercentage,
+          grandTotal: invoice.grandTotal,
+          company: company,
+          packingAmount: invoice.packingAmount.toString(),
+        );
       }
     }
   }
@@ -704,16 +702,16 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
                       onPressed: () => _editInvoice(invoice),
                       tooltip: 'Edit',
                     ),
-                    const SizedBox(width: 4),
-                    IconButton(
-                      icon: const Icon(
-                        Icons.delete,
-                        color: Colors.red,
-                        size: 20,
-                      ),
-                      onPressed: () => _deleteInvoice(invoice.id),
-                      tooltip: 'Delete',
-                    ),
+                    // const SizedBox(width: 4),
+                    // IconButton(
+                    //   icon: const Icon(
+                    //     Icons.delete,
+                    //     color: Colors.red,
+                    //     size: 20,
+                    //   ),
+                    //   onPressed: () => _deleteInvoice(invoice.id),
+                    //   tooltip: 'Delete',
+                    // ),
                   ],
                 ],
               ),
@@ -840,15 +838,15 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
                               onPressed: () => _editInvoice(invoice),
                               tooltip: 'Edit',
                             ),
-                            IconButton(
-                              icon: const Icon(
-                                Icons.delete,
-                                color: Colors.red,
-                                size: 18,
-                              ),
-                              onPressed: () => _deleteInvoice(invoice.id),
-                              tooltip: 'Delete',
-                            ),
+                            // IconButton(
+                            //   icon: const Icon(
+                            //     Icons.delete,
+                            //     color: Colors.red,
+                            //     size: 18,
+                            //   ),
+                            //   onPressed: () => _deleteInvoice(invoice.id),
+                            //   tooltip: 'Delete',
+                            // ),
                           ],
                         ],
                       ),

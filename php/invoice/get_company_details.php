@@ -13,7 +13,7 @@ $obj = json_decode($json, true);
 
 $companyid = $obj['companyid'];
 
-$sql = "SELECT `id`, `companyname`, `gstno`, `contactno`, `address`, `email_id`, `logourl`, `activestatus` 
+$sql = "SELECT `id`, `companyname`, `gstno`, `contactno`, `address`, `email_id`, `logourl`, `activestatus`,`website`,`show_email_id` 
         FROM `companymaster` 
         WHERE `id` = '$companyid' AND `activestatus` = 'Active'";
 

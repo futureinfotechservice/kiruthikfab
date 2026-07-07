@@ -24,7 +24,6 @@ class SourceApiService {
       if (response.statusCode == 200) {
         var data = (response.data);
         if (data['status'] == 'success') {
-          print(data['data']);
           return List<Map<String, dynamic>>.from(data['data']);
         }
       }
@@ -46,7 +45,7 @@ class SourceApiService {
     var url = '$baseUrl/fetch_salesperson.php';
     try {
       var response = await dio.post(url, data: {'companyid': companyid});
-      if (response.statusCode == 200 || response.statusCode == 200) {
+      if (response.statusCode == 200 || response.statusCode == 201) {
         var data = (response.data);
 
         if (data['status'] == 'success') {
@@ -501,7 +500,8 @@ class SourceApiService {
     var url = '$baseUrl/get_next_sourcenumber.php';
     try {
       var response = await dio.post(url, data: {'companyid': companyid});
-      if (response.statusCode == 200) {
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
         var data = (response.data);
         if (data['status'] == 'success') {
           return data['source_no'];

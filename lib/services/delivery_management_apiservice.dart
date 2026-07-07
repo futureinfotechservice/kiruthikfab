@@ -45,7 +45,7 @@ class DeliveryManagementApiService {
     try {
       var request = http.MultipartRequest(
         "POST",
-        Uri.parse("$baseUrl/fetch_all_invoice_no.php"),
+        Uri.parse("$baseUrl/fetch_all_invoice_no_not_delivered.php"),
       );
 
       request.fields["companyid"] = companyId;

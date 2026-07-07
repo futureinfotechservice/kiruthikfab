@@ -406,6 +406,7 @@ class _DeliveryManagementState extends State<DeliveryManagement> {
         companyId: companyid,
         billNo: billNo!,
       );
+
       final data = res;
 
       if (data["delivery_items"] != null && data["delivery_items"].isNotEmpty) {
@@ -419,7 +420,7 @@ class _DeliveryManagementState extends State<DeliveryManagement> {
         deliveryItems = data["delivery_items"];
         deliveryHeadId = int.parse(deliveryItems.first["headid"].toString());
         isEditMode = true;
-        print(data["delivery_items"][0]['delivery_partner']);
+
         if (data["delivery_items"][0]['delivery_partner'] != null &&
             data["delivery_items"][0]['delivery_partner'] != '') {
           try {
@@ -436,10 +437,7 @@ class _DeliveryManagementState extends State<DeliveryManagement> {
             selectedDeliveryPartner = null;
           }
         }
-        if (data["delivery_items"][0]['delivery_partner'] == null &&
-            data["delivery_items"][0]['delivery_partner'] == '') {
-          selectedDeliveryPartner = null;
-        }
+
         existingEntryNo = data["entry_no"]?.toString();
         if (existingEntryNo != null && existingEntryNo!.isNotEmpty) {
           entryNoController.text = existingEntryNo!;
@@ -466,7 +464,17 @@ class _DeliveryManagementState extends State<DeliveryManagement> {
           _updateFilteredLists();
         });
       } else {
-        selectedDeliveryPartner = null;
+        if (data["delivery_items1"][0]['invoice_delivery_partner'] != null &&
+            data["delivery_items1"][0]['invoice_delivery_partner'] != '') {
+          selectedDeliveryPartner = deliveryPartners
+              .where(
+                (element) =>
+                    element.id ==
+                    data["delivery_items1"][0]['invoice_delivery_partner'],
+              )
+              .first;
+        }
+
         // deliveryPartnerController.text = '';
         // await generateNewEntryNumber();
         isEditMode = false;
@@ -483,7 +491,6 @@ class _DeliveryManagementState extends State<DeliveryManagement> {
         await generateNewEntryNumber();
       }
     } catch (e) {
-      print(e);
       _showSnackBar("Error fetching delivery data", isError: true);
     }
   }
@@ -839,7 +846,7 @@ class _DeliveryManagementState extends State<DeliveryManagement> {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: filteredChecklists.length,
-          separatorBuilder: (_, __) =>
+          separatorBuilder: (_, _) =>
               const Divider(height: 1, indent: 16, endIndent: 16),
           itemBuilder: (context, index) {
             return Padding(
@@ -968,7 +975,7 @@ class _DeliveryManagementState extends State<DeliveryManagement> {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: displayProducts.length,
-          separatorBuilder: (_, __) =>
+          separatorBuilder: (_, _) =>
               const Divider(height: 1, indent: 16, endIndent: 16),
           itemBuilder: (context, index) {
             final product = displayProducts[index];

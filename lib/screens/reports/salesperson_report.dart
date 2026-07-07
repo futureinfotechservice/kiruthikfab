@@ -867,7 +867,7 @@ class _SalespersonReportState extends State<SalespersonReport> {
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          bool isSmallScreen = constraints.maxWidth < 600;
+          bool isSmallScreen = constraints.maxWidth < 800;
 
           if (isSmallScreen) {
             return Column(

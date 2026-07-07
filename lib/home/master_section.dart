@@ -151,7 +151,7 @@ class MasterSectionScreenState extends State<MasterSectionScreen>
                 Tab(icon: Icon(Icons.interests), text: 'Interest'),
                 Tab(icon: Icon(Icons.people_outline), text: 'Relation'),
                 Tab(icon: Icon(Icons.source), text: 'Source Mode'),
-                Tab(icon: Icon(Icons.location_city), text: 'District Mode'),
+                Tab(icon: Icon(Icons.location_city), text: 'District Master'),
                 Tab(
                   icon: Icon(Icons.delivery_dining),
                   text: 'Delivery Partner',

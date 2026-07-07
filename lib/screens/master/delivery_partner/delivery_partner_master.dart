@@ -368,7 +368,7 @@ class _DeliveryPartnerMasterScreenState
                           controller: _nameController,
                           decoration: InputDecoration(
                             hintText:
-                                'Enter DeliveryPartner (e.g., Father, Mother, Son, etc.)',
+                                'Enter DeliveryPartner (e.g., ABD Parcel Service, etc.)',
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 16,
                             ),

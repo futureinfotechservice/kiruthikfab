@@ -1,10 +1,16 @@
 <?php
 include 'conn.php';
+include 'cors.php';
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 
 $companyid = isset($_POST['companyid']) ? mysqli_real_escape_string($conn, $_POST['companyid']) : '';
 
+if (empty($companyid)) {
+    $json = file_get_contents('php://input');
+$obj = json_decode($json, true);
+ $companyid = mysqli_real_escape_string($conn, $obj['companyid'] ?? '');
+}
 if (empty($companyid)) {
     echo json_encode(["status" => "error", "message" => "Company ID is required"]);
     mysqli_close($conn);

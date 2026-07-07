@@ -29,6 +29,7 @@ class _SourceFollowupReportState extends State<SourceFollowupReport> {
   bool loadingMore = false;
 
   final ScrollController scrollController = ScrollController();
+  final ScrollController horizontalController = ScrollController();
   List<SourceFollowupReportModel> filtered = [];
 
   bool loading = true;
@@ -657,146 +658,159 @@ class _SourceFollowupReportState extends State<SourceFollowupReport> {
   }
 
   Widget _buildReportTable(bool isSmallScreen) {
-    return Container(
-      constraints: const BoxConstraints(minWidth: 1200),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Fixed Table Header
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-              border: Border.all(color: Colors.grey[400]!),
-            ),
-            child: Row(
-              children: [
-                _buildHeaderCell('S.No', fixedWidth: 60),
-                _buildHeaderCell('Source No', fixedWidth: 100),
-                _buildHeaderCell('Source Name', flex: 2),
-                _buildHeaderCell('Mobile', fixedWidth: 130),
-                _buildHeaderCell('Sales Person', flex: 2),
-                _buildHeaderCell('Entry No', fixedWidth: 150),
-                _buildHeaderCell('Date', fixedWidth: 120),
-                _buildHeaderCell('Followup Date', fixedWidth: 140),
-                _buildHeaderCell('Interest', flex: 1),
-              ],
-            ),
-          ),
+    const double tableWidth = 1260;
 
-          // Scrollable Table Body
-          SizedBox(
-            height: 450, // Fixed height for scrollable area
-            child: Scrollbar(
-              controller: scrollController,
-              thumbVisibility: true,
-              trackVisibility: true,
-              child: ListView.builder(
-                controller: scrollController,
-                itemCount:
-                    filtered.length +
-                    (loadingMore ? 1 : 0) +
-                    (!hasMore && filtered.isNotEmpty && !loadingMore ? 1 : 0),
-                itemBuilder: (context, index) {
-                  // Show loading indicator
-                  if (index == filtered.length && loadingMore) {
-                    return Container(
-                      padding: const EdgeInsets.all(16),
-                      alignment: Alignment.center,
-                      child: const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.blue,
-                          ),
-                        ),
+    return Column(
+      children: [
+        Expanded(
+          child: Scrollbar(
+            controller: horizontalController,
+            thumbVisibility: true,
+            trackVisibility: true,
+            scrollbarOrientation: ScrollbarOrientation.top,
+            child: SingleChildScrollView(
+              controller: horizontalController,
+              scrollDirection: Axis.horizontal,
+              child: SizedBox(
+                width: tableWidth,
+                child: Column(
+                  children: [
+                    //================ HEADER =================
+                    Container(
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        border: Border.all(color: Colors.grey.shade400),
                       ),
-                    );
-                  }
-
-                  // Show "No more data" message
-                  if (index == filtered.length && !hasMore && !loadingMore) {
-                    return Container(
-                      padding: const EdgeInsets.all(16),
-                      alignment: Alignment.center,
-                      child: Text(
-                        'No more data available',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 13,
-                          fontStyle: FontStyle.italic,
-                        ),
+                      child: Row(
+                        children: [
+                          _buildHeaderCell("S.No", 60),
+                          _buildHeaderCell("Source No", 100),
+                          _buildHeaderCell("Source Name", 220),
+                          _buildHeaderCell("Mobile", 110),
+                          _buildHeaderCell("Sales Person", 220),
+                          _buildHeaderCell("Entry No", 140),
+                          _buildHeaderCell("Date", 120),
+                          _buildHeaderCell("Followup Date", 140),
+                          _buildHeaderCell("Interest", 140),
+                        ],
                       ),
-                    );
-                  }
-
-                  // Show data row
-                  final item = filtered[index];
-                  return Container(
-                    decoration: BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(color: Colors.grey[300]!),
-                        left: BorderSide(color: Colors.grey[300]!),
-                        right: BorderSide(color: Colors.grey[300]!),
-                      ),
-                      color: index % 2 == 0 ? Colors.white : Colors.grey[50],
                     ),
-                    child: Row(
-                      children: [
-                        _buildDataCell('${index + 1}', fixedWidth: 60),
-                        _buildDataCell(item.sourceNo, fixedWidth: 100),
-                        _buildDataCell(item.sourceName, flex: 2),
-                        _buildDataCell(item.mobile, fixedWidth: 130),
-                        _buildDataCell(item.salesPersonName, flex: 2),
-                        _buildDataCell(
-                          item.entryNo.toString(),
-                          fixedWidth: 150,
+
+                    //================ BODY =================
+                    Expanded(
+                      child: Scrollbar(
+                        controller: scrollController,
+                        thumbVisibility: true,
+                        trackVisibility: true,
+                        child: ListView.builder(
+                          controller: scrollController,
+                          itemCount:
+                              filtered.length +
+                              (loadingMore ? 1 : 0) +
+                              (!hasMore && filtered.isNotEmpty && !loadingMore
+                                  ? 1
+                                  : 0),
+                          itemBuilder: (context, index) {
+                            if (index == filtered.length && loadingMore) {
+                              return const Padding(
+                                padding: EdgeInsets.all(15),
+                                child: Center(
+                                  child: CircularProgressIndicator(),
+                                ),
+                              );
+                            }
+
+                            if (index == filtered.length &&
+                                !loadingMore &&
+                                !hasMore) {
+                              return Padding(
+                                padding: const EdgeInsets.all(15),
+                                child: Center(
+                                  child: Text(
+                                    "No more data available",
+                                    style: TextStyle(
+                                      color: Colors.grey,
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }
+
+                            final item = filtered[index];
+
+                            return Container(
+                              color: index.isEven
+                                  ? Colors.white
+                                  : Colors.grey.shade50,
+                              child: Row(
+                                children: [
+                                  _buildDataCell("${index + 1}", 60),
+                                  _buildDataCell(item.sourceNo, 100),
+                                  _buildDataCell(item.sourceName, 220),
+                                  _buildDataCell(item.mobile, 110),
+                                  _buildDataCell(item.salesPersonName, 220),
+                                  _buildDataCell(item.entryNo.toString(), 140),
+                                  _buildDataCell(item.date.toString(), 120),
+                                  _buildDataCell(
+                                    item.followupDate.toString(),
+                                    140,
+                                  ),
+                                  _buildDataCell(item.interest.interest, 140),
+                                ],
+                              ),
+                            );
+                          },
                         ),
-                        _buildDataCell(item.date.toString(), fixedWidth: 120),
-                        _buildDataCell(
-                          item.followupDate.toString(),
-                          fixedWidth: 140,
-                        ),
-                        _buildDataCell(item.interest.interest, flex: 1),
-                      ],
+                      ),
                     ),
-                  );
-                },
+                  ],
+                ),
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  // Helper method for header cells
-  Widget _buildHeaderCell(String text, {double? fixedWidth, int? flex}) {
+  Widget _buildHeaderCell(String title, double width) {
     return Container(
-      width: fixedWidth,
+      width: width,
       height: 48,
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       alignment: Alignment.centerLeft,
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      decoration: BoxDecoration(
+        border: Border(right: BorderSide(color: Colors.grey.shade400)),
+      ),
       child: Text(
-        text,
+        title,
         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
         overflow: TextOverflow.ellipsis,
       ),
     );
   }
 
-  // Helper method for data cells
-  Widget _buildDataCell(String text, {double? fixedWidth, int? flex}) {
+  Widget _buildDataCell(String value, double width) {
     return Container(
-      width: fixedWidth,
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+      width: width,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+      decoration: BoxDecoration(
+        border: Border(
+          right: BorderSide(color: Colors.grey.shade300),
+          bottom: BorderSide(color: Colors.grey.shade300),
+        ),
+      ),
       alignment: Alignment.centerLeft,
-      child: Text(
-        text,
-        style: const TextStyle(fontSize: 13),
-        overflow: TextOverflow.ellipsis,
-        maxLines: 1,
+      child: Tooltip(
+        message: value,
+        child: Text(
+          value,
+          overflow: TextOverflow.ellipsis,
+          maxLines: 1,
+          style: const TextStyle(fontSize: 13),
+        ),
       ),
     );
   }

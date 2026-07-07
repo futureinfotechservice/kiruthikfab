@@ -40,11 +40,12 @@ class _AddCallRegisterScreenState extends State<AddCallRegisterScreen> {
   final TextEditingController fromTimeController = TextEditingController();
   final TextEditingController toTimeController = TextEditingController();
   SourceMasterModel? selectedSource;
+  List<SourceMasterModel> sources = [];
   Map<String, dynamic>? selectedAgent;
 
   List<Map<String, dynamic>> agents = [];
   Map<String, dynamic> callRegisters = {};
-  List<SourceMasterModel> sources = [];
+
   bool _initialized = false;
   List<CustomerInterestModel> _interests = [];
   CustomerInterestModel? _selectedInterest;

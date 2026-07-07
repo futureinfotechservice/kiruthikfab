@@ -1,7 +1,5 @@
-import 'dart:typed_data';
-
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -40,9 +38,16 @@ Future<void> generatePdf(
     totalQty += int.tryParse(item.qty) ?? 0;
     totalAmount += double.tryParse(item.total) ?? 0.0;
   }
+  final tamilFont = pw.Font.ttf(
+    await rootBundle.load("assets/fonts/NotoSansTamil-Regular.ttf"),
+  );
 
+  final tamilBold = pw.Font.ttf(
+    await rootBundle.load("assets/fonts/NotoSansTamil-Bold.ttf"),
+  );
   pdf.addPage(
     pw.MultiPage(
+      theme: pw.ThemeData.withFont(base: tamilFont, bold: tamilBold),
       pageFormat: PdfPageFormat.a4.landscape,
       margin: const pw.EdgeInsets.all(20),
       header: (context) {

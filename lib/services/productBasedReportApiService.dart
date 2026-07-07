@@ -13,6 +13,9 @@ class ProductBasedSalesReportService {
     String search = '',
     String? fromDate,
     String? toDate,
+    String? source,
+    String? product,
+    String? salesPerson,
   }) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final companyid = prefs.getString('companyid') ?? '';
@@ -41,6 +44,9 @@ class ProductBasedSalesReportService {
           'search': search,
           'from_date': fromDate ?? '',
           'to_date': toDate ?? '',
+          'source': source ?? '',
+          'product': product ?? '',
+          'salesPerson': salesPerson ?? '',
         },
       );
 
@@ -100,38 +106,5 @@ class ProductBasedSalesReportService {
         hasMore: false,
       );
     }
-  }
-
-  // Convenience method for loading more data
-  Future<ProductBasedSalesReportResponse> loadMore({
-    required int currentPage,
-    int limit = 100,
-    String search = '',
-    String? fromDate,
-    String? toDate,
-  }) async {
-    return await fetchCall(
-      page: currentPage + 1,
-      limit: limit,
-      search: search,
-      fromDate: fromDate,
-      toDate: toDate,
-    );
-  }
-
-  // Convenience method for refreshing with search/filters
-  Future<ProductBasedSalesReportResponse> refresh({
-    String search = '',
-    String? fromDate,
-    String? toDate,
-    int limit = 100,
-  }) async {
-    return await fetchCall(
-      page: 1,
-      limit: limit,
-      search: search,
-      fromDate: fromDate,
-      toDate: toDate,
-    );
   }
 }
