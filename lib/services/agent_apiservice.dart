@@ -17,7 +17,9 @@ class AgentApiService {
     final userid = prefs.getString('id') ?? '';
 
     if (companyid.isEmpty) {
-      _showError(context, "Company ID not found. Please login again.");
+      if (context.mounted) {
+        _showError(context, "Company ID not found. Please login again.");
+      }
       return "Failed";
     }
 
@@ -33,13 +35,17 @@ class AgentApiService {
 
       var response = await http.post(
         url,
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: data,
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache',
+        },
+        body: json.encode(data),
       );
 
       return _handleResponse(context, response.body);
     } catch (e) {
-      _showError(context, "Error: $e");
+      if (context.mounted) _showError(context, "Error: $e");
       return "Failed";
     }
   }
@@ -54,7 +60,9 @@ class AgentApiService {
     final userid = prefs.getString('id') ?? '';
 
     if (companyid.isEmpty) {
-      _showError(context, "Company ID not found. Please login again.");
+      if (context.mounted) {
+        _showError(context, "Company ID not found. Please login again.");
+      }
       return "Failed";
     }
 
@@ -70,13 +78,17 @@ class AgentApiService {
 
       var response = await http.post(
         url,
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: data,
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache',
+        },
+        body: json.encode(data),
       );
 
       return _handleResponse(context, response.body);
     } catch (e) {
-      _showError(context, "Error: $e");
+      if (context.mounted) _showError(context, "Error: $e");
       return "Failed";
     }
   }
@@ -86,7 +98,9 @@ class AgentApiService {
     final companyid = prefs.getString('companyid') ?? '';
 
     if (companyid.isEmpty) {
-      _showError(context, "Company ID not found. Please login again.");
+      if (context.mounted) {
+        _showError(context, "Company ID not found. Please login again.");
+      }
       return [];
     }
 
@@ -95,31 +109,41 @@ class AgentApiService {
     try {
       var response = await http.post(
         url,
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: {'companyid': companyid},
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache',
+        },
+        body: json.encode({'companyid': companyid}),
       );
 
       if (response.statusCode == 200) {
         if (response.body.trim() == "No Data Found." ||
-            response.body.trim().isEmpty) {
+            response.body
+                .trim()
+                .isEmpty) {
           return [];
         }
+        final data = json.decode(response.body);
 
         try {
-          List<dynamic> items = json.decode(response.body);
-
-          List<AgentMasterModel> agents = items
-              .map((item) => AgentMasterModel.fromJson(item))
-              .toList();
-          return agents;
+          if (data['status'] == 'success') {
+            final agents = (data['data'] as List)
+                .map((item) => AgentMasterModel.fromJson(item))
+                .toList();
+            return agents;
+          } else {
+            return [];
+          }
         } catch (e) {
+          print(e);
           return [];
         }
       } else {
         throw Exception('Failed to load agents: ${response.statusCode}');
       }
     } catch (e) {
-      _showError(context, "Error fetching agents: $e");
+      //_showError(context, "Error fetching agents: $e");
       return [];
     }
   }
@@ -127,9 +151,10 @@ class AgentApiService {
   Future<String> deleteAgent(BuildContext context, String agentId) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final companyid = prefs.getString('companyid') ?? '';
-
     if (companyid.isEmpty) {
-      _showError(context, "Company ID not found. Please login again.");
+      if (context.mounted) {
+        _showError(context, "Company ID not found. Please login again.");
+      }
       return "Failed";
     }
 
@@ -137,19 +162,25 @@ class AgentApiService {
     try {
       var response = await http.post(
         url,
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: {'agentid': agentId, 'companyid': companyid},
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache',
+        },
+        body: json.encode({'agentid': agentId, 'companyid': companyid}),
       );
 
       var message = jsonDecode(response.body);
       if (message["status"] == "success") {
         return "Success";
       } else {
-        _showError(context, message["message"] ?? "Delete failed");
+        if (context.mounted) {
+          _showError(context, message["message"] ?? "Delete failed");
+        }
         return "Failed";
       }
     } catch (e) {
-      _showError(context, "Error: $e");
+      if (context.mounted) _showError(context, "Error: $e");
       return "Failed";
     }
   }

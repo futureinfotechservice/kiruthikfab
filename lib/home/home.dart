@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+// import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -137,29 +137,28 @@ class CustomerManagementAppState extends State<CustomerManagementApp> {
 
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      WidgetsFlutterBinding.ensureInitialized();
-
       prefs.clear();
-      // id = (prefs.remove('id')).toString();
-      //
-      // username = (prefs.remove('username')).toString();
-      //
-      // password = (prefs.remove('password')).toString();
-      //
-      // email = (prefs.remove('email')).toString();
-      //
-      // userType = (prefs.remove('user_type')).toString();
-      //
-      // companyid = (prefs.remove('companyid')).toString();
-      //
-      // activestatus = (prefs.remove('activestatus')).toString();
-      //
-      //
-      // companyname = (prefs.remove('companyname')).toString();
-      //
-      //
-      // logourl = (prefs.remove('logourl')).toString();
     });
+    // id = (prefs.remove('id')).toString();
+    //
+    // username = (prefs.remove('username')).toString();
+    //
+    // password = (prefs.remove('password')).toString();
+    //
+    // email = (prefs.remove('email')).toString();
+    //
+    // userType = (prefs.remove('user_type')).toString();
+    //
+    // companyid = (prefs.remove('companyid')).toString();
+    //
+    // activestatus = (prefs.remove('activestatus')).toString();
+    //
+    //
+    // companyname = (prefs.remove('companyname')).toString();
+    //
+    //
+    // logourl = (prefs.remove('logourl')).toString();
+    // });
     if (mounted) {
       Navigator.push(
         context,
@@ -173,12 +172,48 @@ class CustomerManagementAppState extends State<CustomerManagementApp> {
     _loadCounterremove();
   }
 
+  Future<bool> onWillPop() async {
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isWeb = kIsWeb && MediaQuery.of(context).size.width > 768;
+    final isWeb = MediaQuery.of(context).size.width > 768;
     final isUser = userType == "USER";
     final navProvider = context.watch<NavigationProvider>();
     Widget buildCurrentScreen() {
+      if (isUser) {
+        switch (navProvider.selectedIndex) {
+          case 0:
+            return const DashboardScreen();
+
+          case 1:
+            return EntrySectionScreen(
+              initialSubIndex: navProvider.entrySubIndex,
+              onSubIndexChanged: (subIndex) {
+                navProvider.updateIndex(
+                  selectedIndex: navProvider.selectedIndex,
+                  entrySubIndex: subIndex,
+                );
+              },
+            );
+
+          case 2:
+            return ReportSectionScreen(
+              initialSubIndex: navProvider.reportSubIndex,
+              onSubIndexChanged: (subIndex) {
+                navProvider.updateIndex(
+                  selectedIndex: navProvider.selectedIndex,
+                  reportSubIndex: subIndex,
+                );
+              },
+            );
+
+          default:
+            return const SizedBox();
+        }
+      }
+
       switch (navProvider.selectedIndex) {
         case 0:
           return const DashboardScreen();
@@ -222,179 +257,135 @@ class CustomerManagementAppState extends State<CustomerManagementApp> {
     }
 
     if (isWeb) {
-      return Scaffold(
-        body: Row(
-          children: [
-            // Sidebar Navigation for Web
-            _buildWebSidebar(),
-            // Main Content Area
-            Expanded(
-              child: buildCurrentScreen(),
-              // child: IndexedStack(
-              //   index: navProvider.selectedIndex,
-              //   children: [
-              //     const DashboardScreen(),
-              //     isUser
-              //         ? SizedBox()
-              //         : MasterSectionScreen(
-              //             // key: _masterSectionKey,
-              //             initialSubIndex: navProvider.masterSubIndex,
-              //             onSubIndexChanged: (subIndex) {
-              //               navProvider.updateIndex(
-              //                 selectedIndex: navProvider.selectedIndex,
-              //                 masterSubIndex: subIndex,
-              //               );
-              //               // setState(() {
-              //               //   masterSubIndex = subIndex;
-              //               // });
-              //             },
-              //           ),
-              //     EntrySectionScreen(
-              //       // key: _entrySectionKey,
-              //       initialSubIndex: navProvider.entrySubIndex,
-              //       onSubIndexChanged: (subIndex) {
-              //         navProvider.updateIndex(
-              //           selectedIndex: navProvider.selectedIndex,
-              //           entrySubIndex: subIndex,
-              //         );
-              //
-              //         // setState(() {
-              //         //   entrySubIndex = subIndex;
-              //         // });
-              //       },
-              //     ),
-              //     ReportSectionScreen(
-              //       // key: _reportSectionKey,
-              //       initialSubIndex: navProvider.reportSubIndex,
-              //       onSubIndexChanged: (subIndex) {
-              //         navProvider.updateIndex(
-              //           selectedIndex: navProvider.selectedIndex,
-              //           reportSubIndex: subIndex,
-              //         );
-              //
-              //         // setState(() {
-              //         //   reportSubIndex = subIndex;
-              //         // });
-              //       },
-              //     ),
-              //     // const SettingsScreen(),
-              //     // const BackupScreenWeb(),
-              //   ],
-              // ),
-            ),
-          ],
+      return WillPopScope(
+        onWillPop: onWillPop,
+        child: Scaffold(
+          body: Row(
+            children: [
+              // Sidebar Navigation for Web
+              _buildWebSidebar(),
+              // Main Content Area
+              Expanded(
+                child: buildCurrentScreen(),
+                // child: IndexedStack(
+                //   index: navProvider.selectedIndex,
+                //   children: [
+                //     const DashboardScreen(),
+                //     isUser
+                //         ? SizedBox()
+                //         : MasterSectionScreen(
+                //             // key: _masterSectionKey,
+                //             initialSubIndex: navProvider.masterSubIndex,
+                //             onSubIndexChanged: (subIndex) {
+                //               navProvider.updateIndex(
+                //                 selectedIndex: navProvider.selectedIndex,
+                //                 masterSubIndex: subIndex,
+                //               );
+                //               // setState(() {
+                //               //   masterSubIndex = subIndex;
+                //               // });
+                //             },
+                //           ),
+                //     EntrySectionScreen(
+                //       // key: _entrySectionKey,
+                //       initialSubIndex: navProvider.entrySubIndex,
+                //       onSubIndexChanged: (subIndex) {
+                //         navProvider.updateIndex(
+                //           selectedIndex: navProvider.selectedIndex,
+                //           entrySubIndex: subIndex,
+                //         );
+                //
+                //         // setState(() {
+                //         //   entrySubIndex = subIndex;
+                //         // });
+                //       },
+                //     ),
+                //     ReportSectionScreen(
+                //       // key: _reportSectionKey,
+                //       initialSubIndex: navProvider.reportSubIndex,
+                //       onSubIndexChanged: (subIndex) {
+                //         navProvider.updateIndex(
+                //           selectedIndex: navProvider.selectedIndex,
+                //           reportSubIndex: subIndex,
+                //         );
+                //
+                //         // setState(() {
+                //         //   reportSubIndex = subIndex;
+                //         // });
+                //       },
+                //     ),
+                //     // const SettingsScreen(),
+                //     // const BackupScreenWeb(),
+                //   ],
+                // ),
+              ),
+            ],
+          ),
         ),
       );
     } else {
-      return Scaffold(
-        appBar: _buildAppBar(),
-        body: IndexedStack(
-          index: navProvider.selectedIndex,
-          children: [
-            const DashboardScreen(),
-            if (!isUser)
-              MasterSectionScreen(
-                // key: _masterSectionKey,
-                initialSubIndex: navProvider.masterSubIndex,
-                onSubIndexChanged: (subIndex) {
+      return WillPopScope(
+        onWillPop: onWillPop,
+        child: Scaffold(
+          appBar: _buildAppBar(),
+          body: buildCurrentScreen(),
+          bottomNavigationBar: BottomNavigationBar(
+            type: BottomNavigationBarType.fixed,
+            currentIndex: navProvider.selectedIndex,
+            onTap: (index) {
+              setState(() {
+                // selectedIndex = index;
+                navProvider.updateIndex(selectedIndex: index);
+
+                if (index != 1) {
                   navProvider.updateIndex(
                     selectedIndex: navProvider.selectedIndex,
-                    masterSubIndex: subIndex,
+                    masterSubIndex: 0,
                   );
 
-                  // setState(() {
-                  //   masterSubIndex = subIndex;
-                  // });
-                },
-              ),
-            EntrySectionScreen(
-              // key: _entrySectionKey,
-              initialSubIndex: navProvider.entrySubIndex,
-              onSubIndexChanged: (subIndex) {
-                navProvider.updateIndex(
-                  selectedIndex: navProvider.selectedIndex,
-                  entrySubIndex: subIndex,
-                );
+                  // masterSubIndex = 0; // Reset when leaving master section
+                }
+                if (index != 2) {
+                  navProvider.updateIndex(
+                    selectedIndex: navProvider.selectedIndex,
+                    entrySubIndex: 0,
+                  );
 
-                // setState(() {
-                //   entrySubIndex = subIndex;
-                // });
-              },
-            ),
-            ReportSectionScreen(
-              // key: _reportSectionKey,
-              initialSubIndex: navProvider.reportSubIndex,
-              onSubIndexChanged: (subIndex) {
-                navProvider.updateIndex(
-                  selectedIndex: navProvider.selectedIndex,
-                  reportSubIndex: subIndex,
-                );
+                  // entrySubIndex = 0; // Reset when leaving entry section
+                }
+                if (index != 3) {
+                  navProvider.updateIndex(
+                    selectedIndex: navProvider.selectedIndex,
+                    reportSubIndex: 0,
+                  );
 
-                // setState(() {
-                //   reportSubIndex = subIndex;
-                // });
-              },
-            ),
-            // const SettingsScreen(),
-            // const BackupScreen(),
-          ],
-        ),
-        bottomNavigationBar: BottomNavigationBar(
-          type: BottomNavigationBarType.fixed,
-          currentIndex: navProvider.selectedIndex,
-          onTap: (index) {
-            setState(() {
-              // selectedIndex = index;
-              navProvider.updateIndex(selectedIndex: index);
-
-              if (index != 1) {
-                navProvider.updateIndex(
-                  selectedIndex: navProvider.selectedIndex,
-                  masterSubIndex: 0,
-                );
-
-                // masterSubIndex = 0; // Reset when leaving master section
-              }
-              if (index != 2) {
-                navProvider.updateIndex(
-                  selectedIndex: navProvider.selectedIndex,
-                  entrySubIndex: 0,
-                );
-
-                // entrySubIndex = 0; // Reset when leaving entry section
-              }
-              if (index != 3) {
-                navProvider.updateIndex(
-                  selectedIndex: navProvider.selectedIndex,
-                  reportSubIndex: 0,
-                );
-
-                // reportSubIndex = 0; // Reset when leaving report section
-              }
-            });
-          },
-          backgroundColor: const Color(0xFF1E293B),
-          selectedItemColor: Colors.white,
-          unselectedItemColor: Colors.grey[400],
-          items: [
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.dashboard),
-              label: 'Dashboard',
-            ),
-            if (!isUser)
+                  // reportSubIndex = 0; // Reset when leaving report section
+                }
+              });
+            },
+            backgroundColor: const Color(0xFF1E293B),
+            selectedItemColor: Colors.white,
+            unselectedItemColor: Colors.grey[400],
+            items: [
               const BottomNavigationBarItem(
-                icon: Icon(Icons.folder_special),
-                label: 'Master',
+                icon: Icon(Icons.dashboard),
+                label: 'Dashboard',
               ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.edit_document),
-              label: 'Entry',
-            ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.assessment),
-              label: 'Reports',
-            ),
-          ],
+              if (!isUser)
+                const BottomNavigationBarItem(
+                  icon: Icon(Icons.folder_special),
+                  label: 'Master',
+                ),
+              const BottomNavigationBarItem(
+                icon: Icon(Icons.edit_document),
+                label: 'Entry',
+              ),
+              const BottomNavigationBarItem(
+                icon: Icon(Icons.assessment),
+                label: 'Reports',
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -423,19 +414,19 @@ class CustomerManagementAppState extends State<CustomerManagementApp> {
           ? IconButton(
               icon: const Icon(Icons.arrow_back, color: Colors.white),
               onPressed: () {
-                setState(() {
-                  navProvider.updateIndex(
-                    selectedIndex: 0,
-                    reportSubIndex: 0,
-                    masterSubIndex: 0,
-                    entrySubIndex: 0,
-                  );
+                // setState(() {
+                navProvider.updateIndex(
+                  selectedIndex: 0,
+                  reportSubIndex: 0,
+                  masterSubIndex: 0,
+                  entrySubIndex: 0,
+                );
 
-                  // selectedIndex = 0;
-                  // masterSubIndex = 0;
-                  // entrySubIndex = 0;
-                  // reportSubIndex = 0;
-                });
+                // selectedIndex = 0;
+                // masterSubIndex = 0;
+                // entrySubIndex = 0;
+                // reportSubIndex = 0;
+                // });
               },
             )
           : null,
@@ -508,7 +499,7 @@ class CustomerManagementAppState extends State<CustomerManagementApp> {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  'V-0.0.6',
+                  'V-0.0.7',
                   style: TextStyle(color: Colors.grey, fontSize: 12),
                 ),
               ],
@@ -632,9 +623,15 @@ class CustomerManagementAppState extends State<CustomerManagementApp> {
                   ),
                   _buildMasterSubItem(
                     15,
+                    Icons.location_on_outlined,
+                    'State Master',
+                  ),
+                  _buildMasterSubItem(
+                    16,
                     Icons.delivery_dining,
                     'Delivery Partner Master',
                   ),
+                  _buildMasterSubItem(17, Icons.inventory, 'Inventory Master'),
                 ],
               ),
             ),
@@ -674,11 +671,16 @@ class CustomerManagementAppState extends State<CustomerManagementApp> {
               padding: const EdgeInsets.only(left: 16),
               child: Column(
                 children: [
-                  _buildEntrySubItem(0, Icons.receipt, 'Bill Entry'),
-                  _buildEntrySubItem(1, Icons.pages_outlined, 'KYC Entry'),
-                  _buildEntrySubItem(2, Icons.call, 'Call Register'),
                   _buildEntrySubItem(
-                    3,
+                    0,
+                    Icons.inventory_outlined,
+                    'Inward Entry',
+                  ),
+                  _buildEntrySubItem(1, Icons.receipt, 'Bill Entry'),
+                  _buildEntrySubItem(2, Icons.pages_outlined, 'KYC Entry'),
+                  _buildEntrySubItem(3, Icons.call, 'Call Register'),
+                  _buildEntrySubItem(
+                    4,
                     Icons.delivery_dining,
                     'Delivery Management',
                   ),
@@ -730,6 +732,17 @@ class CustomerManagementAppState extends State<CustomerManagementApp> {
                     2,
                     Icons.follow_the_signs,
                     'Source Followup Report',
+                  ),
+                  _buildReportSubItem(3, Icons.receipt_long, 'Stock ledger'),
+                  _buildReportSubItem(
+                    4,
+                    Icons.receipt_outlined,
+                    'Stock Statement',
+                  ),
+                  _buildReportSubItem(
+                    5,
+                    Icons.real_estate_agent,
+                    'Agent Refer',
                   ),
                 ],
               ),

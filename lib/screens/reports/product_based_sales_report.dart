@@ -2,14 +2,19 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:kiruthikfab/indigator/main.dart';
 import 'package:kiruthikfab/models/ProductBasedSalesReportModel.dart';
 import 'package:kiruthikfab/models/source_master_model.dart';
+import 'package:kiruthikfab/screens/navigation_provider.dart';
 import 'package:kiruthikfab/services/kyc_apiservice.dart';
 import 'package:kiruthikfab/services/productBasedReportApiService.dart';
 import 'package:kiruthikfab/services/source_apiservice.dart';
 import 'package:kiruthikfab/widgets/customdropdownwidget.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-import 'generate_sales_pdf.dart';
+import 'generate_sales_excel.dart';
+import 'generate_sales_report/generate_sales_pdf.dart';
 
 class ProductBasedSalesReport extends StatefulWidget {
   const ProductBasedSalesReport({super.key});
@@ -27,6 +32,7 @@ class _ProductBasedSalesReportState extends State<ProductBasedSalesReport> {
   List<ProductBasedSalesReportModel> _filteredData = [];
   final TextEditingController _searchController = TextEditingController();
   final DateFormat _dateFormat = DateFormat('dd/MM/yyyy');
+  final DateFormat _dateFormatPdf = DateFormat('yyyy-MM-dd');
 
   // Pagination variables
   int _currentPage = 1;
@@ -50,6 +56,7 @@ class _ProductBasedSalesReportState extends State<ProductBasedSalesReport> {
   List<Map<String, dynamic>> products = [];
   final SourceApiService _apiService = SourceApiService();
   final KYCApiService _kycService = KYCApiService();
+  String userType = '';
 
   void _clearData() {
     setState(() {
@@ -105,7 +112,8 @@ class _ProductBasedSalesReportState extends State<ProductBasedSalesReport> {
     setState(() {
       _isLoading = true;
     });
-
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    userType = prefs.getString('user_type') ?? '';
     final response = await ProductBasedSalesReportService().fetchCall(
       page: 1,
       limit: _limit,
@@ -160,7 +168,7 @@ class _ProductBasedSalesReportState extends State<ProductBasedSalesReport> {
       final response = await ProductBasedSalesReportService().fetchCall(
         page: _currentPage,
         limit: _limit,
-        search: _searchController.text.trim(),
+
         fromDate: _fromDate != null
             ? DateFormat('yyyy-MM-dd').format(_fromDate!)
             : null,
@@ -170,6 +178,7 @@ class _ProductBasedSalesReportState extends State<ProductBasedSalesReport> {
         source: selectedSource?.id ?? '',
         product: selectedProduct?['id'] ?? "",
         salesPerson: selectedAgent?['id'] ?? '',
+        search: _searchController.text.trim(),
       );
 
       setState(() {
@@ -304,10 +313,31 @@ class _ProductBasedSalesReportState extends State<ProductBasedSalesReport> {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isSmallScreen = screenWidth < 800;
+    final navProvider = context.watch<NavigationProvider>();
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
+        leading: IconButton(
+          onPressed: () {
+            if (userType.toUpperCase() == "ADMIN") {
+              navProvider.updateIndex(
+                selectedIndex: 3,
+                reportSubIndex: 0,
+                masterSubIndex: 0,
+                entrySubIndex: 0,
+              );
+            } else {
+              navProvider.updateIndex(
+                selectedIndex: 2,
+                reportSubIndex: 0,
+                masterSubIndex: 0,
+                entrySubIndex: 0,
+              );
+            }
+          },
+          icon: Icon(Icons.arrow_back, color: Colors.white),
+        ),
         automaticallyImplyActions: false,
         automaticallyImplyLeading: false,
         actions: [
@@ -814,11 +844,29 @@ class _ProductBasedSalesReportState extends State<ProductBasedSalesReport> {
                   onPressed: _filteredData.isEmpty
                       ? null
                       : () async {
-                          await generatePdf(
-                            _filteredData,
-                            context,
-                            title: 'Product Based Sales Report',
-                          );
+                          print('generatePdf1');
+                          if (_fromDate != null && _toDate != null) {
+                            await SalesReportService.generatePdf(
+                              fromDate: _dateFormatPdf
+                                  .format(_fromDate!)
+                                  .toString(),
+                              toDate: _dateFormatPdf
+                                  .format(_toDate!)
+                                  .toString(),
+                              source: selectedSource?.id ?? '',
+                              product: selectedProduct?['id'] ?? "",
+                              salesPerson: selectedAgent?['id'] ?? '',
+                              search: _searchController.text.trim(),
+                            );
+                          } else {
+                            print('generatePdf2');
+                            await SalesReportService.generatePdf(
+                              source: selectedSource?.id ?? '',
+                              product: selectedProduct?['id'] ?? "",
+                              salesPerson: selectedAgent?['id'] ?? '',
+                              search: _searchController.text.trim(),
+                            );
+                          }
                         },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green[700],
@@ -837,43 +885,46 @@ class _ProductBasedSalesReportState extends State<ProductBasedSalesReport> {
                     ],
                   ),
                 ),
-                const SizedBox(width: 12),
-                ElevatedButton(
-                  onPressed: _salesData.isEmpty
-                      ? null
-                      : () async {
-                          await generatePdf(
-                            _salesData,
-                            context,
-                            title: 'Product Based Sales Report',
-                          );
-                        },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue[700],
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    fixedSize: Size(isSmallScreen ? 75 : 100, 50),
-                  ),
-
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (!isSmallScreen) const Icon(Icons.print),
-                      const Text('PDF\nAll'),
-                    ],
-                  ),
-                ),
+                // const SizedBox(width: 12),
+                // ElevatedButton(
+                //   onPressed: _salesData.isEmpty
+                //       ? null
+                //       : () async {
+                //           await SalesReportService.generatePdf();
+                //         },
+                //   style: ElevatedButton.styleFrom(
+                //     backgroundColor: Colors.blue[700],
+                //     foregroundColor: Colors.white,
+                //     shape: RoundedRectangleBorder(
+                //       borderRadius: BorderRadius.circular(10),
+                //     ),
+                //     fixedSize: Size(isSmallScreen ? 75 : 100, 50),
+                //   ),
+                //
+                //   child: Row(
+                //     mainAxisSize: MainAxisSize.min,
+                //     children: [
+                //       if (!isSmallScreen) const Icon(Icons.print),
+                //       const Text('PDF\nAll'),
+                //     ],
+                //   ),
+                // ),
                 const SizedBox(width: 12),
                 ElevatedButton(
                   onPressed: _filteredData.isEmpty
                       ? null
                       : () async {
-                          await generatePdf(
-                            _filteredData,
-                            context,
-                            title: 'Product Based Sales Report',
+                          await SalesReportExcel().generateAndDownloadReport(
+                            fromDate: _fromDate != null
+                                ? DateFormat('yyyy-MM-dd').format(_fromDate!)
+                                : '',
+                            toDate: _toDate != null
+                                ? DateFormat('yyyy-MM-dd').format(_toDate!)
+                                : '',
+                            source: selectedSource?.id ?? '',
+                            product: selectedProduct?['id'] ?? "",
+                            salesPerson: selectedAgent?['id'] ?? '',
+                            search: _searchController.text.trim(),
                           );
                         },
                   style: ElevatedButton.styleFrom(
@@ -893,34 +944,30 @@ class _ProductBasedSalesReportState extends State<ProductBasedSalesReport> {
                     ],
                   ),
                 ),
-                const SizedBox(width: 12),
-                ElevatedButton(
-                  onPressed: _salesData.isEmpty
-                      ? null
-                      : () async {
-                          await generatePdf(
-                            _salesData,
-                            context,
-                            title: 'Product Based Sales Report',
-                          );
-                        },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue[700],
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    fixedSize: Size(isSmallScreen ? 82 : 100, 50),
-                  ),
-
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (!isSmallScreen) const Icon(Icons.print),
-                      const Text('Excel\nAll'),
-                    ],
-                  ),
-                ),
+                // const SizedBox(width: 12),
+                // ElevatedButton(
+                //   onPressed: _salesData.isEmpty
+                //       ? null
+                //       : () async {
+                //           await SalesReportExcel().generateAndDownloadReport();
+                //         },
+                //   style: ElevatedButton.styleFrom(
+                //     backgroundColor: Colors.blue[700],
+                //     foregroundColor: Colors.white,
+                //     shape: RoundedRectangleBorder(
+                //       borderRadius: BorderRadius.circular(10),
+                //     ),
+                //     fixedSize: Size(isSmallScreen ? 82 : 100, 50),
+                //   ),
+                //
+                //   child: Row(
+                //     mainAxisSize: MainAxisSize.min,
+                //     children: [
+                //       if (!isSmallScreen) const Icon(Icons.print),
+                //       const Text('Excel\nAll'),
+                //     ],
+                //   ),
+                // ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
@@ -937,7 +984,7 @@ class _ProductBasedSalesReportState extends State<ProductBasedSalesReport> {
                       child: SizedBox(
                         width: 20,
                         height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: CircularWaveProgress(),
                       ),
                     ),
                   ),
@@ -992,7 +1039,7 @@ class _ProductBasedSalesReportState extends State<ProductBasedSalesReport> {
                     // Table / List
                     Expanded(
                       child: _isLoading && _isInitialLoad
-                          ? const Center(child: CircularProgressIndicator())
+                          ? const Center(child: CircularWaveProgress())
                           : _isReportGenerated && _filteredData.isNotEmpty
                           ? _buildReportTable(isSmallScreen)
                           : _buildEmptyState(),
@@ -1216,9 +1263,7 @@ class _ProductBasedSalesReportState extends State<ProductBasedSalesReport> {
                                 child: const SizedBox(
                                   width: 24,
                                   height: 24,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
+                                  child: CircularWaveProgress(),
                                 ),
                               ),
 

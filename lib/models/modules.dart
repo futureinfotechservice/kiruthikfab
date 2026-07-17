@@ -2,12 +2,13 @@ class LoginData {
   String id;
   String username;
   String password;
-  String unique_id;
+  String uniqueId;
   String email;
-  String user_type;
-  String companyid;
-  String activestatus;
-  String companystatus;
+  String userType;
+  String companyId;
+  String activeStatus;
+  String companyStatus;
+
   // String location_track;
   // String attendance;
   // String crm;
@@ -21,6 +22,7 @@ class LoginData {
   // String accounts;
   String companyname;
   String logourl;
+
   // String offer;
   // String general;
   // String settings;
@@ -30,11 +32,11 @@ class LoginData {
     required this.id,
     required this.username,
     required this.password,
-    required this.unique_id,
+    required this.uniqueId,
     required this.email,
-    required this.user_type,
-    required this.companyid,
-    required this.companystatus,
+    required this.userType,
+    required this.companyId,
+    required this.companyStatus,
     // required this.location_track,
     // required this.attendance,
     // required this.crm,
@@ -52,7 +54,7 @@ class LoginData {
     // required this.general,
     // required this.settings,
     // required this.profile,
-    required this.activestatus,
+    required this.activeStatus,
   });
 
   factory LoginData.fromJson(Map<String, dynamic> json) {
@@ -60,12 +62,12 @@ class LoginData {
       id: json['id'],
       username: json['username'],
       password: json['password'],
-      unique_id: json['unique_id'],
+      uniqueId: json['unique_id'],
       email: json['email'],
-      user_type: json['user_type'],
-      companyid: json['companyid'],
-      activestatus: json['activestatus'],
-      companystatus: json['companystatus'],
+      userType: json['user_type'],
+      companyId: json['companyid'],
+      activeStatus: json['activestatus'],
+      companyStatus: json['companystatus'],
       // attendance: json['attendance'],
       // crm: json['crm'],
       // salesorder: json['salesorder'],

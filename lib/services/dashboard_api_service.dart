@@ -88,12 +88,16 @@ class DashboardApiService {
   ) async {
     final res = await http.post(
       Uri.parse("$baseUrl/fetch_delivery_management_dashboard.php"),
-      body: {
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: json.encode({
         "companyid": companyId,
         "search": search,
         "user_type": type,
         "user_id": id,
-      },
+      }),
     );
 
     if (res.statusCode == 200 || res.statusCode == 201) {

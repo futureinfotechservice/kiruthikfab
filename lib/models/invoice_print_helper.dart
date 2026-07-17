@@ -7,8 +7,8 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
 import '../../../services/invoice_apiservice.dart';
-import '../screens/entry/invoice_print_helper_stub.dart'
-    if (dart.library.html) '../screens/entry/invoice_print_helper_web.dart';
+import '../screens/entry/invoice_print_helper/invoice_print_helper.dart'
+    as invoice_print_helper;
 
 class InvoicePrintHelper {
   static Future<void> printInvoice({
@@ -38,7 +38,7 @@ class InvoicePrintHelper {
 
       if (kIsWeb) {
         // Use the web-specific implementation
-        await InvoicePrintHelperWeb.downloadPDFWeb(
+        await invoice_print_helper.InvoicePrintHelper.downloadPDF(
           pdf,
           'Invoice_${invoice.invoiceNo}.pdf',
         );
@@ -144,7 +144,7 @@ class InvoicePrintHelper {
     double grandTotalValue = getDoubleValue(grandTotal);
     double discountValue = 0.0;
     double taxableAmount = subtotalValue - discountValue;
-    pw.Widget _term(String text) {
+    pw.Widget term(String text) {
       return pw.Padding(
         padding: const pw.EdgeInsets.only(bottom: 4),
         child: pw.Row(
@@ -192,7 +192,7 @@ class InvoicePrintHelper {
             pw.SizedBox(height: 6),
 
             // Address
-            if (company?.address?.isNotEmpty ?? false)
+            if (company?.address.isNotEmpty ?? false)
               pw.Text(
                 company!.address,
                 textAlign: pw.TextAlign.center,
@@ -240,7 +240,7 @@ class InvoicePrintHelper {
                   ),
               ],
             ),
-            if (invoice.gstNo.isNotEmpty && invoice.gstNo != '0') ...[
+            if (company.gstNo.isNotEmpty && company.gstNo != '0') ...[
               pw.SizedBox(height: 6),
               pw.Container(
                 padding: const pw.EdgeInsets.symmetric(
@@ -252,7 +252,7 @@ class InvoicePrintHelper {
                   borderRadius: pw.BorderRadius.circular(4),
                 ),
                 child: pw.Text(
-                  'GSTIN : ${invoice.gstNo}',
+                  'GSTIN : ${company.gstNo}',
                   style: pw.TextStyle(
                     fontSize: 9,
                     fontWeight: pw.FontWeight.bold,
@@ -840,34 +840,34 @@ class InvoicePrintHelper {
               ),
               pw.Divider(color: PdfColors.grey400),
 
-              _term(
+              term(
                 'Damaged, defective, or incorrect products must be reported within 48 hours of delivery along with clear photographs and order details.',
               ),
 
-              _term(
+              term(
                 'Exchanges can be requested within 5 days from the date of delivery.',
               ),
 
-              _term(
+              term(
                 'Products must be unused, unwashed, and in their original condition with all tags intact.',
               ),
 
-              _term(
+              term(
                 'Items must be returned with their original packaging and all accessories.',
               ),
 
               // _term(
               //   'Products are not refundable. Only exchanges are permitted, subject to approval.',
               // ),
-              _term(
+              term(
                 'Return shipping charges must be borne by the customer unless the error is from our side.',
               ),
 
-              _term(
+              term(
                 'Items that are stained, damaged, altered, washed, or show signs of use will not be accepted.',
               ),
 
-              _term(
+              term(
                 'Orders will be processed and dispatched only after full payment has been received.',
               ),
             ],

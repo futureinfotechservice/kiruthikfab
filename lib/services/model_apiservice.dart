@@ -54,7 +54,8 @@ class ModelApiService {
     final userid = prefs.getString('id') ?? '';
 
     if (companyid.isEmpty) {
-      _showError(context, "Company ID not found. Please login again.");
+      if (context.mounted)
+        _showError(context, "Company ID not found. Please login again.");
       return "Failed";
     }
 
@@ -86,7 +87,8 @@ class ModelApiService {
     final companyid = prefs.getString('companyid') ?? '';
 
     if (companyid.isEmpty) {
-      _showError(context, "Company ID not found. Please login again.");
+      if (context.mounted)
+        _showError(context, "Company ID not found. Please login again.");
       return [];
     }
 
@@ -119,7 +121,7 @@ class ModelApiService {
         throw Exception('Failed to load models: ${response.statusCode}');
       }
     } catch (e) {
-      _showError(context, "Error fetching models: $e");
+      // _showError(context, "Error fetching models: $e");
       return [];
     }
   }
@@ -129,7 +131,8 @@ class ModelApiService {
     final companyid = prefs.getString('companyid') ?? '';
 
     if (companyid.isEmpty) {
-      _showError(context, "Company ID not found. Please login again.");
+      if (context.mounted)
+        _showError(context, "Company ID not found. Please login again.");
       return "Failed";
     }
 

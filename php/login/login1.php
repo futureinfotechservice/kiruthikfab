@@ -14,8 +14,8 @@ $platform = $obj['platform'];
 $username = $obj['username'];
 $password = $obj['password'];
 $email = $obj['email'];
-$unique_id = $obj['unique_id'];
-$platform = $obj['platform'];
+// $unique_id = $obj['unique_id'];
+// $platform = $obj['platform'];
 
 
 if ($platform == 1) {
@@ -138,3 +138,5 @@ if ($platform == 1) {
 }
 
 $conn->close();
+exit;
+

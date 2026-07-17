@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:kiruthikfab/services/delivery_partner_api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../indigator/main.dart';
 import '../../models/delivery_partner_master_model.dart';
 import '../../services/delivery_management_apiservice.dart';
 import 'custom_search_dropdown_salesperson.dart';
@@ -90,6 +91,7 @@ class _DeliveryManagementState extends State<DeliveryManagement> {
       }
 
       final companyName = prefs.getString('companyname') ?? '';
+      if (!mounted) return;
       final responses = await Future.wait([
         DeliveryManagementApiService.fetchProducts(companyId: companyid),
         DeliveryPartnerApiService().fetchDeliveryPartners(context),
@@ -585,7 +587,7 @@ class _DeliveryManagementState extends State<DeliveryManagement> {
     return Scaffold(
       backgroundColor: const Color(0xffF3F4F6),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularWaveProgress())
           : SingleChildScrollView(
               padding: const EdgeInsets.all(24),
               child: Column(
@@ -1131,10 +1133,7 @@ class _DeliveryManagementState extends State<DeliveryManagement> {
                 ? const SizedBox(
                     width: 20,
                     height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
+                    child: CircularWaveProgress(),
                   )
                 : Icon(isEditMode ? Icons.check_circle : Icons.save),
             label: Text(buttonText),

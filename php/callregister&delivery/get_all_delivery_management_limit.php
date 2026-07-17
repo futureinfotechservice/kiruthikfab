@@ -41,7 +41,7 @@
 
         $where .= "
     AND dd.date >= '$fromDate' 
-AND dd.date < '$toDate'
+AND dd.date <= '$toDate'
     
      
     ";

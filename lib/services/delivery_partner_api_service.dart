@@ -88,7 +88,8 @@ class DeliveryPartnerApiService {
     final companyid = prefs.getString('companyid') ?? '';
 
     if (companyid.isEmpty) {
-      _showError(context, "Company ID not found. Please login again.");
+      if (context.mounted)
+        _showError(context, "Company ID not found. Please login again.");
       return [];
     }
 
@@ -123,7 +124,7 @@ class DeliveryPartnerApiService {
         );
       }
     } catch (e) {
-      _showError(context, "Error fetching DeliveryPartners: $e");
+      //_showError(context, "Error fetching DeliveryPartners: $e");
       return [];
     }
   }

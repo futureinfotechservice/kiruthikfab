@@ -1,9 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../../../models/source_master_model.dart';
 import '../../../../services/source_apiservice.dart';
+import '../../../indigator/main.dart';
+import '../../navigation_provider.dart';
 import 'source_entry.dart';
 
 class SourceListScreen extends StatefulWidget {
@@ -76,9 +79,11 @@ class _SourceListScreenState extends State<SourceListScreen> {
         total = response.total.toString();
       });
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error : $e"), backgroundColor: Colors.red),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error : $e"), backgroundColor: Colors.red),
+        );
+      }
     }
 
     if (mounted) {
@@ -225,8 +230,20 @@ class _SourceListScreenState extends State<SourceListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final navProvider = context.watch<NavigationProvider>();
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          onPressed: () {
+            navProvider.updateIndex(
+              selectedIndex: 0,
+              reportSubIndex: 0,
+              masterSubIndex: 0,
+              entrySubIndex: 0,
+            );
+          },
+          icon: Icon(Icons.arrow_back, color: Colors.white),
+        ),
         actions: [
           IconButton(
             onPressed: _loadSources,
@@ -272,7 +289,7 @@ class _SourceListScreenState extends State<SourceListScreen> {
                   const SizedBox(
                     width: 18,
                     height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                    child: CircularWaveProgress(),
                   ),
                 const Spacer(),
                 Text("Total : $total"),
@@ -294,7 +311,7 @@ class _SourceListScreenState extends State<SourceListScreen> {
                   if (index >= _sources.length) {
                     return const Padding(
                       padding: EdgeInsets.all(20),
-                      child: Center(child: CircularProgressIndicator()),
+                      child: Center(child: CircularWaveProgress()),
                     );
                   }
 

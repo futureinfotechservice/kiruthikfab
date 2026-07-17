@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../indigator/main.dart';
 import '../../models/source_followup_report_model.dart';
 import '../../services/source_followup_report_apiservice.dart';
+import '../navigation_provider.dart';
 import 'generate_followup_report.dart';
 
 class SourceFollowupReport extends StatefulWidget {
@@ -361,10 +364,32 @@ class _SourceFollowupReportState extends State<SourceFollowupReport> {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isSmallScreen = screenWidth < 600;
-
+    final navProvider = context.watch<NavigationProvider>();
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
+        leading: IconButton(
+          onPressed: () {
+            if (userType?.toUpperCase() == "ADMIN") {
+              navProvider.updateIndex(
+                selectedIndex: 3,
+                reportSubIndex: 0,
+                masterSubIndex: 0,
+                entrySubIndex: 0,
+              );
+            } else {
+              navProvider.updateIndex(
+                selectedIndex: 2,
+                reportSubIndex: 0,
+                masterSubIndex: 0,
+                entrySubIndex: 0,
+              );
+            }
+          },
+          icon: Icon(Icons.arrow_back, color: Colors.white),
+        ),
+        backgroundColor: const Color(0xff1E293B),
+        foregroundColor: Colors.white,
         automaticallyImplyActions: false,
         automaticallyImplyLeading: false,
         actions: [
@@ -374,8 +399,7 @@ class _SourceFollowupReportState extends State<SourceFollowupReport> {
           ),
         ],
         title: const Text('Source Followup Report', style: TextStyle()),
-        backgroundColor: const Color(0xff1E293B),
-        foregroundColor: Colors.white,
+
         elevation: 1,
         centerTitle: false,
       ),
@@ -715,9 +739,7 @@ class _SourceFollowupReportState extends State<SourceFollowupReport> {
                             if (index == filtered.length && loadingMore) {
                               return const Padding(
                                 padding: EdgeInsets.all(15),
-                                child: Center(
-                                  child: CircularProgressIndicator(),
-                                ),
+                                child: Center(child: CircularWaveProgress()),
                               );
                             }
 

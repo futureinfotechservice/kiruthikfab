@@ -1,13 +1,39 @@
 <?php
 include 'conn.php';
+include 'cors.php';
 
-header("Access-Control-Allow-Origin: *");
-header("Content-Type: application/json; charset=UTF-8");
+ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    echo json_encode([
+        "status" => "error",
+        "message" => "Method not allowed. Use POST."
+    ]);
+    exit();
+}
+$rawInput = file_get_contents('php://input');
+if (empty($rawInput)) {
+    http_response_code(400);
+    echo json_encode([
+        "status" => "error",
+        "message" => "Empty request body"
+    ]);
+    exit();
+}
 
-$companyid = isset($_POST['companyid']) ? trim($_POST['companyid']) : '';
-$search    = trim($_POST['search'] ?? '');
-$user_type    = trim($_POST['user_type'] ?? '');
-$user_id    = trim($_POST['user_id'] ?? '');
+$input = json_decode($rawInput, true);
+if (json_last_error() !== JSON_ERROR_NONE) {
+    http_response_code(400);
+    echo json_encode([
+        "status" => "error",
+        "message" => "Invalid JSON format: " . json_last_error_msg()
+    ]);
+    exit();
+}
+
+$companyid = isset($input['companyid']) ? trim($input['companyid']) : '';
+$search = isset($input['search']) ? trim($input['search']) : '';
+$user_type = isset($input['user_type']) ? trim($input['user_type']) : '';
+$user_id = isset($input['user_id']) ? trim($input['user_id']) : '';
 
 if (empty($companyid)) {
     echo json_encode([
@@ -16,8 +42,16 @@ if (empty($companyid)) {
     ]);
     exit();
 }
-
-// Build the base query
+$companyid = filter_var($companyid, FILTER_VALIDATE_INT);
+if ($companyid === false || $companyid <= 0) {
+    http_response_code(400);
+    echo json_encode([
+        "status" => "error",
+        "message" => "Invalid Company ID format"
+    ]);
+    exit();
+}
+ 
 $sql = "
 SELECT
     dd.id AS headid,
@@ -39,9 +73,8 @@ WHERE dd.companyid = ?";
 $params = [$companyid];
 $types = "i";
 
-// Add search condition if provided
 if (!empty($search)) {
-    $searchParam = "%$search%";
+  $searchSafe = '%' . addcslashes($search, '%_') . '%';
     $sql .= " AND (
         dd.entry_no LIKE ? 
         OR ih.invoiceno LIKE ? 
@@ -49,35 +82,44 @@ if (!empty($search)) {
         OR sm.name LIKE ?
         OR sm.address LIKE ?
     )";
-    $params[] = $searchParam;
-    $params[] = $searchParam;
-    $params[] = $searchParam;
-    $params[] = $searchParam;
-    $params[] = $searchParam;
-    $types .= "sssss";
+   for ($i = 0; $i < 5; $i++) {
+            $params[] = $searchSafe;
+            $types .= "s";
+        }
 }
 
 $sql .= " ORDER BY dd.id DESC LIMIT 10";
 
-// Prepare and execute
+ 
 $stmt = mysqli_prepare($conn, $sql);
-mysqli_stmt_bind_param($stmt, $types, ...$params);
-mysqli_stmt_execute($stmt);
+if (!$stmt) {
+        throw new Exception("Database prepare failed: " . mysqli_error($conn));
+    }
+if (count($params) > 0) {
+        mysqli_stmt_bind_param($stmt, $types, ...$params);
+    }
+    
+    if (!mysqli_stmt_execute($stmt)) {
+        throw new Exception("Query execution failed: " . mysqli_stmt_error($stmt));
+    }
+    
 $result = mysqli_stmt_get_result($stmt);
 
 $data = [];
 while ($row = mysqli_fetch_assoc($result)) {
-    $data[] = $row;
+   foreach ($row as $key => $value) {
+            $row[$key] = htmlspecialchars($value ?? '', ENT_QUOTES, 'UTF-8');
+        }
+        $data[] = $row;
 }
 
-// Optional: Reverse to get ascending order (oldest first among last 10)
-//  $data = array_reverse($data);
-
+ 
 echo json_encode([
     "status" => "success",
-    "delivery_items" => $data
+    "delivery_items" => $data,
+     "count" => count($data)
 ]);
 
 mysqli_stmt_close($stmt);
 mysqli_close($conn);
-?>
+ 

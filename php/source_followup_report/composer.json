@@ -1,5 +1,18 @@
 {
     "require": {
-        "tecnickcom/tcpdf": "^6.11"
+        "tecnickcom/tcpdf": "^6.6",
+        "phpoffice/phpspreadsheet": "^1.29.1"
+    },
+    "config": {
+        "platform": {
+            "php": "8.0.30"
+        }
+    },
+    "extra": {
+        "policy": {
+            "advisories": {
+                "block": false
+            }
+        }
     }
 }

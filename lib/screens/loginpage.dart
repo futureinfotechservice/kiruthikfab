@@ -1,11 +1,11 @@
 // import 'package:device_info_plus/device_info_plus.dart';
-import 'package:flutter/foundation.dart';
+// import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../widgets/loginscreenwidget.dart';
 import '../../services/login_apiservice.dart';
+import '../widgets/loginscreenwidget.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -34,7 +34,8 @@ class _LoginScreenState extends State<LoginScreen> {
     final email = prefs.getString('email') ?? '';
 
     if (companyid != '') {
-      if (kIsWeb) {
+      // if (kIsWeb) {
+      if (mounted) {
         ApiService().login(
           context,
           username.toString(),
@@ -43,36 +44,37 @@ class _LoginScreenState extends State<LoginScreen> {
           '',
           '1',
         );
-        // print("Unsupported platform");
-      } else if (defaultTargetPlatform == TargetPlatform.android) {
-        // final deviceInfo = DeviceInfoPlugin();
-        // AndroidDeviceInfo androidInfo =
-        //     await deviceInfo.androidInfo;
-
-        ApiService().login(
-          context,
-          username.toString(),
-          password.toString(),
-          email.toString(),
-          // "${androidInfo.androidId}",
-          "",
-          "0",
-        );
-      } else if (defaultTargetPlatform == TargetPlatform.iOS) {
-        // final deviceInfo = DeviceInfoPlugin();
-        // IosDeviceInfo iosInfo =
-        //     await deviceInfo.iosInfo;
-
-        ApiService().login(
-          context,
-          username.toString(),
-          password.toString(),
-          email.toString(),
-          // "${iosInfo.identifierForVendor}",
-          "",
-          "0",
-        );
       }
+      // print("Unsupported platform");
+      // } else if (defaultTargetPlatform == TargetPlatform.android) {
+      //   // final deviceInfo = DeviceInfoPlugin();
+      //   // AndroidDeviceInfo androidInfo =
+      //   //     await deviceInfo.androidInfo;
+      //
+      //   ApiService().login(
+      //     context,
+      //     username.toString(),
+      //     password.toString(),
+      //     email.toString(),
+      //     // "${androidInfo.androidId}",
+      //     "",
+      //     "0",
+      //   );
+      // } else if (defaultTargetPlatform == TargetPlatform.iOS) {
+      //   // final deviceInfo = DeviceInfoPlugin();
+      //   // IosDeviceInfo iosInfo =
+      //   //     await deviceInfo.iosInfo;
+      //
+      //   ApiService().login(
+      //     context,
+      //     username.toString(),
+      //     password.toString(),
+      //     email.toString(),
+      //     // "${iosInfo.identifierForVendor}",
+      //     "",
+      //     "0",
+      //   );
+      // }
     }
     setState(() {
       logourlvalue = logourl.toString();
@@ -85,7 +87,20 @@ class _LoginScreenState extends State<LoginScreen> {
   void initState() {
     super.initState();
     loadlogo();
+    // if (Platform.isAndroid) {
+    //   requestStoragePermission();
+    // }
   }
+
+  // Future<void> requestStoragePermission() async {
+  //   var status = await Permission.storage.request();
+  //
+  //   if (status.isGranted) {
+  //     print("Permission granted");
+  //   } else {
+  //     print("Permission denied");
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -95,14 +110,15 @@ class _LoginScreenState extends State<LoginScreen> {
 
     return Scaffold(
       backgroundColor: Color(0xffF8F9FA),
-      body: SafeArea(
+      body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const SizedBox(height: 20),
-              // Future Info Tech Logo
+
               Align(
                 alignment: Alignment.topLeft,
                 child: Image.asset('assets/Homelogos/fItlogo.png', height: 60),
@@ -227,7 +243,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             if (emailController.text != "" &&
                                 usernameController.text != "" &&
                                 passwordController.text != "") {
-                              if (kIsWeb) {
+                              // if (kIsWeb) {
+                              if (true) {
                                 ApiService().login(
                                   context,
                                   usernameController.text.toString(),
@@ -237,37 +254,38 @@ class _LoginScreenState extends State<LoginScreen> {
                                   '1',
                                 );
                                 // print("Unsupported platform");
-                              } else if (defaultTargetPlatform ==
-                                  TargetPlatform.android) {
-                                // final deviceInfo = DeviceInfoPlugin();
-                                // AndroidDeviceInfo androidInfo =
-                                //     await deviceInfo.androidInfo;
-
-                                ApiService().login(
-                                  context,
-                                  usernameController.text.toString(),
-                                  passwordController.text.toString(),
-                                  emailController.text.toString(),
-                                  // "${androidInfo.androidId}",
-                                  "",
-                                  "0",
-                                );
-                              } else if (defaultTargetPlatform ==
-                                  TargetPlatform.iOS) {
-                                // final deviceInfo = DeviceInfoPlugin();
-                                // IosDeviceInfo iosInfo =
-                                //     await deviceInfo.iosInfo;
-
-                                ApiService().login(
-                                  context,
-                                  usernameController.text.toString(),
-                                  passwordController.text.toString(),
-                                  emailController.text.toString(),
-                                  // "${iosInfo.identifierForVendor}",
-                                  "",
-                                  "0",
-                                );
                               }
+                              // else if (defaultTargetPlatform ==
+                              //     TargetPlatform.android) {
+                              //   // final deviceInfo = DeviceInfoPlugin();
+                              //   // AndroidDeviceInfo androidInfo =
+                              //   //     await deviceInfo.androidInfo;
+                              //
+                              //   ApiService().login(
+                              //     context,
+                              //     usernameController.text.toString(),
+                              //     passwordController.text.toString(),
+                              //     emailController.text.toString(),
+                              //     // "${androidInfo.androidId}",
+                              //     "",
+                              //     "0",
+                              //   );
+                              // } else if (defaultTargetPlatform ==
+                              //     TargetPlatform.iOS) {
+                              //   // final deviceInfo = DeviceInfoPlugin();
+                              //   // IosDeviceInfo iosInfo =
+                              //   //     await deviceInfo.iosInfo;
+                              //
+                              //   ApiService().login(
+                              //     context,
+                              //     usernameController.text.toString(),
+                              //     passwordController.text.toString(),
+                              //     emailController.text.toString(),
+                              //     // "${iosInfo.identifierForVendor}",
+                              //     "",
+                              //     "0",
+                              //   );
+                              // }
                               // Add login logic here
                             }
                           },

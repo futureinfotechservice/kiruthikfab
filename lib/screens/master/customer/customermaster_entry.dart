@@ -1,12 +1,14 @@
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
 
+import '../../../indigator/main.dart';
 import '../../../models/CustomerMasterModel.dart';
 import '../../../services/customer_apiservice.dart';
 import '../../../widgets/customdropdownwidget.dart';
 
 class CustomerMasterEntryScreen extends StatefulWidget {
   final CustomerMasterModel? customer;
+
   const CustomerMasterEntryScreen({super.key, this.customer});
 
   @override
@@ -22,6 +24,7 @@ class _CustomerMasterEntryScreenState extends State<CustomerMasterEntryScreen> {
   String? _photoFilePath;
   String? _aadharFileName;
   String? _photoFileName;
+
   // Uint8List? _aadharBytes;
   // Uint8List? _photoBytes;
 
@@ -667,7 +670,7 @@ class _CustomerMasterEntryScreenState extends State<CustomerMasterEntryScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(),
+                  CircularWaveProgress(),
                   SizedBox(height: 16),
                   Text(
                     'Loading...',

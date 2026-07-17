@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../indigator/main.dart';
 import '../../models/kyc_master_model.dart';
 import '../../services/kyc_apiservice.dart';
+import '../navigation_provider.dart';
 import 'kyc_entry_screen.dart';
 
 class KYCListScreen extends StatefulWidget {
@@ -530,9 +533,30 @@ class _KYCListScreenState extends State<KYCListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final navProvider = context.watch<NavigationProvider>();
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
+        leading: IconButton(
+          onPressed: () {
+            if (userType.toUpperCase() == "ADMIN") {
+              navProvider.updateIndex(
+                selectedIndex: 2,
+                reportSubIndex: 0,
+                masterSubIndex: 0,
+                entrySubIndex: 0,
+              );
+            } else {
+              navProvider.updateIndex(
+                selectedIndex: 1,
+                reportSubIndex: 0,
+                masterSubIndex: 0,
+                entrySubIndex: 0,
+              );
+            }
+          },
+          icon: Icon(Icons.arrow_back, color: Colors.white),
+        ),
         title: const Text('Family KYC'),
         backgroundColor: const Color(0xFF1E293B),
         foregroundColor: Colors.white,
@@ -589,7 +613,7 @@ class _KYCListScreenState extends State<KYCListScreen> {
                   const SizedBox(
                     height: 20,
                     width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                    child: CircularWaveProgress(),
                   ),
               ],
             ),
@@ -603,7 +627,7 @@ class _KYCListScreenState extends State<KYCListScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      CircularProgressIndicator(),
+                      CircularWaveProgress(),
                       SizedBox(height: 16),
                       Text(
                         'Loading KYC records...',

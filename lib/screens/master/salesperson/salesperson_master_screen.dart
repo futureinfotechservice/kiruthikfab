@@ -1,8 +1,11 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../../../models/salespersonmaster_model.dart';
 import '../../../../services/salesperson_apiservice.dart';
+import '../../../indigator/main.dart';
+import '../../navigation_provider.dart';
 
 class SalesPersonMasterScreen extends StatefulWidget {
   const SalesPersonMasterScreen({super.key});
@@ -216,10 +219,22 @@ class _SalesPersonMasterScreenState extends State<SalesPersonMasterScreen> {
   @override
   Widget build(BuildContext context) {
     final isWeb = kIsWeb && MediaQuery.of(context).size.width > 768;
+    final navProvider = context.watch<NavigationProvider>();
 
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
+        leading: IconButton(
+          onPressed: () {
+            navProvider.updateIndex(
+              selectedIndex: 1,
+              reportSubIndex: 0,
+              masterSubIndex: 0,
+              entrySubIndex: 0,
+            );
+          },
+          icon: Icon(Icons.arrow_back, color: Colors.white),
+        ),
         automaticallyImplyLeading: false,
         // automaticallyImplyActions: false,
         title: const Text('Sales Person Master'),
@@ -238,7 +253,7 @@ class _SalesPersonMasterScreenState extends State<SalesPersonMasterScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(),
+                  CircularWaveProgress(),
                   SizedBox(height: 16),
                   Text(
                     'Processing...',
@@ -276,7 +291,7 @@ class _SalesPersonMasterScreenState extends State<SalesPersonMasterScreen> {
                           const Center(
                             child: Padding(
                               padding: EdgeInsets.all(32),
-                              child: CircularProgressIndicator(),
+                              child: CircularWaveProgress(),
                             ),
                           )
                         else if (_filteredSalesPersons.isEmpty)
@@ -335,7 +350,7 @@ class _SalesPersonMasterScreenState extends State<SalesPersonMasterScreen> {
         DropdownButtonFormField<String>(
           initialValue: selectedRole,
           decoration: InputDecoration(
-            hintText: "Select User Type",
+            hintText: "User Type",
             prefixIcon: const Icon(Icons.person_outline),
             filled: true,
             fillColor: Colors.grey.shade50,
@@ -437,35 +452,40 @@ class _SalesPersonMasterScreenState extends State<SalesPersonMasterScreen> {
                           border: Border.all(color: const Color(0xFFD1D5DB)),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: TextFormField(
-                          controller: _salesPersonNameController,
-                          decoration: InputDecoration(
-                            hintText:
-                                'Enter sales person name (e.g., John Doe, Sales Executive, etc.)',
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                controller: _salesPersonNameController,
+                                decoration: InputDecoration(
+                                  hintText:
+                                      'Enter sales person name (e.g., John Doe, Sales Executive, etc.)',
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                  ),
+                                  border: InputBorder.none,
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Sales Person name is required';
+                                  }
+                                  if (value.length < 2) {
+                                    return 'Sales Person name must be at least 2 characters';
+                                  }
+                                  return null;
+                                },
+                              ),
                             ),
-                            border: InputBorder.none,
-                            suffixIcon: _isEditMode
-                                ? IconButton(
-                                    icon: const Icon(
-                                      Icons.close,
-                                      color: Colors.grey,
-                                    ),
-                                    onPressed: _cancelEdit,
-                                    tooltip: 'Cancel Edit',
-                                  )
-                                : null,
-                          ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Sales Person name is required';
-                            }
-                            if (value.length < 2) {
-                              return 'Sales Person name must be at least 2 characters';
-                            }
-                            return null;
-                          },
+                            if (_isEditMode)
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.close,
+                                  color: Colors.grey,
+                                ),
+                                onPressed: _cancelEdit,
+                                tooltip: 'Cancel Edit',
+                              ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -485,53 +505,35 @@ class _SalesPersonMasterScreenState extends State<SalesPersonMasterScreen> {
                                         ),
                                       ),
                                       const SizedBox(height: 8),
-                                      Container(
-                                        height: 50,
-                                        decoration: BoxDecoration(
-                                          border: Border.all(
-                                            color: const Color(0xFFD1D5DB),
-                                          ),
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                        ),
-                                        child: TextFormField(
-                                          obscureText: isobscureText,
-                                          controller:
-                                              _salesPersonPassController,
-                                          decoration: InputDecoration(
-                                            suffix: IconButton(
-                                              onPressed: () {
-                                                setState(() {
-                                                  isobscureText =
-                                                      !isobscureText;
-                                                });
-                                              },
-                                              icon: isobscureText
-                                                  ? const Icon(
-                                                      Icons.visibility_off,
-                                                    )
-                                                  : const Icon(
-                                                      Icons.visibility,
-                                                    ),
+                                      TextFormField(
+                                        controller: _salesPersonPassController,
+                                        obscureText: isobscureText,
+                                        textAlignVertical:
+                                            TextAlignVertical.center,
+                                        decoration: InputDecoration(
+                                          hintText: "Password",
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
+                                                horizontal: 16,
+                                                vertical: 14,
+                                              ),
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              8,
                                             ),
-                                            hintText: 'Password',
-                                            contentPadding:
-                                                const EdgeInsets.symmetric(
-                                                  horizontal: 16,
-                                                ),
-                                            border: InputBorder.none,
                                           ),
-                                          validator: (value) {
-                                            if (value == null ||
-                                                value.isEmpty) {
-                                              return '_filterProducts is required';
-                                            }
-                                            if (value.length < 2) {
-                                              return '_filterProducts must be at least 2 characters';
-                                            }
-                                            return null;
-                                          },
+                                          suffixIcon: IconButton(
+                                            icon: Icon(
+                                              isobscureText
+                                                  ? Icons.visibility_off
+                                                  : Icons.visibility,
+                                            ),
+                                            onPressed: () {
+                                              setState(() {
+                                                isobscureText = !isobscureText;
+                                              });
+                                            },
+                                          ),
                                         ),
                                       ),
                                     ],
@@ -544,6 +546,7 @@ class _SalesPersonMasterScreenState extends State<SalesPersonMasterScreen> {
                               children: [
                                 if (_isEditMode != true)
                                   Expanded(
+                                    flex: 2,
                                     child: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
@@ -556,53 +559,36 @@ class _SalesPersonMasterScreenState extends State<SalesPersonMasterScreen> {
                                           ),
                                         ),
                                         const SizedBox(height: 8),
-                                        Container(
-                                          height: 50,
-                                          decoration: BoxDecoration(
-                                            border: Border.all(
-                                              color: const Color(0xFFD1D5DB),
+                                        TextFormField(
+                                          controller:
+                                              _salesPersonPassController,
+                                          obscureText: isobscureText,
+                                          textAlignVertical:
+                                              TextAlignVertical.center,
+                                          decoration: InputDecoration(
+                                            hintText: "Password",
+                                            contentPadding:
+                                                const EdgeInsets.symmetric(
+                                                  horizontal: 16,
+                                                  vertical: 14,
+                                                ),
+                                            border: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
                                             ),
-                                            borderRadius: BorderRadius.circular(
-                                              8,
-                                            ),
-                                          ),
-                                          child: TextFormField(
-                                            obscureText: isobscureText,
-                                            controller:
-                                                _salesPersonPassController,
-                                            decoration: InputDecoration(
-                                              suffix: IconButton(
-                                                onPressed: () {
-                                                  setState(() {
-                                                    isobscureText =
-                                                        !isobscureText;
-                                                  });
-                                                },
-                                                icon: isobscureText
-                                                    ? const Icon(
-                                                        Icons.visibility_off,
-                                                      )
-                                                    : const Icon(
-                                                        Icons.visibility,
-                                                      ),
+                                            suffixIcon: IconButton(
+                                              icon: Icon(
+                                                isobscureText
+                                                    ? Icons.visibility_off
+                                                    : Icons.visibility,
                                               ),
-                                              hintText: 'Password',
-                                              contentPadding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 16,
-                                                  ),
-                                              border: InputBorder.none,
+                                              onPressed: () {
+                                                setState(() {
+                                                  isobscureText =
+                                                      !isobscureText;
+                                                });
+                                              },
                                             ),
-                                            validator: (value) {
-                                              if (value == null ||
-                                                  value.isEmpty) {
-                                                return '_filterProducts is required';
-                                              }
-                                              if (value.length < 2) {
-                                                return '_filterProducts must be at least 2 characters';
-                                              }
-                                              return null;
-                                            },
                                           ),
                                         ),
                                       ],
@@ -610,7 +596,7 @@ class _SalesPersonMasterScreenState extends State<SalesPersonMasterScreen> {
                                   ),
                                 if (_isEditMode != true)
                                   const SizedBox(width: 16),
-                                Expanded(child: roleDropdown()),
+                                Expanded(flex: 2, child: roleDropdown()),
                               ],
                             ),
                     ],

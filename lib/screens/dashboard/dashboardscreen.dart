@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../indigator/main.dart';
 import '../../models/dashboard_model.dart';
 import '../../services/dashboard_api_service.dart';
 import '../entry/add_call_register_screen.dart';
@@ -243,7 +244,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     return Scaffold(
       backgroundColor: AppColors.background,
       body: isLoading
-          ? Center(child: CircularProgressIndicator())
+          ? Center(child: CircularWaveProgress())
           : FadeTransition(
               opacity: _fadeAnim,
               child: SingleChildScrollView(
@@ -733,15 +734,20 @@ class _StatCard extends StatelessWidget {
   const _StatCard({required this.stat, this.fullWidth = false});
 
   String formatAmount(String val) {
-    final value = num.parse(val);
-    if (value >= 10000000) {
-      return '${(value / 10000000).toStringAsFixed((value / 10000000) % 1 == 0 ? 0 : 1)} CR';
-    } else if (value >= 100000) {
-      return '${(value / 100000).toStringAsFixed((value / 100000) % 1 == 0 ? 0 : 1)} L';
-    } else if (value >= 1000) {
-      return '${(value / 1000).toStringAsFixed((value / 1000) % 1 == 0 ? 0 : 1)} K';
-    } else {
-      return value.toString();
+    if (val.isEmpty || val == 'null') return '0';
+    try {
+      final value = num.parse(val);
+      if (value >= 10000000) {
+        return '${(value / 10000000).toStringAsFixed((value / 10000000) % 1 == 0 ? 0 : 1)} CR';
+      } else if (value >= 100000) {
+        return '${(value / 100000).toStringAsFixed((value / 100000) % 1 == 0 ? 0 : 1)} L';
+      } else if (value >= 1000) {
+        return '${(value / 1000).toStringAsFixed((value / 1000) % 1 == 0 ? 0 : 1)} K';
+      } else {
+        return value.toString();
+      }
+    } catch (e) {
+      return '0';
     }
   }
 
@@ -979,7 +985,7 @@ class _DeliveryCard extends StatelessWidget {
         ? AppColors.emeraldLight
         : AppColors.amberLight;
     final address = delivery.address;
-
+    final isMobile = MediaQuery.sizeOf(context).width < 600;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -1001,26 +1007,48 @@ class _DeliveryCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Text(
-                      delivery.entryNo,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13,
-                        color: AppColors.textPrimary,
+                isMobile
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            delivery.entryNo,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+
+                          Text(
+                            delivery.customerName,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      )
+                    : Row(
+                        children: [
+                          Text(
+                            delivery.entryNo,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '·  ${delivery.customerName}',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '·  ${delivery.customerName}',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
                 const SizedBox(height: 3),
                 Row(
                   children: [

@@ -133,7 +133,7 @@ class AreaApiService {
         throw Exception('Failed to load areas: ${response.statusCode}');
       }
     } catch (e) {
-      if (context.mounted) _showError(context, "Error fetching areas: $e");
+      //if (context.mounted) _showError(context, "Error fetching areas: $e");
       return [];
     }
   }

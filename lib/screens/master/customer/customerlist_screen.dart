@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../../../indigator/main.dart';
 import '../../../models/CustomerMasterModel.dart';
 import '../../../services/customer_apiservice.dart';
+import '../../navigation_provider.dart';
 import 'customermaster_entry.dart';
 
 class CustomerListScreen extends StatefulWidget {
@@ -118,9 +121,22 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final navProvider = context.watch<NavigationProvider>();
+
     return Scaffold(
       appBar: AppBar(
-        automaticallyImplyLeading: false,
+        // automaticallyImplyLeading: false,
+        leading: IconButton(
+          onPressed: () {
+            navProvider.updateIndex(
+              selectedIndex: 0,
+              reportSubIndex: 0,
+              masterSubIndex: 0,
+              entrySubIndex: 0,
+            );
+          },
+          icon: Icon(Icons.arrow_back, color: Colors.white),
+        ),
         title: const Text('Sources'),
         backgroundColor: const Color(0xFF1E293B),
         foregroundColor: Colors.white,
@@ -138,7 +154,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
             padding: const EdgeInsets.all(16.0),
             child: TextField(
               decoration: InputDecoration(
-                hintText: 'Search source...',
+                hintText: 'Search sources...',
                 prefixIcon: const Icon(Icons.search),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -172,7 +188,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
                   const SizedBox(
                     height: 20,
                     width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                    child: CircularWaveProgress(),
                   ),
               ],
             ),
@@ -187,7 +203,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        CircularProgressIndicator(),
+                        CircularWaveProgress(),
                         SizedBox(height: 16),
                         Text(
                           'Loading source...',

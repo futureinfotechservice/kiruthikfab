@@ -4,6 +4,7 @@ import 'package:kiruthikfab/screens/navigation_provider.dart';
 import 'package:provider/provider.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(
     MultiProvider(
       providers: [ChangeNotifierProvider(create: (_) => NavigationProvider())],

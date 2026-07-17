@@ -15,11 +15,11 @@ class DashboardModel {
 
   factory DashboardModel.fromJson(Map<String, dynamic> json) {
     return DashboardModel(
-      source: json['source'].toString(),
-      called: json['called'].toString(),
-      notCalled: json['notCalled'].toString(),
-      kyc: json['kyc'].toString(),
-      value: json['value'].toString(),
+      source: (json['source'] ?? '0').toString(),
+      called: (json['called'] ?? '0').toString(),
+      notCalled: (json['notCalled'] ?? '0').toString(),
+      kyc: (json['kyc'] ?? '0').toString(),
+      value: (json['value'] ?? '0').toString(),
     );
   }
 }

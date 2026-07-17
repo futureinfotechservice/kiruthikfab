@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../indigator/main.dart';
 import '../../models/call_register_model.dart';
 import '../../models/customer_interest_model.dart';
 import '../../models/source_call_history_model.dart';
@@ -303,7 +304,7 @@ class _AddCallRegisterScreenState extends State<AddCallRegisterScreen> {
         ),
       ),
       body: _isLoading
-          ? Center(child: CircularProgressIndicator())
+          ? Center(child: CircularWaveProgress())
           : SafeArea(
               child: Center(
                 child: SingleChildScrollView(
@@ -889,9 +890,11 @@ class _AddCallRegisterScreenState extends State<AddCallRegisterScreen> {
     );
 
     if (res['status'] == true) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(res['message'])));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(res['message'])));
+      }
 
       feedbackController.clear();
       notesController.clear();
@@ -907,9 +910,11 @@ class _AddCallRegisterScreenState extends State<AddCallRegisterScreen> {
 
       await init(); // generates next entry number
     } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(res['message'])));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(res['message'])));
+      }
     }
   }
 

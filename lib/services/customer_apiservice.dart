@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -13,15 +14,30 @@ class CustomerApiService {
   // Dropdown data models (unchanged)
   Future<List<Map<String, dynamic>>> fetchAgents(BuildContext context) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    final companyid = prefs.getString('companyid') ?? '';
+    final companyId = prefs.getString('companyid') ?? '';
 
-    if (companyid.isEmpty) {
+    if (companyId.isEmpty) {
       return [];
     }
 
     var url = Uri.parse('$baseUrl/fetch_agent.php');
     try {
-      var response = await http.post(url, body: {'companyid': companyid});
+      final response = await http
+          .post(
+            url,
+            headers: {
+              'Content-Type': 'application/json; charset=utf-8',
+              'Accept': 'application/json',
+              'Cache-Control': 'no-cache',
+            },
+            body: json.encode({'companyid': companyId.trim()}),
+          )
+          .timeout(
+            const Duration(seconds: 30),
+            onTimeout: () {
+              throw TimeoutException('Connection timeout');
+            },
+          );
 
       if (response.statusCode == 200) {
         var data = json.decode(response.body);
@@ -694,7 +710,8 @@ class CustomerApiService {
     final companyid = prefs.getString('companyid') ?? '';
 
     if (companyid.isEmpty) {
-      _showError(context, "Company ID not found. Please login again.");
+      if (context.mounted)
+        _showError(context, "Company ID not found. Please login again.");
       return [];
     }
 
@@ -726,7 +743,7 @@ class CustomerApiService {
         throw Exception('Failed to load customers: ${response.statusCode}');
       }
     } catch (e) {
-      _showError(context, "Error fetching customers: $e");
+      //_showError(context, "Error fetching customers: $e");
       return [];
     }
   }

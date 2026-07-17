@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+// import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -8,6 +8,7 @@ import '../screens/master/delivery_partner/delivery_partner_master.dart';
 import '../screens/master/district/district.dart';
 import '../screens/master/incharge/incharge_master_screen.dart';
 import '../screens/master/interest/customer_interest_master_screen.dart';
+import '../screens/master/inventory/inventory_master.dart';
 import '../screens/master/model/model_master_screen.dart';
 import '../screens/master/occupation/occupation_master_screen.dart';
 import '../screens/master/product/product_master_screen.dart';
@@ -17,6 +18,7 @@ import '../screens/master/salesperson/salesperson_master_screen.dart';
 import '../screens/master/size/size_master_screen.dart';
 import '../screens/master/source/source_list_screen.dart';
 import '../screens/master/source_mode/source_mode.dart';
+import '../screens/master/state/state_master.dart';
 import '../screens/master/unit/unit_master_screen.dart';
 import '../screens/navigation_provider.dart';
 
@@ -38,6 +40,49 @@ class MasterSectionScreenState extends State<MasterSectionScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
+  Widget _buildSelectedScreen(int index) {
+    switch (index) {
+      case 0:
+        return const SourceListScreen();
+      case 1:
+        return const ProductMasterScreen();
+      case 2:
+        return const ModelMasterScreen();
+      case 3:
+        return const SizeMasterScreen();
+      case 4:
+        return const UnitMasterScreen();
+      case 5:
+        return const AreaMasterScreen();
+      case 6:
+        return const ReferMasterScreen();
+      case 7:
+        return const InchargeMasterScreen();
+      case 8:
+        return const AgentMasterScreen();
+      case 9:
+        return const SalesPersonMasterScreen();
+      case 10:
+        return const OccupationMasterScreen();
+      case 11:
+        return const CustomerInterestMasterScreen();
+      case 12:
+        return const RelationMasterScreen();
+      case 13:
+        return const SourceModeMasterScreen();
+      case 14:
+        return const DistrictMasterScreen();
+      case 15:
+        return const StateMasterScreen();
+      case 16:
+        return const DeliveryPartnerMasterScreen();
+      case 17:
+        return const InventoryMaster();
+      default:
+        return const SizedBox();
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -46,7 +91,7 @@ class MasterSectionScreenState extends State<MasterSectionScreen>
     // init();
     // masterSubIndex = widget.initialSubIndex;
     _tabController = TabController(
-      length: 16,
+      length: 18,
       vsync: this,
       initialIndex: navProvider.masterSubIndex,
     );
@@ -115,7 +160,7 @@ class MasterSectionScreenState extends State<MasterSectionScreen>
 
   @override
   Widget build(BuildContext context) {
-    final isWeb = kIsWeb && MediaQuery.of(context).size.width > 768;
+    final isWeb = MediaQuery.of(context).size.width > 768;
     final navProvider = context.read<NavigationProvider>();
     if (_tabController.index != widget.initialSubIndex) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -153,9 +198,14 @@ class MasterSectionScreenState extends State<MasterSectionScreen>
                 Tab(icon: Icon(Icons.source), text: 'Source Mode'),
                 Tab(icon: Icon(Icons.location_city), text: 'District Master'),
                 Tab(
+                  icon: Icon(Icons.location_on_outlined),
+                  text: 'State Master',
+                ),
+                Tab(
                   icon: Icon(Icons.delivery_dining),
                   text: 'Delivery Partner',
                 ),
+                Tab(icon: Icon(Icons.inventory), text: 'Inventory'),
               ],
             ),
           ),
@@ -178,7 +228,9 @@ class MasterSectionScreenState extends State<MasterSectionScreen>
                 RelationMasterScreen(),
                 SourceModeMasterScreen(),
                 DistrictMasterScreen(),
+                StateMasterScreen(),
                 DeliveryPartnerMasterScreen(),
+                InventoryMaster(),
               ],
             ),
           ),
@@ -186,27 +238,7 @@ class MasterSectionScreenState extends State<MasterSectionScreen>
       );
     } else {
       // Web: Show selected screen
-      return IndexedStack(
-        index: navProvider.masterSubIndex,
-        children: const [
-          SourceListScreen(),
-          ProductMasterScreen(),
-          ModelMasterScreen(),
-          SizeMasterScreen(),
-          UnitMasterScreen(),
-          AreaMasterScreen(),
-          ReferMasterScreen(),
-          InchargeMasterScreen(),
-          AgentMasterScreen(),
-          SalesPersonMasterScreen(),
-          OccupationMasterScreen(),
-          CustomerInterestMasterScreen(),
-          RelationMasterScreen(),
-          SourceModeMasterScreen(),
-          DistrictMasterScreen(),
-          DeliveryPartnerMasterScreen(),
-        ],
-      );
+      return _buildSelectedScreen(navProvider.masterSubIndex);
     }
   }
 }

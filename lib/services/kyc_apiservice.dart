@@ -131,7 +131,8 @@ class KYCApiService {
     final userid = prefs.getString('id') ?? '';
 
     if (companyid.isEmpty) {
-      _showError(context, "Company ID not found. Please login again.");
+      if (context.mounted)
+        _showError(context, "Company ID not found. Please login again.");
       return "Failed";
     }
 
@@ -171,7 +172,8 @@ class KYCApiService {
     final userid = prefs.getString('id') ?? '';
 
     if (companyid.isEmpty) {
-      _showError(context, "Company ID not found. Please login again.");
+      if (context.mounted)
+        _showError(context, "Company ID not found. Please login again.");
       return "Failed";
     }
 
@@ -234,7 +236,7 @@ class KYCApiService {
         throw Exception('Failed to load KYC: ${response.statusCode}');
       }
     } catch (e) {
-      _showError(context, "Error fetching KYC: $e");
+      // _showError(context, "Error fetching KYC: $e");
       return [];
     }
   }

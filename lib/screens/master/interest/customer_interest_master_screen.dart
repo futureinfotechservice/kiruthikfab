@@ -1,8 +1,11 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../../../indigator/main.dart';
 import '../../../models/customer_interest_model.dart';
 import '../../../services/customer_interest_apiservice.dart';
+import '../../navigation_provider.dart';
 
 class CustomerInterestMasterScreen extends StatefulWidget {
   const CustomerInterestMasterScreen({super.key});
@@ -204,10 +207,22 @@ class _CustomerInterestMasterScreenState
   @override
   Widget build(BuildContext context) {
     final isWeb = kIsWeb && MediaQuery.of(context).size.width > 768;
+    final navProvider = context.watch<NavigationProvider>();
 
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
+        leading: IconButton(
+          onPressed: () {
+            navProvider.updateIndex(
+              selectedIndex: 1,
+              reportSubIndex: 0,
+              masterSubIndex: 0,
+              entrySubIndex: 0,
+            );
+          },
+          icon: Icon(Icons.arrow_back, color: Colors.white),
+        ),
         // automaticallyImplyActions: false,
         automaticallyImplyLeading: false,
         title: const Text('Customer Interest Master'),
@@ -226,7 +241,7 @@ class _CustomerInterestMasterScreenState
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(),
+                  CircularWaveProgress(),
                   SizedBox(height: 16),
                   Text(
                     'Processing...',
@@ -264,7 +279,7 @@ class _CustomerInterestMasterScreenState
                           const Center(
                             child: Padding(
                               padding: EdgeInsets.all(32),
-                              child: CircularProgressIndicator(),
+                              child: CircularWaveProgress(),
                             ),
                           )
                         else if (_filteredOccupations.isEmpty)
@@ -331,129 +346,120 @@ class _CustomerInterestMasterScreenState
         child: Column(
           children: [
             Row(
+              children: [
+                const Text(
+                  'Interest',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF374151),
+                  ),
+                ),
+                const Text(
+                  ' *',
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
                   flex: 3,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const Text(
-                            'Interest',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xFF374151),
+                  child: Container(
+                    height: 50,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: const Color(0xFFD1D5DB)),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            textInputAction: TextInputAction.done,
+                            onFieldSubmitted: (_) {
+                              _submitForm();
+                            },
+                            controller: _interestController,
+                            decoration: InputDecoration(
+                              hintText:
+                                  'Enter Interest (e.g., Immediate, Consider, Later Purchase,  etc.)',
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
+                              border: InputBorder.none,
                             ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Interest is required';
+                              }
+                              if (value.length < 2) {
+                                return 'Interest must be at least 2 characters';
+                              }
+                              return null;
+                            },
                           ),
-                          const Text(
-                            ' *',
-                            style: TextStyle(
-                              color: Colors.red,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        height: 50,
-                        decoration: BoxDecoration(
-                          border: Border.all(color: const Color(0xFFD1D5DB)),
-                          borderRadius: BorderRadius.circular(8),
                         ),
-                        child: TextFormField(
-                          textInputAction: TextInputAction.done,
-                          onFieldSubmitted: (_) {
-                            _submitForm();
-                          },
-                          controller: _interestController,
-                          decoration: InputDecoration(
-                            hintText:
-                                'Enter Interest (e.g., Immediate, Consider, Later Purchase,  etc.)',
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                            ),
-                            border: InputBorder.none,
-                            suffixIcon: _isEditMode
-                                ? IconButton(
-                                    icon: const Icon(
-                                      Icons.close,
-                                      color: Colors.grey,
-                                    ),
-                                    onPressed: _cancelEdit,
-                                    tooltip: 'Cancel Edit',
-                                  )
-                                : null,
+                        if (_isEditMode)
+                          IconButton(
+                            icon: const Icon(Icons.close, color: Colors.grey),
+                            onPressed: _cancelEdit,
+                            tooltip: 'Cancel Edit',
                           ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Interest is required';
-                            }
-                            if (value.length < 2) {
-                              return 'Interest must be at least 2 characters';
-                            }
-                            return null;
-                          },
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
                 if (isWeb) ...[
                   const SizedBox(width: 16),
                   Expanded(
                     flex: 1,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
+                    child: Row(
                       children: [
-                        const SizedBox(height: 24),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: SizedBox(
-                                height: 50,
-                                child: ElevatedButton(
-                                  onPressed: _submitForm,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF1E293B),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                  ),
-                                  child: Text(
-                                    _isEditMode ? 'Update' : 'Create',
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.white,
-                                    ),
-                                  ),
+                        Expanded(
+                          child: SizedBox(
+                            height: 50,
+                            child: ElevatedButton(
+                              onPressed: _submitForm,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF1E293B),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              child: Text(
+                                _isEditMode ? 'Update' : 'Create',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.white,
                                 ),
                               ),
                             ),
-                            if (_isEditMode) ...[
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: SizedBox(
-                                  height: 50,
-                                  child: OutlinedButton(
-                                    onPressed: _cancelEdit,
-                                    style: OutlinedButton.styleFrom(
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                    ),
-                                    child: const Text('Cancel'),
+                          ),
+                        ),
+                        if (_isEditMode) ...[
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: SizedBox(
+                              height: 50,
+                              child: OutlinedButton(
+                                onPressed: _cancelEdit,
+                                style: OutlinedButton.styleFrom(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
                                 ),
+                                child: const Text('Cancel'),
                               ),
-                            ],
-                          ],
-                        ),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),

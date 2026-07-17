@@ -17,7 +17,8 @@ class ReferApiService {
     final userid = prefs.getString('id') ?? '';
 
     if (companyid.isEmpty) {
-      _showError(context, "Company ID not found. Please login again.");
+      if (context.mounted)
+        _showError(context, "Company ID not found. Please login again.");
       return "Failed";
     }
 
@@ -39,7 +40,7 @@ class ReferApiService {
 
       return _handleResponse(context, response.body);
     } catch (e) {
-      _showError(context, "Error: $e");
+      if (context.mounted) _showError(context, "Error: $e");
       return "Failed";
     }
   }
@@ -54,7 +55,8 @@ class ReferApiService {
     final userid = prefs.getString('id') ?? '';
 
     if (companyid.isEmpty) {
-      _showError(context, "Company ID not found. Please login again.");
+      if (context.mounted)
+        _showError(context, "Company ID not found. Please login again.");
       return "Failed";
     }
 
@@ -76,7 +78,7 @@ class ReferApiService {
 
       return _handleResponse(context, response.body);
     } catch (e) {
-      _showError(context, "Error: $e");
+      if (context.mounted) _showError(context, "Error: $e");
       return "Failed";
     }
   }
@@ -86,7 +88,8 @@ class ReferApiService {
     final companyid = prefs.getString('companyid') ?? '';
 
     if (companyid.isEmpty) {
-      _showError(context, "Company ID not found. Please login again.");
+      if (context.mounted)
+        _showError(context, "Company ID not found. Please login again.");
       return [];
     }
 
@@ -119,7 +122,7 @@ class ReferApiService {
         throw Exception('Failed to load refers: ${response.statusCode}');
       }
     } catch (e) {
-      _showError(context, "Error fetching refers: $e");
+      //_showError(context, "Error fetching refers: $e");
       return [];
     }
   }

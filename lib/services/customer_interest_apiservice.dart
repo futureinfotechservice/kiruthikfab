@@ -60,9 +60,9 @@ class CustomerInterestApiservice {
         throw Exception('Failed to load interest: ${response.statusCode}');
       }
     } catch (e) {
-      if (context.mounted) {
-        _showError(context, "Error fetching interest: $e");
-      }
+      //if (context.mounted) {
+      //   _showError(context, "Error fetching interest: $e");
+      // }
       return [];
     }
   }

@@ -1,18 +1,22 @@
+import 'dart:convert';
+
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
-import 'package:printing/printing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../../widgets/customappbarwidget.dart';
 import '../../../../../widgets/customdropdownwidget.dart';
 import '../../../../../widgets/customtextfield.dart';
-import '../../../models/invoice_print_helper.dart';
 import '../../../services/invoice_apiservice.dart';
 import '../../../services/kyc_apiservice.dart';
 import '../../models/delivery_partner_master_model.dart';
+import '../../services/config.dart';
 import '../../services/delivery_partner_api_service.dart';
+import '../master/inventory/inventory_master.dart';
+import 'invoice_print_view.dart';
 
 class InvoiceEntryPage extends StatefulWidget {
   final dynamic invoice;
@@ -72,6 +76,10 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
   final List<GlobalKey<DropdownSearchState<String>>> _unitDropdownKeys = [];
   List<DeliveryPartnerMasterModel> deliveryPartners = [];
   DeliveryPartnerMasterModel? selectedDeliveryPartner;
+  List<InventoryItem> inventoryItems = [];
+  List<InventoryItem> filteredInventoryItems = [];
+
+  final Map<int, List<InventoryItem>> _cachedInventoryCombinations = {};
 
   bool get isEditMode => widget.invoice != null && !widget.isViewMode;
 
@@ -96,10 +104,13 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       final companyid = prefs.getString('companyid') ?? '';
 
-      final nextNo = await invoiceApiService().getNextInvoiceNumber(
-        context,
-        companyid,
-      );
+      String nextNo = '';
+      if (mounted) {
+        nextNo = await invoiceApiService().getNextInvoiceNumber(
+          context,
+          companyid,
+        );
+      }
       setState(() {
         _billNoController.text = nextNo.toString();
       });
@@ -140,6 +151,45 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
     setState(() {});
   }
 
+  Future<void> fetchInventoryItems() async {
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      final companyid = prefs.getString('companyid') ?? '';
+
+      if (companyid.isEmpty) {
+        return;
+      }
+
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/inventory_fetch_all.php'),
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: {'companyid': companyid},
+          )
+          .timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200) {
+        try {
+          final data = jsonDecode(response.body);
+          if (data is List) {
+            if (mounted) {
+              setState(() {
+                inventoryItems = data
+                    .map((item) => InventoryItem.fromJson(item))
+                    .toList();
+                filteredInventoryItems = List.from(inventoryItems);
+              });
+            }
+          }
+        } catch (e) {
+          return;
+        }
+      }
+    } catch (e) {
+      return;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -154,6 +204,7 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
       loadSizes(),
       loadUnits(),
       loadDeliveryPartners(),
+      fetchInventoryItems(),
     ]);
     // SharedPreferences prefs = await SharedPreferences.getInstance();
     // usertype = prefs.getString('user_type') ?? '';
@@ -175,10 +226,27 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
     _calculateTotals();
   }
 
+  List<InventoryItem> _getAvailableInventoryForProduct(String productId) {
+    if (productId.isEmpty) return [];
+
+    // Check cache first
+    if (_cachedInventoryCombinations.containsKey(
+      int.tryParse(productId) ?? 0,
+    )) {
+      return _cachedInventoryCombinations[int.tryParse(productId) ?? 0] ?? [];
+    }
+
+    final available = inventoryItems
+        .where((item) => item.productId == productId)
+        .toList();
+
+    _cachedInventoryCombinations[int.tryParse(productId) ?? 0] = available;
+    return available;
+  }
+
   void _prefillForm() {
     final invoice = actualInvoice!;
-    print('invoice.deliveryPartner');
-    print(invoice.deliveryPartner);
+
     setState(() {
       _billNoController.text = invoice.invoiceNo;
       _billDateController.text = DateFormat(
@@ -198,8 +266,14 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
           invoice.deliveryPartner != 'null') {
         selectedDeliveryPartner = deliveryPartners.firstWhere(
           (element) => element.id == invoice.deliveryPartner,
+          orElse: () => DeliveryPartnerMasterModel(
+            id: '',
+            companyid: '',
+            name: '',
+            addedby: '',
+            activestatus: '',
+          ),
         );
-        print(selectedDeliveryPartner?.name);
       }
       _loadInvoiceDetails(invoice.id);
     });
@@ -225,6 +299,9 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
         selectedModels.clear();
         selectedSizes.clear();
         selectedUnits.clear();
+        _filteredModelsForRow.clear();
+        _filteredSizesForRow.clear();
+        _filteredUnitsForRow.clear();
 
         for (var detail in invoiceDetails) {
           _invoiceItems.add({
@@ -259,14 +336,21 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
           selectedModels.add(detail['modelname'] ?? '');
           selectedSizes.add(detail['sizename'] ?? '');
           selectedUnits.add(detail['unitname'] ?? '');
+
+          // Initialize filtered lists
+          _filteredModelsForRow.add([]);
+          _filteredSizesForRow.add([]);
+          _filteredUnitsForRow.add([]);
         }
 
         _calculateTotals();
       });
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed to load invoice details')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load invoice details')),
+        );
+      }
     }
   }
 
@@ -296,7 +380,9 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
     }
 
     // Calculate tax on subtotal (no discount)
-    double tax = subtotal * (_taxPercentage / 100);
+    double tax =
+        (subtotal * (_taxPercentage / 100)) +
+        ((double.parse(_packingAmountController.text) * 5) / 100);
     int packagingAmount = int.parse(_packingAmountController.text.toString());
     double grandTotal = subtotal + tax + packagingAmount;
 
@@ -337,13 +423,12 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
       selectedModels.add('');
       selectedSizes.add('');
       selectedUnits.add('');
-    });
 
-    // WidgetsBinding.instance.addPostFrameCallback((_) {
-    //   if (_productDropdownKeys.isNotEmpty) {
-    //     _productDropdownKeys.last.currentState?.openDropDownSearch();
-    //   }
-    // });
+      // Initialize filtered lists
+      _filteredModelsForRow.add([]);
+      _filteredSizesForRow.add([]);
+      _filteredUnitsForRow.add([]);
+    });
   }
 
   void _removeItem(int index) {
@@ -364,6 +449,11 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
       selectedModels.removeAt(index);
       selectedSizes.removeAt(index);
       selectedUnits.removeAt(index);
+
+      // Remove filtered lists
+      _filteredModelsForRow.removeAt(index);
+      _filteredSizesForRow.removeAt(index);
+      _filteredUnitsForRow.removeAt(index);
 
       _calculateTotals();
     });
@@ -412,10 +502,96 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
       ),
     );
 
+    // Get available inventory combinations for this product
+    final availableInventory = _getAvailableInventoryForProduct(selected.id);
+
+    // Extract unique values
+    final availableModels = availableInventory
+        .map((item) => item.modelName)
+        .toSet()
+        .toList();
+    final availableSizes = availableInventory
+        .map((item) => item.sizeName)
+        .toSet()
+        .toList();
+    final availableUnits = availableInventory
+        .map((item) => item.unitName)
+        .toSet()
+        .toList();
+
     setState(() {
       _invoiceItems[index]['productId'] = selected.id;
       _invoiceItems[index]['productName'] = productName;
       selectedProducts[index] = productName;
+
+      _invoiceItems[index]['modelId'] = '0';
+      _invoiceItems[index]['modelName'] = '';
+      _invoiceItems[index]['sizeId'] = '0';
+      _invoiceItems[index]['sizeName'] = '';
+      _invoiceItems[index]['unitId'] = '0';
+      _invoiceItems[index]['unitName'] = '';
+      selectedModels[index] = '';
+      selectedSizes[index] = '';
+      selectedUnits[index] = '';
+
+      // Store filtered lists
+      _filteredModelsForRow[index] = availableModels;
+      _filteredSizesForRow[index] = availableSizes;
+      _filteredUnitsForRow[index] = availableUnits;
+
+      // AUTOFILL: If only one model exists, select it automatically
+      if (availableModels.length == 1) {
+        final modelName = availableModels.first;
+        final model = modellist.firstWhere(
+          (m) => m.modelName == modelName,
+          orElse: () => Model(
+            id: '0',
+            modelName: '',
+            addedby: '',
+            activestatus: '1',
+            createdAt: '',
+          ),
+        );
+        _invoiceItems[index]['modelId'] = model.id;
+        _invoiceItems[index]['modelName'] = modelName;
+        selectedModels[index] = modelName;
+
+        // If only one size exists after model selection, autofill
+        if (availableSizes.length == 1) {
+          final sizeName = availableSizes.first;
+          final size = sizelist.firstWhere(
+            (s) => s.sizeName == sizeName,
+            orElse: () => ProductSize(
+              id: '0',
+              sizeName: '',
+              addedby: '',
+              activestatus: '1',
+              createdAt: '',
+            ),
+          );
+          _invoiceItems[index]['sizeId'] = size.id;
+          _invoiceItems[index]['sizeName'] = sizeName;
+          selectedSizes[index] = sizeName;
+        }
+
+        // If only one unit exists after model selection, autofill
+        if (availableUnits.length == 1) {
+          final unitName = availableUnits.first;
+          final unit = unitlist.firstWhere(
+            (u) => u.unitName == unitName,
+            orElse: () => Unit(
+              id: '0',
+              unitName: '',
+              addedby: '',
+              activestatus: '1',
+              createdAt: '',
+            ),
+          );
+          _invoiceItems[index]['unitId'] = unit.id;
+          _invoiceItems[index]['unitName'] = unitName;
+          selectedUnits[index] = unitName;
+        }
+      }
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -437,12 +613,83 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
       ),
     );
 
+    // Get available inventory for this product and model
+    final productId = _invoiceItems[index]['productId'];
+    final availableInventory = _getAvailableInventoryForProduct(productId);
+
+    // Filter by selected model
+    final filteredByModel = availableInventory
+        .where((item) => item.modelId == selected.id)
+        .toList();
+
+    // Extract unique sizes and units for this model
+    final availableSizesForModel = filteredByModel
+        .map((item) => item.sizeName)
+        .toSet()
+        .toList();
+    final availableUnitsForModel = filteredByModel
+        .map((item) => item.unitName)
+        .toSet()
+        .toList();
+
     setState(() {
       _invoiceItems[index]['modelId'] = selected.id;
       _invoiceItems[index]['modelName'] = modelName;
       selectedModels[index] = modelName;
+
+      // Clear previous size and unit selections
+      _invoiceItems[index]['sizeId'] = '0';
+      _invoiceItems[index]['sizeName'] = '';
+      _invoiceItems[index]['unitId'] = '0';
+      _invoiceItems[index]['unitName'] = '';
+      selectedSizes[index] = '';
+      selectedUnits[index] = '';
+
+      // Store filtered lists for this model
+      _filteredSizesForRow[index] = availableSizesForModel;
+      _filteredUnitsForRow[index] = availableUnitsForModel;
+
+      // AUTOFILL: If only one size exists, select it automatically
+      if (availableSizesForModel.length == 1) {
+        final sizeName = availableSizesForModel.first;
+        final size = sizelist.firstWhere(
+          (s) => s.sizeName == sizeName,
+          orElse: () => ProductSize(
+            id: '0',
+            sizeName: '',
+            addedby: '',
+            activestatus: '1',
+            createdAt: '',
+          ),
+        );
+        _invoiceItems[index]['sizeId'] = size.id;
+        _invoiceItems[index]['sizeName'] = sizeName;
+        selectedSizes[index] = sizeName;
+      }
+
+      // AUTOFILL: If only one unit exists, select it automatically
+      if (availableUnitsForModel.length == 1) {
+        final unitName = availableUnitsForModel.first;
+        final unit = unitlist.firstWhere(
+          (u) => u.unitName == unitName,
+          orElse: () => Unit(
+            id: '0',
+            unitName: '',
+            addedby: '',
+            activestatus: '1',
+            createdAt: '',
+          ),
+        );
+        _invoiceItems[index]['unitId'] = unit.id;
+        _invoiceItems[index]['unitName'] = unitName;
+        selectedUnits[index] = unitName;
+      }
     });
   }
+
+  final List<List<String>> _filteredModelsForRow = [];
+  final List<List<String>> _filteredSizesForRow = [];
+  final List<List<String>> _filteredUnitsForRow = [];
 
   void _onSizeSelected(int index, String sizeName) {
     if (sizeName.isEmpty) return;
@@ -520,6 +767,29 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
     return null;
   }
 
+  bool _isAutoFilled(int index, String field) {
+    if (index >= _filteredModelsForRow.length ||
+        index >= _filteredSizesForRow.length ||
+        index >= _filteredUnitsForRow.length) {
+      return false;
+    }
+
+    if (field == 'model') {
+      return _filteredModelsForRow[index].length == 1 &&
+          selectedModels[index] != null &&
+          selectedModels[index]!.isNotEmpty;
+    } else if (field == 'size') {
+      return _filteredSizesForRow[index].length == 1 &&
+          selectedSizes[index] != null &&
+          selectedSizes[index]!.isNotEmpty;
+    } else if (field == 'unit') {
+      return _filteredUnitsForRow[index].length == 1 &&
+          selectedUnits[index] != null &&
+          selectedUnits[index]!.isNotEmpty;
+    }
+    return false;
+  }
+
   void _saveInvoice() {
     String? validationError = _validateInvoice();
     if (validationError != null) {
@@ -547,17 +817,19 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
               _grandTotal,
               int.parse(_packingAmountController.text),
               _gstNoController.text,
-              selectedDeliveryPartner!.id,
+              selectedDeliveryPartner?.id ?? "",
             )
             .then((result) {
               if (result == "Success") {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Invoice updated successfully'),
-                    backgroundColor: Colors.green,
-                    duration: Duration(seconds: 1),
-                  ),
-                );
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Invoice updated successfully'),
+                      backgroundColor: Colors.green,
+                      duration: Duration(seconds: 1),
+                    ),
+                  );
+                }
                 Future.delayed(Duration(milliseconds: 500), () {
                   if (mounted) {
                     Navigator.of(context).pop(true);
@@ -585,13 +857,15 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
             )
             .then((result) {
               if (result == "Success") {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Invoice saved successfully'),
-                    backgroundColor: Colors.green,
-                    duration: Duration(seconds: 1),
-                  ),
-                );
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Invoice saved successfully'),
+                      backgroundColor: Colors.green,
+                      duration: Duration(seconds: 1),
+                    ),
+                  );
+                }
                 Future.delayed(Duration(milliseconds: 500), () {
                   if (mounted) {
                     Navigator.of(context).pop(true);
@@ -607,21 +881,23 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
     Company? company;
     if (mounted) company = await invoiceApiService().getCompanyDetails(context);
 
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => InvoicePrintPreview(
-          invoice: actualInvoice!,
-          items: _invoiceItems,
-          customerName: selectedCustomer ?? '',
-          subtotal: _subtotal,
-          taxAmount: _taxAmount,
-          taxPercentage: _taxPercentage.toString(),
-          grandTotal: _grandTotal,
-          packingAmount: _packingAmountController.text,
-          company: company,
+    if (mounted) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => InvoicePrintPreview(
+            invoice: actualInvoice!,
+            items: _invoiceItems,
+            customerName: selectedCustomer ?? '',
+            subtotal: _subtotal,
+            taxAmount: _taxAmount,
+            taxPercentage: _taxPercentage.toString(),
+            grandTotal: _grandTotal,
+            packingAmount: _packingAmountController.text,
+            company: company,
+          ),
         ),
-      ),
-    );
+      );
+    }
   }
 
   @override
@@ -791,7 +1067,6 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text(
               'Invoice Items',
@@ -801,7 +1076,8 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
                 color: Color(0xFF374151),
               ),
             ),
-            if (!isViewMode)
+            const Spacer(),
+            if (!isViewMode && !isMobile)
               ElevatedButton(
                 onPressed: _addItem,
                 style: ElevatedButton.styleFrom(
@@ -833,9 +1109,28 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: _invoiceItems.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      separatorBuilder: (_, _) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
+        // Get available inventory for this product
+        final productId = _invoiceItems[index]['productId'];
+        final availableInventory = _getAvailableInventoryForProduct(productId);
+
+        // Get unique values for dropdowns
+        final availableModels = availableInventory
+            .map((item) => item.modelName)
+            .toSet()
+            .toList();
+        final availableSizes = availableInventory
+            .map((item) => item.sizeName)
+            .toSet()
+            .toList();
+        final availableUnits = availableInventory
+            .map((item) => item.unitName)
+            .toSet()
+            .toList();
+
         return Card(
+          color: Colors.white,
           elevation: 1,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
@@ -846,7 +1141,7 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header with fixed height
+                // Header
                 SizedBox(
                   height: 40,
                   child: Row(
@@ -879,7 +1174,7 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
                 ),
                 const SizedBox(height: 8),
 
-                // All dropdowns with fixed height
+                // Product dropdown (always shows all products)
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -889,7 +1184,6 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
                     ),
                     const SizedBox(height: 4),
                     SizedBox(
-                      // height: 45,
                       child: CustomDropdownSearch(
                         label: "",
                         isRequired: true,
@@ -909,25 +1203,60 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
                   ],
                 ),
                 const SizedBox(height: 12),
+
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Model',
-                      style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                    Row(
+                      children: [
+                        const Text(
+                          'Model',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF6B7280),
+                          ),
+                        ),
+                        if (_isAutoFilled(index, 'model')) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.green.shade100,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              'Auto-filled',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.green.shade700,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                     const SizedBox(height: 4),
                     SizedBox(
-                      // height: 45,
                       child: CustomDropdownSearch(
                         label: "",
                         isRequired: false,
-                        items: modellist.map((p) => p.modelName).toList(),
+                        items: availableModels.isNotEmpty
+                            ? availableModels
+                            : ['No models available'],
                         selectedItem: selectedModels[index],
-                        isReadOnly: isViewMode,
+                        isReadOnly:
+                            isViewMode ||
+                            availableModels.isEmpty ||
+                            _isAutoFilled(index, 'model'),
                         dropdownKey: _modelDropdownKeys[index],
                         onChanged: (value) {
-                          if (value != null && value.isNotEmpty) {
+                          if (value != null &&
+                              value.isNotEmpty &&
+                              value != 'No models available') {
                             _onModelSelected(index, value);
                           }
                         },
@@ -935,75 +1264,132 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                Row(
+
+                // Size dropdown with autofill indicator
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Size',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFF6B7280),
-                            ),
+                    Row(
+                      children: [
+                        const Text(
+                          'Size',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF6B7280),
                           ),
-                          const SizedBox(height: 4),
-                          SizedBox(
-                            // height: 45,
-                            child: CustomDropdownSearch(
-                              label: "",
-                              isRequired: false,
-                              items: sizelist.map((s) => s.sizeName).toList(),
-                              selectedItem: selectedSizes[index],
-                              isReadOnly: isViewMode,
-                              dropdownKey: _sizeDropdownKeys[index],
-                              onChanged: (value) {
-                                if (value != null && value.isNotEmpty) {
-                                  _onSizeSelected(index, value);
-                                }
-                              },
+                        ),
+                        if (_isAutoFilled(index, 'size')) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.green.shade100,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              'Auto-filled',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.green.shade700,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
                         ],
-                      ),
+                      ],
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Unit',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFF6B7280),
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          SizedBox(
-                            // height: 45,
-                            child: CustomDropdownSearch(
-                              label: "",
-                              isRequired: false,
-                              items: unitlist.map((u) => u.unitName).toList(),
-                              selectedItem: selectedUnits[index],
-                              isReadOnly: isViewMode,
-                              dropdownKey: _unitDropdownKeys[index],
-                              onChanged: (value) {
-                                if (value != null && value.isNotEmpty) {
-                                  _onUnitSelected(index, value);
-                                }
-                              },
-                            ),
-                          ),
-                        ],
+                    const SizedBox(height: 4),
+                    SizedBox(
+                      child: CustomDropdownSearch(
+                        label: "",
+                        isRequired: false,
+                        items: availableSizes.isNotEmpty
+                            ? availableSizes
+                            : ['No sizes available'],
+                        selectedItem: selectedSizes[index],
+                        isReadOnly:
+                            isViewMode ||
+                            availableSizes.isEmpty ||
+                            _isAutoFilled(index, 'size'),
+                        dropdownKey: _sizeDropdownKeys[index],
+                        onChanged: (value) {
+                          if (value != null &&
+                              value.isNotEmpty &&
+                              value != 'No sizes available') {
+                            _onSizeSelected(index, value);
+                          }
+                        },
                       ),
                     ),
                   ],
                 ),
-                // Quantity and Rate row with fixed heights
+
+                // Unit dropdown with autofill indicator
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Text(
+                          'Unit',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF6B7280),
+                          ),
+                        ),
+                        if (_isAutoFilled(index, 'unit')) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.green.shade100,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              'Auto-filled',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.green.shade700,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    SizedBox(
+                      child: CustomDropdownSearch(
+                        label: "",
+                        isRequired: false,
+                        items: availableUnits.isNotEmpty
+                            ? availableUnits
+                            : ['No units available'],
+                        selectedItem: selectedUnits[index],
+                        isReadOnly:
+                            isViewMode ||
+                            availableUnits.isEmpty ||
+                            _isAutoFilled(index, 'unit'),
+                        dropdownKey: _unitDropdownKeys[index],
+                        onChanged: (value) {
+                          if (value != null &&
+                              value.isNotEmpty &&
+                              value != 'No units available') {
+                            _onUnitSelected(index, value);
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+
+                // Quantity and Rate row
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -1087,7 +1473,6 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
                               ),
                               readOnly: isViewMode,
                               onChanged: (value) {
-                                // ... existing validation code
                                 _updateItemAmount(index);
                               },
                             ),
@@ -1099,7 +1484,7 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
                 ),
                 const SizedBox(height: 12),
 
-                // Amount display with fixed height
+                // Amount display
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -1128,6 +1513,28 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
                     ),
                   ],
                 ),
+                SizedBox(height: 12),
+                if (!isViewMode)
+                  Align(
+                    alignment: AlignmentGeometry.bottomRight,
+                    child: ElevatedButton(
+                      onPressed: _addItem,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF1E293B),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                      ),
+                      child: const Text(
+                        '+ Add Item',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -1144,7 +1551,7 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
       ),
       child: Column(
         children: [
-          // Header - Fixed height
+          // Header
           Container(
             height: 50,
             color: const Color(0xFFF8FAFC),
@@ -1214,19 +1621,40 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
             ),
           ),
 
-          // Items - Fixed height rows
+          // Items
           ..._invoiceItems.asMap().entries.map((entry) {
             final index = entry.key;
             final item = entry.value;
+
+            // Get available inventory for this product
+            final productId = item['productId'];
+            final availableInventory = _getAvailableInventoryForProduct(
+              productId,
+            );
+
+            // Get unique values for dropdowns
+            final availableModels = availableInventory
+                .map((i) => i.modelName)
+                .toSet()
+                .toList();
+            final availableSizes = availableInventory
+                .map((i) => i.sizeName)
+                .toSet()
+                .toList();
+            final availableUnits = availableInventory
+                .map((i) => i.unitName)
+                .toSet()
+                .toList();
+
             return Container(
-              height: 70, // Fixed height for all rows
+              height: 70,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
                 border: Border(top: BorderSide(color: const Color(0xFFE2E8F0))),
               ),
               child: Row(
-                crossAxisAlignment:
-                    CrossAxisAlignment.center, // Center all items vertically
+                crossAxisAlignment: CrossAxisAlignment.center,
+
                 children: [
                   // S.No
                   Expanded(
@@ -1241,7 +1669,7 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
                   Expanded(
                     flex: 2,
                     child: Align(
-                      alignment: Alignment.centerLeft,
+                      alignment: Alignment.bottomLeft,
                       child: isViewMode
                           ? Text(item['productName'] ?? '')
                           : SizedBox(
@@ -1265,82 +1693,154 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
                     ),
                   ),
 
-                  // Model
                   Expanded(
                     flex: 2,
                     child: Align(
-                      alignment: Alignment.centerLeft,
+                      alignment: Alignment.bottomLeft,
                       child: isViewMode
                           ? Text(item['modelName'] ?? '')
-                          : SizedBox(
-                              height: 50,
-                              child: CustomDropdownSearch(
-                                label: "",
-                                isRequired: false,
-                                items: modellist
-                                    .map((m) => m.modelName)
-                                    .toList(),
-                                selectedItem: selectedModels[index],
-                                isReadOnly: isViewMode,
-                                dropdownKey: _modelDropdownKeys[index],
-                                onChanged: (value) {
-                                  if (value != null && value.isNotEmpty) {
-                                    _onModelSelected(index, value);
-                                  }
-                                },
-                              ),
+                          : Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (_isAutoFilled(index, 'model'))
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 2),
+                                    child: Text(
+                                      'Auto-filled',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: Colors.green.shade700,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                SizedBox(
+                                  height: 50,
+                                  child: CustomDropdownSearch(
+                                    label: "",
+                                    isRequired: false,
+                                    items: availableModels.isNotEmpty
+                                        ? availableModels
+                                        : ['No models available'],
+                                    selectedItem: selectedModels[index],
+                                    isReadOnly:
+                                        isViewMode ||
+                                        availableModels.isEmpty ||
+                                        _isAutoFilled(index, 'model'),
+                                    dropdownKey: _modelDropdownKeys[index],
+                                    onChanged: (value) {
+                                      if (value != null &&
+                                          value.isNotEmpty &&
+                                          value != 'No models available') {
+                                        _onModelSelected(index, value);
+                                      }
+                                    },
+                                  ),
+                                ),
+                              ],
                             ),
                     ),
                   ),
 
-                  // Size
+                  // Size - Filtered with autofill
                   Expanded(
                     flex: 1,
                     child: Align(
-                      alignment: Alignment.centerLeft,
+                      alignment: Alignment.bottomLeft,
                       child: isViewMode
                           ? Text(item['sizeName'] ?? '')
-                          : SizedBox(
-                              height: 50,
-                              child: CustomDropdownSearch(
-                                label: "",
-                                isRequired: false,
-                                items: sizelist.map((s) => s.sizeName).toList(),
-                                selectedItem: selectedSizes[index],
-                                isReadOnly: isViewMode,
-                                dropdownKey: _sizeDropdownKeys[index],
-                                onChanged: (value) {
-                                  if (value != null && value.isNotEmpty) {
-                                    _onSizeSelected(index, value);
-                                  }
-                                },
-                              ),
+                          : Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (_isAutoFilled(index, 'size'))
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 2),
+                                    child: Text(
+                                      'Auto-filled',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: Colors.green.shade700,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                SizedBox(
+                                  height: 50,
+                                  child: CustomDropdownSearch(
+                                    label: "",
+                                    isRequired: false,
+                                    items: availableSizes.isNotEmpty
+                                        ? availableSizes
+                                        : ['No sizes available'],
+                                    selectedItem: selectedSizes[index],
+                                    isReadOnly:
+                                        isViewMode ||
+                                        availableSizes.isEmpty ||
+                                        _isAutoFilled(index, 'size'),
+                                    dropdownKey: _sizeDropdownKeys[index],
+                                    onChanged: (value) {
+                                      if (value != null &&
+                                          value.isNotEmpty &&
+                                          value != 'No sizes available') {
+                                        _onSizeSelected(index, value);
+                                      }
+                                    },
+                                  ),
+                                ),
+                              ],
                             ),
                     ),
                   ),
 
-                  // Unit
+                  // Unit - Filtered with autofill
                   Expanded(
                     flex: 1,
                     child: Align(
-                      alignment: Alignment.centerLeft,
+                      alignment: Alignment.bottomLeft,
                       child: isViewMode
                           ? Text(item['unitName'] ?? '')
-                          : SizedBox(
-                              height: 50,
-                              child: CustomDropdownSearch(
-                                label: "",
-                                isRequired: false,
-                                items: unitlist.map((u) => u.unitName).toList(),
-                                selectedItem: selectedUnits[index],
-                                isReadOnly: isViewMode,
-                                dropdownKey: _unitDropdownKeys[index],
-                                onChanged: (value) {
-                                  if (value != null && value.isNotEmpty) {
-                                    _onUnitSelected(index, value);
-                                  }
-                                },
-                              ),
+                          : Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (_isAutoFilled(index, 'unit'))
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 2),
+                                    child: Text(
+                                      'Auto-filled',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: Colors.green.shade700,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                SizedBox(
+                                  height: 50,
+                                  child: CustomDropdownSearch(
+                                    label: "",
+                                    isRequired: false,
+                                    items: availableUnits.isNotEmpty
+                                        ? availableUnits
+                                        : ['No units available'],
+                                    selectedItem: selectedUnits[index],
+                                    isReadOnly:
+                                        isViewMode ||
+                                        availableUnits.isEmpty ||
+                                        _isAutoFilled(index, 'unit'),
+                                    dropdownKey: _unitDropdownKeys[index],
+                                    onChanged: (value) {
+                                      if (value != null &&
+                                          value.isNotEmpty &&
+                                          value != 'No units available') {
+                                        _onUnitSelected(index, value);
+                                      }
+                                    },
+                                  ),
+                                ),
+                              ],
                             ),
                     ),
                   ),
@@ -1348,7 +1848,8 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
                   // Quantity
                   Expanded(
                     flex: 1,
-                    child: Center(
+                    child: Align(
+                      alignment: Alignment.bottomLeft,
                       child: isViewMode
                           ? Text(item['quantity'] ?? '')
                           : SizedBox(
@@ -1391,7 +1892,8 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
                   // Rate
                   Expanded(
                     flex: 1,
-                    child: Center(
+                    child: Align(
+                      alignment: Alignment.bottomLeft,
                       child: isViewMode
                           ? Text('Rs.${item['rate'] ?? ''}')
                           : SizedBox(
@@ -1450,7 +1952,8 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
                   // Amount
                   Expanded(
                     flex: 1,
-                    child: Center(
+                    child: Align(
+                      alignment: Alignment.bottomLeft,
                       child: Container(
                         height: 50,
                         padding: const EdgeInsets.symmetric(
@@ -1489,7 +1992,7 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
                 ],
               ),
             );
-          }).toList(),
+          }),
         ],
       ),
     );
@@ -1518,6 +2021,7 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
                     ),
                     const SizedBox(height: 4),
                     TextFormField(
+                      enabled: !isViewMode,
                       controller: _gstNoController,
                       keyboardType: TextInputType.emailAddress,
 
@@ -1533,6 +2037,7 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
                 ),
                 const SizedBox(height: 8),
                 CustomDropdownSearch(
+                  isReadOnly: !isViewMode,
                   selectedItem: selectedDeliveryPartner?.name,
                   label: 'Delivery Partners',
                   items: deliveryPartners.map<String>((invoice) {
@@ -1566,6 +2071,7 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
                     ),
                     const SizedBox(height: 4),
                     TextFormField(
+                      enabled: !isViewMode,
                       onChanged: (val) {
                         _calculateTotals();
                       },
@@ -1621,6 +2127,7 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
                           ),
                           const SizedBox(height: 4),
                           TextFormField(
+                            enabled: !isViewMode,
                             controller: _gstNoController,
                             keyboardType: TextInputType.emailAddress,
 
@@ -1636,6 +2143,7 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
                       ),
                       const SizedBox(height: 8),
                       CustomDropdownSearch(
+                        isReadOnly: !isViewMode,
                         selectedItem: selectedDeliveryPartner?.name,
                         label: 'Delivery Partners',
                         items: deliveryPartners.map<String>((invoice) {
@@ -1669,6 +2177,7 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
                           ),
                           const SizedBox(height: 4),
                           TextFormField(
+                            enabled: !isViewMode,
                             onChanged: (val) {
                               _calculateTotals();
                             },
@@ -1831,588 +2340,6 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
             ),
           ),
           child: Text(isEditMode ? 'Update Invoice' : 'Save Invoice'),
-        ),
-      ],
-    );
-  }
-}
-
-class InvoicePrintPreview extends StatelessWidget {
-  final InvoiceModel invoice;
-  final List<Map<String, dynamic>> items;
-  final String customerName;
-  final String subtotal;
-  final String taxAmount;
-  final String taxPercentage;
-  final String grandTotal;
-  final String packingAmount;
-  final Company? company;
-
-  const InvoicePrintPreview({
-    super.key,
-    required this.invoice,
-    required this.items,
-    required this.customerName,
-    required this.subtotal,
-    required this.taxAmount,
-    required this.taxPercentage,
-    required this.grandTotal,
-    this.company,
-    required this.packingAmount, // Make it optional
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Print Invoice - ${invoice.invoiceNo}'),
-        backgroundColor: const Color(0xFF1E293B),
-        foregroundColor: Colors.white,
-        actions: [
-          // IconButton(
-          //   icon: const Icon(Icons.picture_as_pdf, color: Colors.white),
-          //   onPressed: () async {
-          //     showDialog(
-          //       context: context,
-          //       barrierDismissible: false,
-          //       builder: (context) => const Center(
-          //         child: CircularProgressIndicator(),
-          //       ),
-          //     );
-          //
-          //     try {
-          //       final pdf = await InvoicePrintHelper.generatePDF(
-          //         invoice: invoice,
-          //         items: items,
-          //         customerName: customerName,
-          //         subtotal: subtotal,
-          //         taxAmount: taxAmount,
-          //         taxPercentage: taxPercentage,
-          //         grandTotal: grandTotal,
-          //         company: company, // Pass company to PDF helper
-          //       );
-          //
-          //       if (context.mounted) {
-          //         Navigator.of(context).pop();
-          //       }
-          //
-          //       final bool isWeb = identical(0, 0.0);
-          //
-          //       if (isWeb) {
-          //         await InvoicePrintHelper.downloadPDFWeb(
-          //           pdf,
-          //           'Invoice_${invoice.invoiceNo}.pdf',
-          //         );
-          //         if (context.mounted) {
-          //           ScaffoldMessenger.of(context).showSnackBar(
-          //             const SnackBar(
-          //               content: Text('PDF downloaded successfully'),
-          //               backgroundColor: Colors.green,
-          //             ),
-          //           );
-          //         }
-          //       } else {
-          //         await Printing.layoutPdf(
-          //           onLayout: (format) async => pdf,
-          //         );
-          //       }
-          //     } catch (e) {
-          //       if (context.mounted) {
-          //         Navigator.of(context).pop();
-          //         ScaffoldMessenger.of(context).showSnackBar(
-          //           SnackBar(
-          //             content: Text('Error: $e'),
-          //             backgroundColor: Colors.red,
-          //           ),
-          //         );
-          //       }
-          //     }
-          //   },
-          //   tooltip: 'Download PDF',
-          // ),
-          IconButton(
-            icon: const Icon(Icons.picture_as_pdf, color: Colors.white),
-            onPressed: () async {
-              showDialog(
-                context: context,
-                barrierDismissible: false,
-                builder: (context) =>
-                    const Center(child: CircularProgressIndicator()),
-              );
-
-              try {
-                final pdf = await InvoicePrintHelper.generatePDF(
-                  invoice: invoice,
-                  items: items,
-                  customerName: customerName,
-                  subtotal: subtotal,
-                  taxAmount: taxAmount,
-                  taxPercentage: taxPercentage,
-                  grandTotal: grandTotal,
-                  company: company,
-                  packingAmount: packingAmount,
-                );
-
-                if (context.mounted) {
-                  Navigator.of(context).pop();
-                }
-
-                // Use Printing.layoutPdf directly for non-web platforms
-                // For web, you need to handle download differently
-                final bool isWeb = identical(0, 0.0);
-
-                if (isWeb) {
-                  // Create a download for web using the helper's internal method
-                  // Since downloadPDFWeb is private, we'll use printInvoice which handles both
-                  await InvoicePrintHelper.printInvoice(
-                    context: context,
-                    invoice: invoice,
-                    items: items,
-                    customerName: customerName,
-                    subtotal: subtotal,
-                    taxAmount: taxAmount,
-                    taxPercentage: taxPercentage,
-                    grandTotal: grandTotal,
-                    company: company,
-                    packingAmount: packingAmount,
-                  );
-                } else {
-                  await Printing.layoutPdf(onLayout: (format) async => pdf);
-                }
-
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('PDF generated successfully'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Error: $e'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              }
-            },
-            tooltip: 'Download PDF',
-          ),
-          // IconButton(
-          //   icon: const Icon(Icons.print, color: Colors.white),
-          //   onPressed: () async {
-          //     showDialog(
-          //       context: context,
-          //       barrierDismissible: false,
-          //       builder: (context) => const Center(
-          //         child: CircularProgressIndicator(),
-          //       ),
-          //     );
-          //
-          //     try {
-          //       await InvoicePrintHelper.printInvoice(
-          //         context: context,
-          //         invoice: invoice,
-          //         items: items,
-          //         customerName: customerName,
-          //         subtotal: subtotal,
-          //         taxAmount: taxAmount,
-          //         taxPercentage: taxPercentage,
-          //         grandTotal: grandTotal,
-          //         company: company, // Pass company to print helper
-          //       );
-          //
-          //       if (context.mounted) {
-          //         Navigator.of(context).pop();
-          //       }
-          //     } catch (e) {
-          //       if (context.mounted) {
-          //         Navigator.of(context).pop();
-          //         ScaffoldMessenger.of(context).showSnackBar(
-          //           SnackBar(
-          //             content: Text('Error: $e'),
-          //             backgroundColor: Colors.red,
-          //           ),
-          //         );
-          //       }
-          //     }
-          //   },
-          //   tooltip: 'Print',
-          // ),
-        ],
-      ),
-      body: Center(
-        child: SingleChildScrollView(
-          child: Container(
-            width: 800,
-            margin: const EdgeInsets.all(24),
-            padding: const EdgeInsets.all(32),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.shade300,
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Company Header Section
-                _buildCompanyHeader(),
-
-                const SizedBox(height: 24),
-
-                // Invoice Title
-                Center(
-                  child: Column(
-                    children: [
-                      const Text(
-                        'TAX INVOICE',
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF1E293B),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Bill No: ${invoice.invoiceNo}  |  Date: ${DateFormat('dd/MM/yyyy').format(DateFormat('yyyy-MM-dd').parse(invoice.date))}',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 32),
-
-                // Bill To Section
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey.shade300),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Bill To:',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text('Customer Name: $customerName'),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 32),
-
-                // Items Table
-                Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey.shade300),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    children: [
-                      // Table Header
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        color: Colors.grey.shade100,
-                        child: const Row(
-                          children: [
-                            Expanded(
-                              flex: 1,
-                              child: Text(
-                                'S.No',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                            Expanded(
-                              flex: 4,
-                              child: Text(
-                                'Description',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                            Expanded(
-                              flex: 1,
-                              child: Text(
-                                'Qty',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                            Expanded(
-                              flex: 1,
-                              child: Text(
-                                'Rate',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                            Expanded(
-                              flex: 1,
-                              child: Text(
-                                'Amount',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Table Rows
-                      ...items.asMap().entries.map((entry) {
-                        final index = entry.key;
-                        final item = entry.value;
-
-                        String description = item['formattedDescription'] ?? '';
-
-                        if (description.isEmpty) {
-                          final List<String> parts = [];
-                          parts.add(
-                            item['productName'] ?? item['productname'] ?? '',
-                          );
-
-                          final model =
-                              item['modelName'] ?? item['modelname'] ?? '';
-                          if (model.isNotEmpty) parts.add('Model: $model');
-
-                          final size =
-                              item['sizeName'] ?? item['sizename'] ?? '';
-                          if (size.isNotEmpty) parts.add('Size: $size');
-
-                          final unit =
-                              item['unitName'] ?? item['unitname'] ?? '';
-                          if (unit.isNotEmpty) parts.add('Unit: $unit');
-
-                          description = parts.join(' | ');
-                        }
-
-                        return Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            border: Border(
-                              top: BorderSide(color: Colors.grey.shade300),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(flex: 1, child: Text('${index + 1}')),
-                              Expanded(
-                                flex: 4,
-                                child: Text(
-                                  description,
-                                  style: const TextStyle(fontSize: 11),
-                                ),
-                              ),
-                              Expanded(
-                                flex: 1,
-                                child: Text(
-                                  item['quantity']?.toString() ?? '0',
-                                ),
-                              ),
-                              Expanded(
-                                flex: 1,
-                                child: Text(
-                                  'Rs.${double.tryParse(item['rate']?.toString() ?? '0')?.toStringAsFixed(2)}',
-                                ),
-                              ),
-                              Expanded(
-                                flex: 1,
-                                child: Text(
-                                  'Rs.${double.tryParse(item['amount']?.toString() ?? '0')?.toStringAsFixed(2)}',
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // Totals Section
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    SizedBox(
-                      width: 300,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildTotalRow('Subtotal:', 'Rs.$subtotal'),
-                          const SizedBox(height: 4),
-                          _buildTotalRow(
-                            'Packing Amount:',
-                            'Rs.$packingAmount',
-                          ),
-                          const SizedBox(height: 4),
-                          _buildTotalRow(
-                            'Tax ($taxPercentage%):',
-                            'Rs.$taxAmount',
-                          ),
-                          const Divider(color: Colors.grey),
-                          _buildTotalRow(
-                            'Total Amount:',
-                            'Rs.$grandTotal',
-                            isBold: true,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 32),
-
-                // Footer with Authorized Sign
-                _buildFooter(),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCompanyHeader() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Company Logo (if available)
-          if (company?.logoUrl != null && company!.logoUrl.isNotEmpty)
-            Container(
-              width: 80,
-              height: 80,
-              margin: const EdgeInsets.only(right: 16),
-              child: company!.logoUrl.startsWith('http')
-                  ? Image.network(company!.logoUrl, fit: BoxFit.contain)
-                  : const Icon(Icons.business, size: 50, color: Colors.grey),
-            ),
-
-          // Company Details
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  company?.companyName ?? 'Company Name',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1E293B),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                if (company?.address != null && company!.address.isNotEmpty)
-                  Text(
-                    company!.address,
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                const SizedBox(height: 4),
-                if (company?.contactNo != null && company!.contactNo.isNotEmpty)
-                  Text(
-                    'Contact: ${company!.contactNo}',
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                if (company?.emailId != null && company!.emailId.isNotEmpty)
-                  Text(
-                    'Email: ${company!.emailId}',
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                if (company?.gstNo != null && company!.gstNo.isNotEmpty)
-                  Text(
-                    'GST No: ${company!.gstNo}',
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFooter() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Terms & Conditions:',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              '1. Goods once sold will not be taken back\n2. Subject to local jurisdiction',
-              style: TextStyle(fontSize: 10, color: Colors.grey),
-            ),
-          ],
-        ),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Container(
-              width: 200,
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              decoration: const BoxDecoration(
-                border: Border(top: BorderSide(color: Colors.black)),
-              ),
-              child: const Text(
-                'Authorized Signatory',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTotalRow(String label, String value, {bool isBold = false}) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
-            fontSize: isBold ? 16 : 14,
-          ),
-        ),
-        Text(
-          value,
-          style: TextStyle(
-            fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
-            fontSize: isBold ? 16 : 14,
-          ),
         ),
       ],
     );

@@ -335,7 +335,9 @@ class InvoiceApiService {
           list.add(Customer.fromJson(item));
         }
       }
-    } catch (e) {}
+    } catch (e) {
+      return [];
+    }
     return list;
   }
 
@@ -458,6 +460,77 @@ class InvoiceApiService {
   }
 
   // Save invoice - WITHOUT DISCOUNT
+  // Future<String> saveInvoice(
+  //   BuildContext context,
+  //   String invoiceNo,
+  //   String customerId,
+  //   String date,
+  //   List<Map<String, dynamic>> items,
+  //   String remarks,
+  //   String taxPercentage,
+  //   String subtotal,
+  //   String grandTotal,
+  //   int packingAmount,
+  //   String gstNo,
+  //   String deliveryPartner,
+  // ) async {
+  //   try {
+  //     SharedPreferences prefs = await SharedPreferences.getInstance();
+  //     final companyid = prefs.getString('companyid') ?? '';
+  //     final addedby = prefs.getString('id') ?? '';
+  //
+  //     final url = Uri.parse("$baseUrl/save_invoice3.php");
+  //
+  //     var data = {
+  //       "invoiceno": invoiceNo,
+  //       "companyid": companyid,
+  //       "customerid": customerId,
+  //       "date": date,
+  //       "items": items,
+  //       "remarks": remarks,
+  //       "taxpercentage": taxPercentage,
+  //       "subtotal": subtotal,
+  //       "grandtotal": grandTotal,
+  //       "addedby": addedby,
+  //       "status": 'Pending',
+  //       "packing_amount": packingAmount,
+  //       "gst_no": gstNo,
+  //       "delivery_partner": deliveryPartner,
+  //     };
+  //     // print(data);
+  //     //{invoiceno: 11, companyid: 2, customerid: 12540, date: 2026-07-13, items: [{productId: 20, productName: Pant, modelId: 8, modelName: Model 1, sizeId: 24, sizeName: M, unitId: 6, unitName: Piece, quantity: 10, rate: 100.00, amount: 1000.00}], remarks: , taxpercentage: 5, subtotal: 1000.00, grandtotal: 1050.00, addedby: 11, status: Pending, packing_amount: 0, gst_no: , delivery_partner: }
+  //     var response = await http.post(
+  //       url,
+  //       headers: {"Content-Type": "application/json"},
+  //       body: json.encode(data),
+  //     );
+  //
+  //     var message = json.decode(response.body);
+  //
+  //     if (message['success'] == true) {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(
+  //           content: Text('Invoice saved successfully'),
+  //           backgroundColor: Colors.green,
+  //         ),
+  //       );
+  //       return "Success";
+  //     } else {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(
+  //           content: Text(message['message'] ?? 'Failed to save invoice'),
+  //           backgroundColor: Colors.red,
+  //         ),
+  //       );
+  //       return "Failed";
+  //     }
+  //   } catch (e) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+  //     );
+  //     return "Failed";
+  //   }
+  // }
   Future<String> saveInvoice(
     BuildContext context,
     String invoiceNo,
@@ -473,61 +546,156 @@ class InvoiceApiService {
     String deliveryPartner,
   ) async {
     try {
+      // Validate required fields
+      if (invoiceNo.isEmpty || customerId.isEmpty || items.isEmpty) {
+        _showSnackBar(
+          context,
+          'Invoice number, customer, and items are required',
+          Colors.orange,
+        );
+        return "Failed";
+      }
+
       SharedPreferences prefs = await SharedPreferences.getInstance();
       final companyid = prefs.getString('companyid') ?? '';
       final addedby = prefs.getString('id') ?? '';
 
-      final url = Uri.parse("$baseUrl/save_invoice2.php");
-      // final url = Uri.parse("$baseUrl/test_saveinvoice.php");
+      if (companyid.isEmpty || addedby.isEmpty) {
+        _showSnackBar(
+          context,
+          'Company or user information missing',
+          Colors.orange,
+        );
+        return "Failed";
+      }
+
+      // Clean and prepare items data
+      List<Map<String, dynamic>> cleanedItems = items.map((item) {
+        return {
+          "productId": int.tryParse(item['productId']?.toString() ?? '0') ?? 0,
+          "productName": item['productName']?.toString() ?? '',
+          "modelId": int.tryParse(item['modelId']?.toString() ?? '0') ?? 0,
+          "modelName": item['modelName']?.toString() ?? '',
+          "sizeId": int.tryParse(item['sizeId']?.toString() ?? '0') ?? 0,
+          "sizeName": item['sizeName']?.toString() ?? '',
+          "unitId": int.tryParse(item['unitId']?.toString() ?? '0') ?? 0,
+          "unitName": item['unitName']?.toString() ?? '',
+          "quantity": double.tryParse(item['quantity']?.toString() ?? '0') ?? 0,
+          "rate": double.tryParse(item['rate']?.toString() ?? '0') ?? 0,
+          "amount": double.tryParse(item['amount']?.toString() ?? '0') ?? 0,
+        };
+      }).toList();
+
+      // Validate items have positive quantities
+      for (var item in cleanedItems) {
+        if (item['quantity'] <= 0) {
+          _showSnackBar(
+            context,
+            'Quantity must be greater than 0 for ${item['productName']}',
+            Colors.orange,
+          );
+          return "Failed";
+        }
+      }
+
+      final url = Uri.parse("$baseUrl/save_invoice3.php");
 
       var data = {
-        "invoiceno": invoiceNo,
+        "invoiceno": invoiceNo.trim(),
         "companyid": companyid,
-        "customerid": customerId,
+        "customerid": customerId.trim(),
         "date": date,
-        "items": items,
-        "remarks": remarks,
-        "taxpercentage": taxPercentage,
-        "subtotal": subtotal,
-        "grandtotal": grandTotal,
+        "items": cleanedItems,
+        "remarks": remarks.trim(),
+        "taxpercentage": taxPercentage.isNotEmpty
+            ? double.tryParse(taxPercentage) ?? 0
+            : 0,
+        "subtotal": subtotal.isNotEmpty ? double.tryParse(subtotal) ?? 0 : 0,
+        "grandtotal": grandTotal.isNotEmpty
+            ? double.tryParse(grandTotal) ?? 0
+            : 0,
         "addedby": addedby,
         "status": 'Pending',
         "packing_amount": packingAmount,
-        "gst_no": gstNo,
-        "delivery_partner": deliveryPartner,
+        "gst_no": gstNo.trim(),
+        "delivery_partner": deliveryPartner.trim(),
       };
 
-      var response = await http.post(
-        url,
-        headers: {"Content-Type": "application/json"},
-        body: json.encode(data),
-      );
+      // Debug log (remove in production)
+      debugPrint('Sending invoice data: ${json.encode(data)}');
 
-      var message = json.decode(response.body);
+      var response = await http
+          .post(
+            url,
+            headers: {"Content-Type": "application/json"},
+            body: json.encode(data),
+          )
+          .timeout(
+            const Duration(seconds: 30),
+            onTimeout: () {
+              throw Exception('Connection timeout. Please try again.');
+            },
+          );
 
-      if (message['success'] == true) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Invoice saved successfully'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        return "Success";
+      if (response.statusCode == 200) {
+        var message = json.decode(response.body);
+
+        if (message['success'] == true) {
+          _showSnackBar(
+            context,
+            'Invoice saved successfully! Invoice #: ${message['invoice_id'] ?? invoiceNo}',
+            Colors.green,
+          );
+          return "Success";
+        } else {
+          // Handle specific error messages from server
+          String errorMsg = message['message'] ?? 'Failed to save invoice';
+          if (message['error'] != null) {
+            errorMsg = message['error'];
+          }
+          _showSnackBar(context, errorMsg, Colors.red);
+          return "Failed";
+        }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(message['message'] ?? 'Failed to save invoice'),
-            backgroundColor: Colors.red,
-          ),
+        _showSnackBar(
+          context,
+          'Server error: ${response.statusCode}',
+          Colors.red,
         );
         return "Failed";
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+      debugPrint('Error saving invoice: $e');
+      _showSnackBar(
+        context,
+        'Error: ${e.toString().replaceFirst('Exception: ', '')}',
+        Colors.red,
       );
       return "Failed";
     }
+  }
+
+  void _showSnackBar(
+    BuildContext context,
+    String message,
+    Color backgroundColor,
+  ) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: const TextStyle(fontSize: 14)),
+        backgroundColor: backgroundColor,
+        duration: const Duration(seconds: 4),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        action: SnackBarAction(
+          label: 'Close',
+          textColor: Colors.white,
+          onPressed: () {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          },
+        ),
+      ),
+    );
   }
 
   // Update invoice - WITHOUT DISCOUNT
@@ -548,9 +716,10 @@ class InvoiceApiService {
   ) async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      final companyid = prefs.getString('companyid') ?? '';
 
-      final url = Uri.parse("$baseUrl/update_invoice2.php");
+      final companyid = prefs.getString('companyid') ?? '';
+      final userId = prefs.getString('id') ?? '';
+      final url = Uri.parse("$baseUrl/update_invoice3.php");
 
       var data = {
         "invoiceid": invoiceId,
@@ -566,8 +735,9 @@ class InvoiceApiService {
         "packing_amount": packingAmount,
         "gst_no": gstNo,
         "delivery_partner": deliveryPartner,
+        'addedby': userId,
       };
-
+      print(data);
       var response = await http.post(
         url,
         headers: {"Content-Type": "application/json"},
@@ -575,7 +745,7 @@ class InvoiceApiService {
       );
 
       var message = json.decode(response.body);
-
+      print(message);
       if (message['success'] == true) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -587,13 +757,18 @@ class InvoiceApiService {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(message['message'] ?? 'Failed to update invoice'),
+            content: Text(
+              message['error'] ??
+                  message['message'] ??
+                  'Failed to update invoice',
+            ),
             backgroundColor: Colors.red,
           ),
         );
         return "Failed";
       }
     } catch (e) {
+      print(e);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
       );

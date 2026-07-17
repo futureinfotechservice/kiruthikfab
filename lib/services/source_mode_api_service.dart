@@ -17,7 +17,8 @@ class SourceModeApiService {
     final userid = prefs.getString('id') ?? '';
 
     if (companyid.isEmpty) {
-      _showError(context, "Company ID not found. Please login again.");
+      if (context.mounted)
+        _showError(context, "Company ID not found. Please login again.");
       return "Failed";
     }
 
@@ -39,7 +40,7 @@ class SourceModeApiService {
 
       return _handleResponse(context, response.body);
     } catch (e) {
-      _showError(context, "Error: $e");
+      if (context.mounted) _showError(context, "Error: $e");
       return "Failed";
     }
   }
@@ -54,7 +55,8 @@ class SourceModeApiService {
     final userid = prefs.getString('id') ?? '';
 
     if (companyid.isEmpty) {
-      _showError(context, "Company ID not found. Please login again.");
+      if (context.mounted)
+        _showError(context, "Company ID not found. Please login again.");
       return "Failed";
     }
 
@@ -76,7 +78,7 @@ class SourceModeApiService {
 
       return _handleResponse(context, response.body);
     } catch (e) {
-      _showError(context, "Error: $e");
+      if (context.mounted) _showError(context, "Error: $e");
       return "Failed";
     }
   }
@@ -88,7 +90,8 @@ class SourceModeApiService {
     final companyid = prefs.getString('companyid') ?? '';
 
     if (companyid.isEmpty) {
-      _showError(context, "Company ID not found. Please login again.");
+      if (context.mounted)
+        _showError(context, "Company ID not found. Please login again.");
       return [];
     }
 
@@ -120,7 +123,7 @@ class SourceModeApiService {
         throw Exception('Failed to load occupations: ${response.statusCode}');
       }
     } catch (e) {
-      _showError(context, "Error fetching occupations: $e");
+      //_showError(context, "Error fetching occupations: $e");
       return [];
     }
   }

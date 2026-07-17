@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:kiruthikfab/screens/reports/sales_report_table.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../models/SalespersonData.dart';
 import '../../../services/salesperson_report_apiservice.dart';
+import '../../indigator/main.dart';
+import '../navigation_provider.dart';
 
 class SalespersonReport extends StatefulWidget {
   const SalespersonReport({super.key});
@@ -223,7 +226,7 @@ class _SalespersonReportState extends State<SalespersonReport> {
                 const SizedBox(height: 10),
 
                 _isLoading
-                    ? const Center(child: CircularProgressIndicator())
+                    ? const Center(child: CircularWaveProgress())
                     : SalesReportTable(data: _filteredData),
               ],
             ),
@@ -858,6 +861,8 @@ class _SalespersonReportState extends State<SalespersonReport> {
   }
 
   Widget _header() {
+    final navProvider = context.read<NavigationProvider>();
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -873,21 +878,36 @@ class _SalespersonReportState extends State<SalespersonReport> {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                Row(
                   children: [
-                    Text(
-                      'Salesperson Performance Report',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
+                    IconButton(
+                      onPressed: () {
+                        navProvider.updateIndex(
+                          selectedIndex: 0,
+                          reportSubIndex: 0,
+                          masterSubIndex: 0,
+                          entrySubIndex: 0,
+                        );
+                      },
+                      icon: Icon(Icons.arrow_back, color: Colors.white),
                     ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Salesperson-wise performance metrics',
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                    const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Salesperson Performance Report',
+                          style: TextStyle(
+                            fontSize: 19,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Salesperson-wise performance metrics',
+                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -935,6 +955,17 @@ class _SalespersonReportState extends State<SalespersonReport> {
 
           return Row(
             children: [
+              IconButton(
+                onPressed: () {
+                  navProvider.updateIndex(
+                    selectedIndex: 0,
+                    reportSubIndex: 0,
+                    masterSubIndex: 0,
+                    entrySubIndex: 0,
+                  );
+                },
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
+              ),
               const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../../../widgets/customappbarwidget.dart';
 import '../../../../services/invoice_apiservice.dart';
 import '../../../models/invoice_print_helper.dart';
-import 'InvoiceEntryPage.dart';
+import '../navigation_provider.dart';
+import 'invoice_entry_page.dart';
 
 class InvoiceListPage extends StatefulWidget {
   const InvoiceListPage({super.key});
@@ -124,36 +125,36 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
     });
   }
 
-  Future<void> _deleteInvoice(String invoiceId) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Invoice'),
-        content: const Text('Are you sure you want to delete this invoice?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      String result = '';
-      if (mounted) {
-        result = await invoiceApiService().deleteInvoice(context, invoiceId);
-      }
-      if (result == "Success") {
-        _loadInvoices();
-      }
-    }
-  }
+  // Future<void> _deleteInvoice(String invoiceId) async {
+  //   final confirm = await showDialog<bool>(
+  //     context: context,
+  //     builder: (context) => AlertDialog(
+  //       title: const Text('Delete Invoice'),
+  //       content: const Text('Are you sure you want to delete this invoice?'),
+  //       actions: [
+  //         TextButton(
+  //           onPressed: () => Navigator.of(context).pop(false),
+  //           child: const Text('Cancel'),
+  //         ),
+  //         ElevatedButton(
+  //           onPressed: () => Navigator.of(context).pop(true),
+  //           style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+  //           child: const Text('Delete'),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  //
+  //   if (confirm == true) {
+  //     String result = '';
+  //     if (mounted) {
+  //       result = await invoiceApiService().deleteInvoice(context, invoiceId);
+  //     }
+  //     if (result == "Success") {
+  //       _loadInvoices();
+  //     }
+  //   }
+  // }
 
   void _viewInvoice(InvoiceModel invoice) async {
     final result = await Navigator.of(context).push(
@@ -195,10 +196,13 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
       // Calculate tax amount from invoice data
       double subtotal = double.tryParse(invoice.subtotal) ?? 0;
       double grandTotal = double.tryParse(invoice.grandTotal) ?? 0;
+      double pack = double.tryParse(invoice.packingAmount.toString()) ?? 0;
       // double taxPercentage = double.tryParse(invoice.taxPercentage) ?? 5.0;
 
+      grandTotal = grandTotal + (pack * 5) / 100;
+
       // Calculate tax amount (grandTotal = subtotal + tax)
-      double taxAmount = grandTotal - subtotal;
+      double taxAmount = grandTotal - subtotal - pack;
 
       // Format the items with proper description
       final formattedItems = details.map((item) {
@@ -239,7 +243,7 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
           subtotal: invoice.subtotal,
           taxAmount: taxAmount.toStringAsFixed(2),
           taxPercentage: invoice.taxPercentage,
-          grandTotal: invoice.grandTotal,
+          grandTotal: grandTotal.toString(),
           company: company,
           packingAmount: invoice.packingAmount.toString(),
         );
@@ -249,8 +253,37 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
 
   @override
   Widget build(BuildContext context) {
+    final navProvider = context.watch<NavigationProvider>();
+
     return Scaffold(
-      appBar: CustomAppBarWidget(title: 'Invoices', showBackButton: true),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF1E293B),
+        foregroundColor: Colors.white,
+        title: Text('Invoices'),
+        leading: IconButton(
+          onPressed: () {
+            if (userType.toUpperCase() == "ADMIN") {
+              navProvider.updateIndex(
+                selectedIndex: 2,
+                reportSubIndex: 0,
+                masterSubIndex: 0,
+                entrySubIndex: 0,
+              );
+            } else {
+              navProvider.updateIndex(
+                selectedIndex: 1,
+                reportSubIndex: 0,
+                masterSubIndex: 0,
+                entrySubIndex: 0,
+              );
+            }
+          },
+          icon: Icon(Icons.arrow_back, color: Colors.white),
+        ),
+        actions: [
+          IconButton(onPressed: _loadInvoices, icon: const Icon(Icons.refresh)),
+        ],
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -670,7 +703,7 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
               ),
               const SizedBox(height: 4),
               Text(
-                'Amount: ₹${invoice.grandTotal}',
+                'Amount: ₹${(double.parse(invoice.grandTotal) + (double.parse(invoice.packingAmount.toString()) * 5) / 100).toStringAsFixed(2)}',
                 style: const TextStyle(fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 12),

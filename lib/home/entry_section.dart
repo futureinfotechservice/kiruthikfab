@@ -1,10 +1,11 @@
-import 'package:flutter/foundation.dart';
+// import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../screens/entry/call_register_screen.dart';
 import '../screens/entry/delivery_management_screen.dart';
 import '../screens/entry/invoice_list.dart';
+import '../screens/entry/inward_entry_page.dart';
 import '../screens/entry/kyc_list_screen.dart';
 import '../screens/navigation_provider.dart';
 
@@ -26,6 +27,23 @@ class EntrySectionScreenState extends State<EntrySectionScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
+  Widget _buildSelectedScreen(int index) {
+    switch (index) {
+      case 0:
+        return const InwardEntryPage();
+      case 1:
+        return const InvoiceListPage();
+      case 2:
+        return const KYCListScreen();
+      case 3:
+        return const CallRegisterScreen();
+      case 4:
+        return const DeliveryManagementListScreen();
+      default:
+        return const SizedBox();
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -33,7 +51,7 @@ class EntrySectionScreenState extends State<EntrySectionScreen>
     // init();
     // entrySubIndex = widget.initialSubIndex;
     _tabController = TabController(
-      length: 4, // Updated to 1 tab
+      length: 5, // Updated to 1 tab
       vsync: this,
       initialIndex: navProvider.entrySubIndex,
     );
@@ -99,7 +117,7 @@ class EntrySectionScreenState extends State<EntrySectionScreen>
 
   @override
   Widget build(BuildContext context) {
-    final isWeb = kIsWeb && MediaQuery.of(context).size.width > 768;
+    final isWeb = MediaQuery.of(context).size.width > 768;
     final navProvider = context.read<NavigationProvider>();
     //
     // if (_tabController.index != navProvider.entrySubIndex) {
@@ -129,7 +147,9 @@ class EntrySectionScreenState extends State<EntrySectionScreen>
               unselectedLabelColor: Colors.grey[400],
               isScrollable: true,
               tabs: const [
+                Tab(icon: Icon(Icons.inventory_outlined), text: 'Inward Entry'),
                 Tab(icon: Icon(Icons.receipt), text: 'Bill Entry'),
+
                 Tab(icon: Icon(Icons.pages_outlined), text: 'KYC Entry'),
                 Tab(icon: Icon(Icons.call), text: 'Call Register'),
                 Tab(
@@ -143,6 +163,7 @@ class EntrySectionScreenState extends State<EntrySectionScreen>
             child: TabBarView(
               controller: _tabController,
               children: [
+                const InwardEntryPage(),
                 const InvoiceListPage(),
                 const KYCListScreen(),
                 const CallRegisterScreen(),
@@ -154,15 +175,7 @@ class EntrySectionScreenState extends State<EntrySectionScreen>
       );
     } else {
       // Web: Show selected screen
-      return IndexedStack(
-        index: navProvider.entrySubIndex,
-        children: const [
-          InvoiceListPage(),
-          KYCListScreen(),
-          CallRegisterScreen(),
-          DeliveryManagementListScreen(),
-        ],
-      );
+      return _buildSelectedScreen(navProvider.entrySubIndex);
     }
   }
 }

@@ -1,11 +1,13 @@
-import 'package:flutter/foundation.dart';
+// import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:kiruthikfab/screens/navigation_provider.dart';
 import 'package:kiruthikfab/screens/reports//product_based_sales_report.dart';
+import 'package:kiruthikfab/screens/reports/agent_refer_report/agent_refer_report.dart';
+import 'package:kiruthikfab/screens/reports/salesperson_report.dart';
 import 'package:kiruthikfab/screens/reports/source_followup_report.dart';
+import 'package:kiruthikfab/screens/reports/stock_ledger/stock_ledger_page.dart';
+import 'package:kiruthikfab/screens/reports/stock_statement/stock_statement_page.dart';
 import 'package:provider/provider.dart';
-
-import '../screens/navigation_provider.dart';
-import '../screens/reports/salesperson_report.dart';
 
 class ReportSectionScreen extends StatefulWidget {
   final int initialSubIndex;
@@ -25,6 +27,25 @@ class ReportSectionScreenState extends State<ReportSectionScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
+  Widget _buildSelectedScreen(int index) {
+    switch (index) {
+      case 0:
+        return const SalespersonReport();
+      case 1:
+        return const ProductBasedSalesReport();
+      case 2:
+        return const SourceFollowupReport();
+      case 3:
+        return const StockLedgerPage();
+      case 4:
+        return const StockStatementPage();
+      case 5:
+        return const AgentReferReport();
+      default:
+        return const SizedBox();
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -32,7 +53,7 @@ class ReportSectionScreenState extends State<ReportSectionScreen>
     //init();
     // reportSubIndex = widget.initialSubIndex;
     _tabController = TabController(
-      length: 3,
+      length: 6,
       vsync: this,
       initialIndex: navProvider.reportSubIndex,
     );
@@ -102,7 +123,7 @@ class ReportSectionScreenState extends State<ReportSectionScreen>
 
   @override
   Widget build(BuildContext context) {
-    final isWeb = kIsWeb && MediaQuery.of(context).size.width > 768;
+    final isWeb = MediaQuery.of(context).size.width > 768;
     final navProvider = context.read<NavigationProvider>();
     if (_tabController.index != widget.initialSubIndex) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -133,6 +154,12 @@ class ReportSectionScreenState extends State<ReportSectionScreen>
                   icon: Icon(Icons.follow_the_signs),
                   text: 'Source Followup Report',
                 ),
+                Tab(icon: Icon(Icons.receipt_long), text: 'Stock ledger'),
+                Tab(
+                  icon: Icon(Icons.receipt_outlined),
+                  text: 'Stock Statement',
+                ),
+                Tab(icon: Icon(Icons.real_estate_agent), text: 'Agent Refer'),
               ],
             ),
           ),
@@ -143,6 +170,9 @@ class ReportSectionScreenState extends State<ReportSectionScreen>
                 SalespersonReport(),
                 ProductBasedSalesReport(),
                 SourceFollowupReport(),
+                StockLedgerPage(),
+                StockStatementPage(),
+                AgentReferReport(),
               ],
             ),
           ),
@@ -150,14 +180,7 @@ class ReportSectionScreenState extends State<ReportSectionScreen>
       );
     } else {
       // Web: Show selected screen
-      return IndexedStack(
-        index: navProvider.reportSubIndex,
-        children: const [
-          SalespersonReport(),
-          ProductBasedSalesReport(),
-          SourceFollowupReport(),
-        ],
-      );
+      return _buildSelectedScreen(navProvider.reportSubIndex);
     }
   }
 }

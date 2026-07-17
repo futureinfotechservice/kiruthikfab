@@ -5,11 +5,22 @@ class NavigationProvider with ChangeNotifier {
   int _masterSubIndex = 0;
   int _entrySubIndex = 0;
   int _reportSubIndex = 0;
+  String _inventoryNo = '';
 
   int get selectedIndex => _selectedIndex;
+
   int get masterSubIndex => _masterSubIndex;
+
   int get entrySubIndex => _entrySubIndex;
+
   int get reportSubIndex => _reportSubIndex;
+
+  String get inventoryNo => _inventoryNo;
+
+  void updateInventory({required String inventoryNo}) {
+    _inventoryNo = inventoryNo;
+    notifyListeners();
+  }
 
   void updateIndex({
     required int selectedIndex,

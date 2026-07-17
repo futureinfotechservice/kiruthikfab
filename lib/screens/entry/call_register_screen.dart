@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../indigator/main.dart';
 import '../../models/call_register_model.dart';
 import '../../services/call_register_service.dart';
 import '../../services/source_apiservice.dart';
 import '../entry/add_call_register_screen.dart';
 import '../entry/custom_search_dropdown_salesperson.dart';
+import '../navigation_provider.dart';
 
 class CallRegisterScreen extends StatefulWidget {
   const CallRegisterScreen({super.key});
@@ -209,9 +212,30 @@ class _CallRegisterScreenState extends State<CallRegisterScreen> {
     //     MediaQuery.of(context).size.width < 1000 &&
     //     MediaQuery.of(context).size.width >= 700;
     final isUser = userType == "USER";
+    final navProvider = context.watch<NavigationProvider>();
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          onPressed: () {
+            if (userType?.toUpperCase() == "ADMIN") {
+              navProvider.updateIndex(
+                selectedIndex: 2,
+                reportSubIndex: 0,
+                masterSubIndex: 0,
+                entrySubIndex: 0,
+              );
+            } else {
+              navProvider.updateIndex(
+                selectedIndex: 1,
+                reportSubIndex: 0,
+                masterSubIndex: 0,
+                entrySubIndex: 0,
+              );
+            }
+          },
+          icon: Icon(Icons.arrow_back, color: Colors.white),
+        ),
         automaticallyImplyLeading: false,
         automaticallyImplyActions: false,
         backgroundColor: const Color(0xff1E293B),
@@ -238,7 +262,7 @@ class _CallRegisterScreenState extends State<CallRegisterScreen> {
         ],
       ),
       body: loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularWaveProgress())
           : SingleChildScrollView(
               controller: scrollController,
               padding: const EdgeInsets.all(10),
@@ -516,7 +540,7 @@ class _CallRegisterScreenState extends State<CallRegisterScreen> {
 
   Widget buildTable(BuildContext context) {
     final isUser = userType == "USER";
-    final filteredList = filtered ?? []; // Handle null
+    final filteredList = filtered; // Handle null
 
     return Center(
       child: Scrollbar(

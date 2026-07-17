@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../indigator/main.dart';
 import '../../models/delivery_model.dart';
 import '../../services/delivery_management_apiservice.dart';
 import '../entry/delivery_management.dart';
+import '../navigation_provider.dart';
 
 class DeliveryManagementListScreen extends StatefulWidget {
   const DeliveryManagementListScreen({super.key});
@@ -101,7 +104,7 @@ class _DeliveryManagementListScreenState
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       companyid = prefs.getString('companyid') ?? '';
-
+      userType = prefs.getString('user_type') ?? '';
       if (companyid.isEmpty) {
         throw Exception("Company ID not found");
       }
@@ -186,7 +189,7 @@ class _DeliveryManagementListScreenState
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
       body: loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularWaveProgress())
           : SingleChildScrollView(
               child: Padding(
                 padding: const EdgeInsets.all(1),
@@ -235,6 +238,8 @@ class _DeliveryManagementListScreenState
   }
 
   Widget _header() {
+    final navProvider = context.read<NavigationProvider>();
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -244,6 +249,26 @@ class _DeliveryManagementListScreenState
       ),
       child: Row(
         children: [
+          IconButton(
+            onPressed: () {
+              if (userType?.toUpperCase() == "ADMIN") {
+                navProvider.updateIndex(
+                  selectedIndex: 2,
+                  reportSubIndex: 0,
+                  masterSubIndex: 0,
+                  entrySubIndex: 0,
+                );
+              } else {
+                navProvider.updateIndex(
+                  selectedIndex: 1,
+                  reportSubIndex: 0,
+                  masterSubIndex: 0,
+                  entrySubIndex: 0,
+                );
+              }
+            },
+            icon: Icon(Icons.arrow_back, color: Colors.white),
+          ),
           const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

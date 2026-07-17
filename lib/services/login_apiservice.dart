@@ -1,11 +1,12 @@
 // lib/services/api_service.dart
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:kiruthikfab/models/modules.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../models/modules.dart';
 import '../home/home.dart';
 import 'auth_service.dart';
 import 'config.dart';
@@ -13,54 +14,144 @@ import 'config.dart';
 class ApiService {
   List<LoginData> loginlist = [];
 
-  Future login(
+  Future<void> login(
     BuildContext context,
     String username,
     String password,
     String mailid,
-    String unique_id,
+    String uniqueId,
     String platform,
   ) async {
-    final url = Uri.parse('$baseUrl/login1.php');
+    try {
+      final url = Uri.parse('$baseUrl/login2.php');
 
-    final response = await http.post(
-      url,
-      body: json.encode({
-        'username': username,
-        'password': password,
-        'email': mailid,
-        'platform': platform.toString(),
-        'unique_id': unique_id.toString(),
-      }),
-    );
+      // Validate inputs
+      if (username.isEmpty || password.isEmpty || mailid.isEmpty) {
+        _showError(context, 'Username, password, and email are required');
+        return;
+      }
 
-    var message = response.body.toString();
+      final requestBody = {
+        'username': username.trim(),
+        'password': password.trim(),
+        'email': mailid.trim(),
+        'platform': platform.toString().trim(),
+        'unique_id': uniqueId.toString().trim(),
+      };
 
-    if (message.toString().contains('login success')) {
-      ApiService().userdata(
-        context,
-        username,
-        password,
-        mailid,
-        unique_id,
-        platform,
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message.toString()),
-          backgroundColor: Colors.red,
-        ),
-      );
+      final response = await http
+          .post(
+            url,
+            headers: {
+              'Content-Type': 'application/json; charset=utf-8',
+              'Accept': 'application/json',
+              // 'Cache-Control': 'no-cache',
+            },
+            body: json.encode(requestBody),
+          )
+          .timeout(
+            const Duration(seconds: 30),
+            onTimeout: () {
+              throw TimeoutException('Connection timeout');
+            },
+          );
+
+      try {
+        final data = json.decode(response.body);
+
+        if (response.statusCode == 200 &&
+            data['status'] == 'success' &&
+            context.mounted) {
+          // Success handling
+          ApiService().userdata(
+            context,
+            username.trim(),
+            password.trim(),
+            mailid.trim(),
+            uniqueId.trim(),
+            platform.trim(),
+          );
+        } else {
+          // Error handling - prefer server message or fallback
+          final errorMsg = data['message'] ?? 'Login failed. Please try again.';
+          if (context.mounted) _showError(context, errorMsg);
+        }
+      } catch (e) {
+        ///print(e);
+        if (context.mounted) {
+          _showError(context, 'Invalid server response format');
+        }
+      }
+    } catch (e) {
+      //print(e);
+      if (context.mounted) {
+        _showError(context, 'Network error: ${e.toString()}');
+      }
     }
   }
+
+  void _showError(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 4),
+      ),
+    );
+  }
+
+  // Future login(
+  //   BuildContext context,
+  //   String username,
+  //   String password,
+  //   String mailid,
+  //   String unique_id,
+  //   String platform,
+  // ) async {
+  //   final url = Uri.parse('$baseUrl/login1.php');
+  //
+  //   final response = await http.post(
+  //     url,
+  //     body: json.encode({
+  //       'username': username,
+  //       'password': password,
+  //       'email': mailid,
+  //       'platform': platform.toString(),
+  //       'unique_id': unique_id.toString(),
+  //     }),
+  //     headers: {
+  //       'Content-Type': 'application/json; charset=utf-8',
+  //       'Accept': 'application/json',
+  //     },
+  //   );
+  //
+  //   var message = response.body.toString();
+  //
+  //   if (message.toString().contains('login success')) {
+  //     ApiService().userdata(
+  //       context,
+  //       username,
+  //       password,
+  //       mailid,
+  //       unique_id,
+  //       platform,
+  //     );
+  //   } else {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(
+  //         content: Text(message.toString()),
+  //         backgroundColor: Colors.red,
+  //       ),
+  //     );
+  //   }
+  // }
 
   Future userdata(
     BuildContext context,
     String username,
     String password,
     String mailid,
-    String unique_id,
+    String uniqueId,
     String platform,
   ) async {
     loginlist.clear();
@@ -83,13 +174,13 @@ class ApiService {
         username: api['username'],
         password: api['password'],
         // unique_id: api['unique_id'],
-        user_type: api['user_type'],
+        userType: api['user_type'],
         email: api['email_id'],
-        companyid: api['companyid'],
-        activestatus: api['activestatus'],
+        companyId: api['companyid'],
+        activeStatus: api['activestatus'],
         // location_track: api['location_track']??'',
-        companystatus: api['companystatus'],
-        unique_id: api['unique_id'] ?? '',
+        companyStatus: api['companystatus'],
+        uniqueId: api['unique_id'] ?? '',
         // attendance: api['attendance'],
         // crm: api['crm'],
         // salesorder: api['salesorder'],
@@ -110,16 +201,14 @@ class ApiService {
       );
       loginlist.add(ab);
     });
-    // SharedPreferences.setMockInitialValues({});
-    WidgetsFlutterBinding.ensureInitialized();
     SharedPreferences prefs = await SharedPreferences.getInstance();
     prefs.setString('id', loginlist[0].id.toString());
     prefs.setString('username', loginlist[0].username.toString());
     prefs.setString('password', loginlist[0].password.toString());
     prefs.setString('email', loginlist[0].email.toString());
-    prefs.setString('user_type', loginlist[0].user_type.toString());
-    prefs.setString('companyid', loginlist[0].companyid.toString());
-    prefs.setString('activestatus', loginlist[0].activestatus.toString());
+    prefs.setString('user_type', loginlist[0].userType.toString());
+    prefs.setString('companyid', loginlist[0].companyId.toString());
+    prefs.setString('activestatus', loginlist[0].activeStatus.toString());
     prefs.setString('companyname', loginlist[0].companyname.toString());
     prefs.setString('logourl', loginlist[0].logourl.toString());
 
@@ -132,9 +221,11 @@ class ApiService {
     );
     // GoRouter.of(context).pushNamed("dashboard");
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const CustomerManagementApp()),
-    );
+    if (context.mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const CustomerManagementApp()),
+      );
+    }
   }
 }
