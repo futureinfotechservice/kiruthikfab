@@ -96,7 +96,7 @@ class _CustomDropdownSearchState extends State<CustomDropdownSearch> {
 
   @override
   Widget build(BuildContext context) {
-    OutlineInputBorder _border({Color color = const Color(0xFFD1D5DB)}) {
+    OutlineInputBorder border({Color color = const Color(0xFFD1D5DB)}) {
       return OutlineInputBorder(
         borderSide: BorderSide(color: color, width: 1.4),
         borderRadius: BorderRadius.circular(6),
@@ -156,10 +156,10 @@ class _CustomDropdownSearchState extends State<CustomDropdownSearch> {
               fillColor: widget.isReadOnly
                   ? const Color(0xFFF3F4F6)
                   : const Color(0xFFF3F4F6),
-              border: _border(),
-              enabledBorder: _border(),
-              focusedBorder: _border(),
-              disabledBorder: _border(color: const Color(0xFFD1D5DB)),
+              border: border(),
+              enabledBorder: border(),
+              focusedBorder: border(),
+              disabledBorder: border(color: const Color(0xFFD1D5DB)),
               isDense: widget.isCompact,
               contentPadding: widget.isCompact
                   ? const EdgeInsets.symmetric(horizontal: 14, vertical: 13)
@@ -233,7 +233,7 @@ class CustomDropdownSearchonlybox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    OutlineInputBorder _border({Color color = const Color(0xFFE5E7EB)}) {
+    OutlineInputBorder border({Color color = const Color(0xFFE5E7EB)}) {
       return OutlineInputBorder(
         borderSide: BorderSide(color: color, width: 1),
         borderRadius: BorderRadius.circular(6),
@@ -286,10 +286,10 @@ class CustomDropdownSearchonlybox extends StatelessWidget {
             ),
             filled: true,
             fillColor: isReadOnly ? const Color(0xFFF3F4F6) : Colors.white,
-            border: _border(),
-            enabledBorder: _border(),
-            focusedBorder: _border(color: Colors.blue),
-            disabledBorder: _border(color: const Color(0xFFE5E7EB)),
+            border: border(),
+            enabledBorder: border(),
+            focusedBorder: border(color: Colors.blue),
+            disabledBorder: border(color: const Color(0xFFE5E7EB)),
             suffixIconConstraints: const BoxConstraints(minWidth: 3),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 12,

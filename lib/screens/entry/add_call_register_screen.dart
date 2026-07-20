@@ -11,6 +11,7 @@ import '../../models/source_master_model.dart';
 import '../../services/call_register_service.dart';
 import '../../services/customer_interest_apiservice.dart';
 import '../../services/source_apiservice.dart';
+import '../../widgets/custom_search_dropdown_source.dart';
 
 class AddCallRegisterScreen extends StatefulWidget {
   final CallRegisterModel? existing;
@@ -31,7 +32,8 @@ class _AddCallRegisterScreenState extends State<AddCallRegisterScreen> {
   final TextEditingController feedbackController = TextEditingController();
   final TextEditingController notesController = TextEditingController();
   final entryNoController = TextEditingController();
-  final _searchController = TextEditingController();
+
+  // final _searchController = TextEditingController();
   final _searchController1 = TextEditingController();
 
   DateTime? selectedDate;
@@ -1099,107 +1101,29 @@ class _AddCallRegisterScreenState extends State<AddCallRegisterScreen> {
   }
 
   Widget _sourceField() {
+    final customerNames = sources
+        .map((e) => {'name': e.name, 'mobile': e.mobileNo})
+        .take(100)
+        .toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionLabel("Source Name *"),
-        const SizedBox(height: 8),
-        DropdownSearch<SourceMasterModel>(
-          compareFn: (item, selectedItem) => item == selectedItem,
-          selectedItem: selectedSource,
-          decoratorProps: DropDownDecoratorProps(
-            baseStyle: TextStyle(fontSize: 14, color: Colors.black),
-            decoration: InputDecoration(
-              filled: true,
-              fillColor: const Color(0xFFF3F4F6),
-              border: border(),
-              enabledBorder: border(),
-              focusedBorder: border(),
-              disabledBorder: border(color: const Color(0xFFD1D5DB)),
-
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 14,
-              ),
-              hintStyle: TextStyle(color: const Color(0xFF6B7280)),
-            ),
-          ),
-          items: (filter, loadProps) {
-            final query = filter.toLowerCase().trim();
-
-            return sources
-                .where((e) => e.name.toLowerCase().contains(query))
-                .take(100)
-                .toList();
-          },
-          itemAsString: (item) => item.name,
-
-          // items: (filter, loadProps) => sources.map((source) {
-          //   return source.name;
-          // }).toList(),
-          onSelected: (value) async {
+        SizedBox(height: 5),
+        CustomDropdownSearchSource(
+          label: "Source Name *",
+          isRequired: true,
+          items: customerNames,
+          selectedItem: selectedSource?.name ?? '',
+          onChanged: (value) async {
             if (value == null) return;
-
             setState(() {
               selectedSource = sources.firstWhere(
-                (element) => element == value,
+                (element) => element.name == value,
               );
             });
             fetchHistory();
           },
-          popupProps: PopupProps.menu(
-            showSearchBox: true,
-            searchFieldProps: TextFieldProps(
-              controller: _searchController,
-
-              decoration: InputDecoration(
-                hintText: 'Search...',
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 12,
-                ),
-                border: OutlineInputBorder(
-                  // borderRadius: BorderRadius.circular(8),
-                ),
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.clear, size: 20),
-                  onPressed: () {
-                    _searchController.clear();
-                  },
-                ),
-              ),
-              onSubmitted: (value) async {
-                setState(() {
-                  selectedSource = sources.firstWhere(
-                    (element) => element.name == value,
-                  );
-                });
-                fetchHistory();
-              },
-            ),
-            menuProps: MenuProps(
-              // borderRadius: BorderRadius.circular(12),
-              elevation: 6,
-              color: Colors.white,
-              backgroundColor: Colors.white,
-            ),
-          ),
         ),
-        // DropdownButtonFormField<SourceMasterModel>(
-        //   initialValue: selectedSource,
-        //   decoration: _inputDecoration(),
-        //   items: sources.map((source) {
-        //     return DropdownMenuItem<SourceMasterModel>(
-        //       value: source,
-        //       child: Text(source.name),
-        //     );
-        //   }).toList(),
-        //   onChanged: (value) {
-        //     setState(() {
-        //       selectedSource = value;
-        //     });
-        //   },
-        // ),
       ],
     );
   }

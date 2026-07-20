@@ -212,7 +212,7 @@ class _InwardListViewState extends State<InwardListView> {
                 end: Alignment.bottomRight,
                 colors: [
                   Colors.blue.shade50,
-                  Colors.blue.shade100.withOpacity(0.5),
+                  Colors.blue.shade100.withValues(alpha: 0.5),
                 ],
               ),
               borderRadius: const BorderRadius.only(
@@ -297,7 +297,7 @@ class _InwardListViewState extends State<InwardListView> {
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: Colors.blue.shade100.withOpacity(0.5),
+                      color: Colors.blue.shade100.withValues(alpha: 0.5),
                     ),
                     boxShadow: [
                       BoxShadow(
@@ -371,12 +371,12 @@ class _InwardListViewState extends State<InwardListView> {
                         end: Alignment.bottomRight,
                         colors: [
                           Colors.grey.shade50,
-                          Colors.grey.shade100.withOpacity(0.3),
+                          Colors.grey.shade100.withValues(alpha: 0.3),
                         ],
                       ),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: Colors.grey.shade200.withOpacity(0.8),
+                        color: Colors.grey.shade200.withValues(alpha: 0.8),
                       ),
                       boxShadow: [
                         BoxShadow(
@@ -419,8 +419,8 @@ class _InwardListViewState extends State<InwardListView> {
                               ),
                               decoration: BoxDecoration(
                                 color: int.parse(item.stock) > 100
-                                    ? Colors.green.withOpacity(0.1)
-                                    : Colors.orange.withOpacity(0.1),
+                                    ? Colors.green.withValues(alpha: 0.1)
+                                    : Colors.orange.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Row(
@@ -534,7 +534,7 @@ class _InwardListViewState extends State<InwardListView> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -620,7 +620,7 @@ class _InwardListViewState extends State<InwardListView> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(

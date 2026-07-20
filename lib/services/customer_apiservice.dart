@@ -7,7 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../models/CustomerMasterModel.dart';
+
+import '../models/customer_master_model.dart';
 import 'config.dart';
 
 class CustomerApiService {
@@ -24,20 +25,20 @@ class CustomerApiService {
     try {
       final response = await http
           .post(
-            url,
-            headers: {
-              'Content-Type': 'application/json; charset=utf-8',
-              'Accept': 'application/json',
-              'Cache-Control': 'no-cache',
-            },
-            body: json.encode({'companyid': companyId.trim()}),
-          )
+        url,
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache',
+        },
+        body: json.encode({'companyid': companyId.trim()}),
+      )
           .timeout(
-            const Duration(seconds: 30),
-            onTimeout: () {
-              throw TimeoutException('Connection timeout');
-            },
-          );
+        const Duration(seconds: 30),
+        onTimeout: () {
+          throw TimeoutException('Connection timeout');
+        },
+      );
 
       if (response.statusCode == 200) {
         var data = json.decode(response.body);
@@ -76,8 +77,7 @@ class CustomerApiService {
   }
 
   Future<List<Map<String, dynamic>>> fetchIncharges(
-    BuildContext context,
-  ) async {
+      BuildContext context,) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final companyid = prefs.getString('companyid') ?? '';
 
@@ -102,8 +102,7 @@ class CustomerApiService {
   }
 
   Future<List<Map<String, dynamic>>> fetchOccupations(
-    BuildContext context,
-  ) async {
+      BuildContext context,) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final companyid = prefs.getString('companyid') ?? '';
 
@@ -152,8 +151,7 @@ class CustomerApiService {
   }
 
   Future<List<Map<String, dynamic>>> fetchSalesPersons(
-    BuildContext context,
-  ) async {
+      BuildContext context,) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final companyid = prefs.getString('companyid') ?? '';
 
@@ -208,8 +206,9 @@ class CustomerApiService {
     final userid = prefs.getString('id') ?? '';
 
     if (companyid.isEmpty) {
-      if (context.mounted)
+      if (context.mounted) {
         _showError(context, "Company ID not found. Please login again.");
+      }
       return "Failed";
     }
 
@@ -338,7 +337,9 @@ class CustomerApiService {
             await http.MultipartFile.fromPath(
               'aadharfile',
               aadharFile,
-              filename: 'aadhar_${DateTime.now().millisecondsSinceEpoch}.jpg',
+              filename: 'aadhar_${DateTime
+                  .now()
+                  .millisecondsSinceEpoch}.jpg',
             ),
           );
         }
@@ -352,7 +353,9 @@ class CustomerApiService {
             await http.MultipartFile.fromPath(
               'photofile',
               photoFile,
-              filename: 'photo_${DateTime.now().millisecondsSinceEpoch}.jpg',
+              filename: 'photo_${DateTime
+                  .now()
+                  .millisecondsSinceEpoch}.jpg',
             ),
           );
         }
@@ -430,21 +433,29 @@ class CustomerApiService {
         data['aadhar_base64'] = aadharFile;
         data['aadhar_filename'] =
             aadharFileName ??
-            'aadhar_${DateTime.now().millisecondsSinceEpoch}.jpg';
+                'aadhar_${DateTime
+                    .now()
+                    .millisecondsSinceEpoch}.jpg';
       }
 
       if (photoFile != null && photoFile.isNotEmpty) {
         data['photo_base64'] = photoFile;
         data['photo_filename'] =
             photoFileName ??
-            'photo_${DateTime.now().millisecondsSinceEpoch}.jpg';
+                'photo_${DateTime
+                    .now()
+                    .millisecondsSinceEpoch}.jpg';
       }
 
       var response = await http.post(url, body: data);
 
-      return _handleResponse(context, response.body);
+      if (context.mounted) {
+        return _handleResponse(context, response.body);
+      } else {
+        return '';
+      }
     } catch (e) {
-      _showError(context, "Error: $e");
+      if (context.mounted) _showError(context, "Error: $e");
       return "Failed";
     }
   }
@@ -481,70 +492,76 @@ class CustomerApiService {
     final userid = prefs.getString('id') ?? '';
 
     if (companyid.isEmpty) {
-      _showError(context, "Company ID not found. Please login again.");
+      if (context.mounted) {
+        _showError(context, "Company ID not found. Please login again.");
+      }
       return "Failed";
     }
 
     var url = Uri.parse('$baseUrl/customer_update1.php');
 
-    if (kIsWeb) {
-      return _updateCustomerWeb(
-        context: context,
-        url: url,
-        customerId: customerId,
-        companyid: companyid,
-        userid: userid,
-        customername: customername,
-        mobile1: mobile1,
-        mobile2: mobile2,
-        whatsapp: whatsapp,
-        address: address,
-        area: area,
-        areaId: areaId,
-        gstNo: gstNo,
-        refer: refer,
-        referId: referId,
-        incharge: incharge,
-        inchargeId: inchargeId,
-        agent: agent,
-        agentId: agentId,
-        salesperson: salesperson,
-        salespersonId: salespersonId,
-        occupation: occupation,
-        occupationId: occupationId,
-        aadharFile: aadharFile,
-        photoFile: photoFile,
-        aadharFileName: aadharFileName,
-        photoFileName: photoFileName,
-      );
+    if (context.mounted) {
+      if (kIsWeb) {
+        return _updateCustomerWeb(
+          context: context,
+          url: url,
+          customerId: customerId,
+          companyid: companyid,
+          userid: userid,
+          customername: customername,
+          mobile1: mobile1,
+          mobile2: mobile2,
+          whatsapp: whatsapp,
+          address: address,
+          area: area,
+          areaId: areaId,
+          gstNo: gstNo,
+          refer: refer,
+          referId: referId,
+          incharge: incharge,
+          inchargeId: inchargeId,
+          agent: agent,
+          agentId: agentId,
+          salesperson: salesperson,
+          salespersonId: salespersonId,
+          occupation: occupation,
+          occupationId: occupationId,
+          aadharFile: aadharFile,
+          photoFile: photoFile,
+          aadharFileName: aadharFileName,
+          photoFileName: photoFileName,
+        );
+      } else {
+        return _updateCustomerMobile(
+          context: context,
+          url: url,
+          customerId: customerId,
+          companyid: companyid,
+          userid: userid,
+          customername: customername,
+          mobile1: mobile1,
+          mobile2: mobile2,
+          whatsapp: whatsapp,
+          address: address,
+          area: area,
+          areaId: areaId,
+          gstNo: gstNo,
+          refer: refer,
+          referId: referId,
+          incharge: incharge,
+          inchargeId: inchargeId,
+          agent: agent,
+          agentId: agentId,
+          salesperson: salesperson,
+          salespersonId: salespersonId,
+          occupation: occupation,
+          occupationId: occupationId,
+          aadharFile: aadharFile,
+          photoFile: photoFile,
+        );
+      }
     } else {
-      return _updateCustomerMobile(
-        context: context,
-        url: url,
-        customerId: customerId,
-        companyid: companyid,
-        userid: userid,
-        customername: customername,
-        mobile1: mobile1,
-        mobile2: mobile2,
-        whatsapp: whatsapp,
-        address: address,
-        area: area,
-        areaId: areaId,
-        gstNo: gstNo,
-        refer: refer,
-        referId: referId,
-        incharge: incharge,
-        inchargeId: inchargeId,
-        agent: agent,
-        agentId: agentId,
-        salesperson: salesperson,
-        salespersonId: salespersonId,
-        occupation: occupation,
-        occupationId: occupationId,
-        aadharFile: aadharFile,
-        photoFile: photoFile,
-      );
+      return '';
     }
   }
 
@@ -620,9 +637,13 @@ class CustomerApiService {
 
       var response = await request.send();
       var responseBody = await response.stream.bytesToString();
-      return _handleResponse(context, responseBody);
+      if (context.mounted) {
+        return _handleResponse(context, responseBody);
+      } else {
+        return '';
+      }
     } catch (e) {
-      _showError(context, "Error: $e");
+      if (context.mounted) _showError(context, "Error: $e");
       return "Failed";
     }
   }
@@ -686,20 +707,28 @@ class CustomerApiService {
         data['aadhar_base64'] = aadharFile;
         data['aadhar_filename'] =
             aadharFileName ??
-            'aadhar_${DateTime.now().millisecondsSinceEpoch}.jpg';
+                'aadhar_${DateTime
+                    .now()
+                    .millisecondsSinceEpoch}.jpg';
       }
 
       if (photoFile != null && photoFile.isNotEmpty) {
         data['photo_base64'] = photoFile;
         data['photo_filename'] =
             photoFileName ??
-            'photo_${DateTime.now().millisecondsSinceEpoch}.jpg';
+                'photo_${DateTime
+                    .now()
+                    .millisecondsSinceEpoch}.jpg';
       }
 
       var response = await http.post(url, body: data);
-      return _handleResponse(context, response.body);
+      if (context.mounted) {
+        return _handleResponse(context, response.body);
+      } else {
+        return '';
+      }
     } catch (e) {
-      _showError(context, "Error: $e");
+      if (context.mounted) _showError(context, "Error: $e");
       return "Failed";
     }
   }
@@ -710,8 +739,9 @@ class CustomerApiService {
     final companyid = prefs.getString('companyid') ?? '';
 
     if (companyid.isEmpty) {
-      if (context.mounted)
+      if (context.mounted) {
         _showError(context, "Company ID not found. Please login again.");
+      }
       return [];
     }
 
@@ -753,7 +783,9 @@ class CustomerApiService {
     final companyid = prefs.getString('companyid') ?? '';
 
     if (companyid.isEmpty) {
-      _showError(context, "Company ID not found. Please login again.");
+      if (context.mounted) {
+        _showError(context, "Company ID not found. Please login again.");
+      }
       return "Failed";
     }
 
@@ -769,11 +801,13 @@ class CustomerApiService {
       if (message["status"] == "success") {
         return "Success";
       } else {
-        _showError(context, message["message"] ?? "Delete failed");
+        if (context.mounted) {
+          _showError(context, message["message"] ?? "Delete failed");
+        }
         return "Failed";
       }
     } catch (e) {
-      _showError(context, "Error: $e");
+      if (context.mounted) _showError(context, "Error: $e");
       return "Failed";
     }
   }

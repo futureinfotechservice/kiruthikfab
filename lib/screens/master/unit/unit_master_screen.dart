@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../indigator/main.dart';
-import '../../../models/UnitMasterModel.dart';
+import '../../../models/unit_master_model.dart';
 import '../../../services/unit_apiservice.dart';
 import '../../navigation_provider.dart';
 
@@ -101,25 +101,29 @@ class _UnitMasterScreenState extends State<UnitMasterScreen> {
       }
 
       if (result == "Success") {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              _isEditMode
-                  ? 'Unit updated successfully!'
-                  : 'Unit created successfully!',
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                _isEditMode
+                    ? 'Unit updated successfully!'
+                    : 'Unit created successfully!',
+              ),
+              backgroundColor: Colors.green,
             ),
-            backgroundColor: Colors.green,
-          ),
-        );
+          );
+        }
 
         // Reset form and reload list
         _cancelEdit();
         await _loadUnits();
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() {

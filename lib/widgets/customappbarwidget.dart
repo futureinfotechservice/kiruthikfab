@@ -66,7 +66,7 @@ class CustomAppBarWidget extends StatelessWidget
               ],
             ),
           ),
-        if (actions != null) ...actions!, // Add custom actions
+        ...?actions, // Add custom actions
         const SizedBox(width: 16),
       ],
     );

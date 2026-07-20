@@ -477,7 +477,10 @@ Widget _buildGridInfo(String label, String value) {
   );
 }
 
-Widget buildEmptyState({required Function() fetchLedgerData}) {
+Widget buildEmptyState({
+  required Function() fetchLedgerData,
+  required String selectedInventoryDropdown,
+}) {
   return Center(
     child: Column(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -498,17 +501,18 @@ Widget buildEmptyState({required Function() fetchLedgerData}) {
           style: TextStyle(fontSize: 14, color: Colors.grey.shade400),
         ),
         const SizedBox(height: 20),
-        ElevatedButton.icon(
-          onPressed: fetchLedgerData,
-          icon: const Icon(Icons.refresh),
-          label: const Text('Refresh'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.blue.shade700,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
+        if (selectedInventoryDropdown.isNotEmpty)
+          ElevatedButton.icon(
+            onPressed: fetchLedgerData,
+            icon: const Icon(Icons.refresh),
+            label: const Text('Refresh'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue.shade700,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
           ),
-        ),
       ],
     ),
   );

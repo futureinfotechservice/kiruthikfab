@@ -43,7 +43,11 @@ class AgentApiService {
         body: json.encode(data),
       );
 
-      return _handleResponse(context, response.body);
+      if (context.mounted) {
+        return _handleResponse(context, response.body);
+      } else {
+        return '';
+      }
     } catch (e) {
       if (context.mounted) _showError(context, "Error: $e");
       return "Failed";
@@ -86,7 +90,11 @@ class AgentApiService {
         body: json.encode(data),
       );
 
-      return _handleResponse(context, response.body);
+      if (context.mounted) {
+        return _handleResponse(context, response.body);
+      } else {
+        return '';
+      }
     } catch (e) {
       if (context.mounted) _showError(context, "Error: $e");
       return "Failed";
@@ -119,9 +127,7 @@ class AgentApiService {
 
       if (response.statusCode == 200) {
         if (response.body.trim() == "No Data Found." ||
-            response.body
-                .trim()
-                .isEmpty) {
+            response.body.trim().isEmpty) {
           return [];
         }
         final data = json.decode(response.body);
@@ -136,7 +142,6 @@ class AgentApiService {
             return [];
           }
         } catch (e) {
-          print(e);
           return [];
         }
       } else {

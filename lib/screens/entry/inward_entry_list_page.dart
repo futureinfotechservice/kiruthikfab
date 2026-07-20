@@ -7,7 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../indigator/main.dart';
 
 class InwardEntriesListPage extends StatefulWidget {
-  const InwardEntriesListPage({Key? key}) : super(key: key);
+  const InwardEntriesListPage({super.key});
 
   @override
   State<InwardEntriesListPage> createState() => InwardEntriesListPageState();

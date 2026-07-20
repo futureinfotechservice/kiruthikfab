@@ -1,11 +1,11 @@
-class incharge_master_model {
+class InChargeMasterModel {
   String id;
   String companyid;
   String inchargetname;
   String addedby;
   String activestatus;
 
-  incharge_master_model({
+  InChargeMasterModel({
     required this.id,
     required this.companyid,
     required this.inchargetname,
@@ -13,8 +13,8 @@ class incharge_master_model {
     required this.activestatus,
   });
 
-  factory incharge_master_model.fromJson(Map<String, dynamic> json) {
-    return incharge_master_model(
+  factory InChargeMasterModel.fromJson(Map<String, dynamic> json) {
+    return InChargeMasterModel(
       id: json['id']?.toString() ?? '',
       companyid: json['companyid']?.toString() ?? '',
       inchargetname: json['inchargetname']?.toString() ?? '',

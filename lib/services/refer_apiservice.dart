@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../models/ReferMasterModel.dart';
+import '../models/refer_master_model.dart';
 import 'config.dart';
 
 class ReferApiService {
@@ -17,8 +17,9 @@ class ReferApiService {
     final userid = prefs.getString('id') ?? '';
 
     if (companyid.isEmpty) {
-      if (context.mounted)
+      if (context.mounted) {
         _showError(context, "Company ID not found. Please login again.");
+      }
       return "Failed";
     }
 
@@ -38,7 +39,11 @@ class ReferApiService {
         body: data,
       );
 
-      return _handleResponse(context, response.body);
+      if (context.mounted) {
+        return _handleResponse(context, response.body);
+      } else {
+        return '';
+      }
     } catch (e) {
       if (context.mounted) _showError(context, "Error: $e");
       return "Failed";
@@ -55,8 +60,9 @@ class ReferApiService {
     final userid = prefs.getString('id') ?? '';
 
     if (companyid.isEmpty) {
-      if (context.mounted)
+      if (context.mounted) {
         _showError(context, "Company ID not found. Please login again.");
+      }
       return "Failed";
     }
 
@@ -76,7 +82,11 @@ class ReferApiService {
         body: data,
       );
 
-      return _handleResponse(context, response.body);
+      if (context.mounted) {
+        return _handleResponse(context, response.body);
+      } else {
+        return '';
+      }
     } catch (e) {
       if (context.mounted) _showError(context, "Error: $e");
       return "Failed";
@@ -88,8 +98,9 @@ class ReferApiService {
     final companyid = prefs.getString('companyid') ?? '';
 
     if (companyid.isEmpty) {
-      if (context.mounted)
+      if (context.mounted) {
         _showError(context, "Company ID not found. Please login again.");
+      }
       return [];
     }
 
@@ -132,7 +143,9 @@ class ReferApiService {
     final companyid = prefs.getString('companyid') ?? '';
 
     if (companyid.isEmpty) {
-      _showError(context, "Company ID not found. Please login again.");
+      if (context.mounted) {
+        _showError(context, "Company ID not found. Please login again.");
+      }
       return "Failed";
     }
 
@@ -148,11 +161,13 @@ class ReferApiService {
       if (message["status"] == "success") {
         return "Success";
       } else {
-        _showError(context, message["message"] ?? "Delete failed");
+        if (context.mounted) {
+          _showError(context, message["message"] ?? "Delete failed");
+        }
         return "Failed";
       }
     } catch (e) {
-      _showError(context, "Error: $e");
+      if (context.mounted) _showError(context, "Error: $e");
       return "Failed";
     }
   }

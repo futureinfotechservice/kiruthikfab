@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../models/SalespersonData.dart';
+import '../../../models/salesperson_data.dart';
 
 class SalesReportTable extends StatelessWidget {
   final List<SalespersonData> data;

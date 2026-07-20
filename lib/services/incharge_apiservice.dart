@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../models/InchargeMasterModel.dart';
+import '../models/in_charge_master_model.dart';
 import 'config.dart';
 
 class InchargeApiService {
@@ -17,7 +17,9 @@ class InchargeApiService {
     final userid = prefs.getString('id') ?? '';
 
     if (companyid.isEmpty) {
-      _showError(context, "Company ID not found. Please login again.");
+      if (context.mounted) {
+        _showError(context, "Company ID not found. Please login again.");
+      }
       return "Failed";
     }
 
@@ -37,9 +39,13 @@ class InchargeApiService {
         body: data,
       );
 
-      return _handleResponse(context, response.body);
+      if (context.mounted) {
+        return _handleResponse(context, response.body);
+      } else {
+        return '';
+      }
     } catch (e) {
-      _showError(context, "Error: $e");
+      if (context.mounted) _showError(context, "Error: $e");
       return "Failed";
     }
   }
@@ -54,7 +60,9 @@ class InchargeApiService {
     final userid = prefs.getString('id') ?? '';
 
     if (companyid.isEmpty) {
-      _showError(context, "Company ID not found. Please login again.");
+      if (context.mounted) {
+        _showError(context, "Company ID not found. Please login again.");
+      }
       return "Failed";
     }
 
@@ -74,22 +82,25 @@ class InchargeApiService {
         body: data,
       );
 
-      return _handleResponse(context, response.body);
+      if (context.mounted) {
+        return _handleResponse(context, response.body);
+      } else {
+        return '';
+      }
     } catch (e) {
-      _showError(context, "Error: $e");
+      if (context.mounted) _showError(context, "Error: $e");
       return "Failed";
     }
   }
 
-  Future<List<incharge_master_model>> fetchIncharges(
-    BuildContext context,
-  ) async {
+  Future<List<InChargeMasterModel>> fetchIncharges(BuildContext context) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final companyid = prefs.getString('companyid') ?? '';
 
     if (companyid.isEmpty) {
-      if (context.mounted)
+      if (context.mounted) {
         _showError(context, "Company ID not found. Please login again.");
+      }
       return [];
     }
 
@@ -111,8 +122,8 @@ class InchargeApiService {
         try {
           List<dynamic> items = json.decode(response.body);
 
-          List<incharge_master_model> incharges = items
-              .map((item) => incharge_master_model.fromJson(item))
+          List<InChargeMasterModel> incharges = items
+              .map((item) => InChargeMasterModel.fromJson(item))
               .toList();
           return incharges;
         } catch (e) {
@@ -132,7 +143,9 @@ class InchargeApiService {
     final companyid = prefs.getString('companyid') ?? '';
 
     if (companyid.isEmpty) {
-      _showError(context, "Company ID not found. Please login again.");
+      if (context.mounted) {
+        _showError(context, "Company ID not found. Please login again.");
+      }
       return "Failed";
     }
 
@@ -148,11 +161,13 @@ class InchargeApiService {
       if (message["status"] == "success") {
         return "Success";
       } else {
-        _showError(context, message["message"] ?? "Delete failed");
+        if (context.mounted) {
+          _showError(context, message["message"] ?? "Delete failed");
+        }
         return "Failed";
       }
     } catch (e) {
-      _showError(context, "Error: $e");
+      if (context.mounted) _showError(context, "Error: $e");
       return "Failed";
     }
   }

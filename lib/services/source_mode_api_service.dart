@@ -10,15 +10,16 @@ import 'config.dart';
 class SourceModeApiService {
   Future<String> insertSourceMode({
     required BuildContext context,
-    required String sourcingmode_name,
+    required String sourcingmodeName,
   }) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final companyid = prefs.getString('companyid') ?? '';
     final userid = prefs.getString('id') ?? '';
 
     if (companyid.isEmpty) {
-      if (context.mounted)
+      if (context.mounted) {
         _showError(context, "Company ID not found. Please login again.");
+      }
       return "Failed";
     }
 
@@ -27,7 +28,7 @@ class SourceModeApiService {
     try {
       var data = {
         'companyid': companyid,
-        'sourcingmode_name': sourcingmode_name,
+        'sourcingmode_name': sourcingmodeName,
         'addedby': userid,
         'activestatus': '1',
       };
@@ -38,7 +39,11 @@ class SourceModeApiService {
         body: data,
       );
 
-      return _handleResponse(context, response.body);
+      if (context.mounted) {
+        return _handleResponse(context, response.body);
+      } else {
+        return '';
+      }
     } catch (e) {
       if (context.mounted) _showError(context, "Error: $e");
       return "Failed";
@@ -48,15 +53,16 @@ class SourceModeApiService {
   Future<String> updateSourceMode({
     required BuildContext context,
     required String occupationId,
-    required String sourcingmode_name,
+    required String sourcingmodeName,
   }) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final companyid = prefs.getString('companyid') ?? '';
     final userid = prefs.getString('id') ?? '';
 
     if (companyid.isEmpty) {
-      if (context.mounted)
+      if (context.mounted) {
         _showError(context, "Company ID not found. Please login again.");
+      }
       return "Failed";
     }
 
@@ -66,7 +72,7 @@ class SourceModeApiService {
       var data = {
         'sourcingmodeid': occupationId,
         'companyid': companyid,
-        'sourcingmode_name': sourcingmode_name,
+        'sourcingmode_name': sourcingmodeName,
         'addedby': userid,
       };
 
@@ -76,7 +82,11 @@ class SourceModeApiService {
         body: data,
       );
 
-      return _handleResponse(context, response.body);
+      if (context.mounted) {
+        return _handleResponse(context, response.body);
+      } else {
+        return '';
+      }
     } catch (e) {
       if (context.mounted) _showError(context, "Error: $e");
       return "Failed";
@@ -90,8 +100,9 @@ class SourceModeApiService {
     final companyid = prefs.getString('companyid') ?? '';
 
     if (companyid.isEmpty) {
-      if (context.mounted)
+      if (context.mounted) {
         _showError(context, "Company ID not found. Please login again.");
+      }
       return [];
     }
 
@@ -136,7 +147,9 @@ class SourceModeApiService {
     final companyid = prefs.getString('companyid') ?? '';
 
     if (companyid.isEmpty) {
-      _showError(context, "Company ID not found. Please login again.");
+      if (context.mounted) {
+        _showError(context, "Company ID not found. Please login again.");
+      }
       return "Failed";
     }
 
@@ -152,11 +165,13 @@ class SourceModeApiService {
       if (message["status"] == "success") {
         return "Success";
       } else {
-        _showError(context, message["message"] ?? "Delete failed");
+        if (context.mounted) {
+          _showError(context, message["message"] ?? "Delete failed");
+        }
         return "Failed";
       }
     } catch (e) {
-      _showError(context, "Error: $e");
+      if (context.mounted) _showError(context, "Error: $e");
       return "Failed";
     }
   }

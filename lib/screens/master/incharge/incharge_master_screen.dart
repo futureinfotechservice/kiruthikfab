@@ -1,11 +1,10 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:kiruthikfab/indigator/main.dart';
+import 'package:kiruthikfab/models/in_charge_master_model.dart';
+import 'package:kiruthikfab/screens/navigation_provider.dart';
+import 'package:kiruthikfab/services/incharge_apiservice.dart';
 import 'package:provider/provider.dart';
-
-import '../../../indigator/main.dart';
-import '../../../models/InchargeMasterModel.dart';
-import '../../../services/incharge_apiservice.dart';
-import '../../navigation_provider.dart';
 
 class InchargeMasterScreen extends StatefulWidget {
   const InchargeMasterScreen({super.key});
@@ -24,9 +23,9 @@ class _InchargeMasterScreenState extends State<InchargeMasterScreen> {
   bool _isListLoading = true;
 
   // Store the incharge being edited
-  incharge_master_model? _editingIncharge;
+  InChargeMasterModel? _editingIncharge;
 
-  List<incharge_master_model> _incharges = [];
+  List<InChargeMasterModel> _incharges = [];
   String _searchQuery = '';
 
   @override
@@ -101,25 +100,29 @@ class _InchargeMasterScreenState extends State<InchargeMasterScreen> {
       }
 
       if (result == "Success") {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              _isEditMode
-                  ? 'Incharge updated successfully!'
-                  : 'Incharge created successfully!',
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                _isEditMode
+                    ? 'Incharge updated successfully!'
+                    : 'Incharge created successfully!',
+              ),
+              backgroundColor: Colors.green,
             ),
-            backgroundColor: Colors.green,
-          ),
-        );
+          );
+        }
 
         // Reset form and reload list
         _cancelEdit();
         await _loadIncharges();
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -168,7 +171,7 @@ class _InchargeMasterScreenState extends State<InchargeMasterScreen> {
     }
   }
 
-  void _editIncharge(incharge_master_model incharge) {
+  void _editIncharge(InChargeMasterModel incharge) {
     setState(() {
       _isEditMode = true;
       _editingIncharge = incharge;
@@ -190,7 +193,7 @@ class _InchargeMasterScreenState extends State<InchargeMasterScreen> {
     });
   }
 
-  List<incharge_master_model> get _filteredIncharges {
+  List<InChargeMasterModel> get _filteredIncharges {
     if (_searchQuery.isEmpty) return _incharges;
     return _incharges.where((incharge) {
       return incharge.inchargetname.toLowerCase().contains(

@@ -284,7 +284,7 @@ class _SearchableTextBoxState extends State<SearchableTextBox> {
 
   @override
   Widget build(BuildContext context) {
-    OutlineInputBorder _border({Color color = const Color(0xFFD1D5DB)}) {
+    OutlineInputBorder border({Color color = const Color(0xFFD1D5DB)}) {
       return OutlineInputBorder(
         borderSide: BorderSide(color: color, width: 1.4),
         borderRadius: BorderRadius.circular(6),
@@ -305,10 +305,10 @@ class _SearchableTextBoxState extends State<SearchableTextBox> {
               fillColor: widget.isReadOnly
                   ? const Color(0xFFF3F4F6)
                   : const Color(0xFFF3F4F6),
-              border: _border(),
-              enabledBorder: _border(),
-              focusedBorder: _border(),
-              disabledBorder: _border(color: const Color(0xFFD1D5DB)),
+              border: border(),
+              enabledBorder: border(),
+              focusedBorder: border(),
+              disabledBorder: border(color: const Color(0xFFD1D5DB)),
               isDense: widget.isCompact,
               contentPadding: widget.isCompact
                   ? const EdgeInsets.symmetric(horizontal: 14, vertical: 13)

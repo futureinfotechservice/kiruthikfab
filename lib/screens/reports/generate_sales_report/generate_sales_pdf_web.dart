@@ -50,7 +50,7 @@ class SalesReportService {
 
       // Make GET request
       final response = await http.get(url);
-      print(response.statusCode);
+
       if (response.statusCode == 200) {
         await _savePdf(response.bodyBytes);
         return null;
@@ -67,7 +67,7 @@ class SalesReportService {
     try {
       final fileName =
           'Product_Based_Sales_Report_${DateTime.now().millisecondsSinceEpoch}.pdf';
-      print(fileName);
+
       final base64Data = base64Encode(pdfBytes);
       final anchor = web.HTMLAnchorElement()
         ..href = 'data:application/pdf;base64,$base64Data'

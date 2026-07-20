@@ -386,7 +386,9 @@ class InvoiceApiService {
           list.add(Product.fromJson(item));
         }
       }
-    } catch (e) {}
+    } catch (e) {
+      return [];
+    }
     return list;
   }
 
@@ -409,7 +411,9 @@ class InvoiceApiService {
           list.add(Model.fromJson(item));
         }
       }
-    } catch (e) {}
+    } catch (e) {
+      return [];
+    }
     return list;
   }
 
@@ -432,7 +436,9 @@ class InvoiceApiService {
           list.add(ProductSize.fromJson(item));
         }
       }
-    } catch (e) {}
+    } catch (e) {
+      return [];
+    }
     return list;
   }
 
@@ -455,7 +461,9 @@ class InvoiceApiService {
           list.add(Unit.fromJson(item));
         }
       }
-    } catch (e) {}
+    } catch (e) {
+      return [];
+    }
     return list;
   }
 
@@ -561,11 +569,13 @@ class InvoiceApiService {
       final addedby = prefs.getString('id') ?? '';
 
       if (companyid.isEmpty || addedby.isEmpty) {
-        _showSnackBar(
-          context,
-          'Company or user information missing',
-          Colors.orange,
-        );
+        if (context.mounted) {
+          _showSnackBar(
+            context,
+            'Company or user information missing',
+            Colors.orange,
+          );
+        }
         return "Failed";
       }
 
@@ -589,11 +599,13 @@ class InvoiceApiService {
       // Validate items have positive quantities
       for (var item in cleanedItems) {
         if (item['quantity'] <= 0) {
-          _showSnackBar(
-            context,
-            'Quantity must be greater than 0 for ${item['productName']}',
-            Colors.orange,
-          );
+          if (context.mounted) {
+            _showSnackBar(
+              context,
+              'Quantity must be greater than 0 for ${item['productName']}',
+              Colors.orange,
+            );
+          }
           return "Failed";
         }
       }
@@ -621,9 +633,6 @@ class InvoiceApiService {
         "delivery_partner": deliveryPartner.trim(),
       };
 
-      // Debug log (remove in production)
-      debugPrint('Sending invoice data: ${json.encode(data)}');
-
       var response = await http
           .post(
             url,
@@ -641,11 +650,13 @@ class InvoiceApiService {
         var message = json.decode(response.body);
 
         if (message['success'] == true) {
-          _showSnackBar(
-            context,
-            'Invoice saved successfully! Invoice #: ${message['invoice_id'] ?? invoiceNo}',
-            Colors.green,
-          );
+          if (context.mounted) {
+            _showSnackBar(
+              context,
+              'Invoice saved successfully! Invoice #: ${message['invoice_id'] ?? invoiceNo}',
+              Colors.green,
+            );
+          }
           return "Success";
         } else {
           // Handle specific error messages from server
@@ -653,24 +664,27 @@ class InvoiceApiService {
           if (message['error'] != null) {
             errorMsg = message['error'];
           }
-          _showSnackBar(context, errorMsg, Colors.red);
+          if (context.mounted) _showSnackBar(context, errorMsg, Colors.red);
           return "Failed";
         }
       } else {
-        _showSnackBar(
-          context,
-          'Server error: ${response.statusCode}',
-          Colors.red,
-        );
+        if (context.mounted) {
+          _showSnackBar(
+            context,
+            'Server error: ${response.statusCode}',
+            Colors.red,
+          );
+        }
         return "Failed";
       }
     } catch (e) {
-      debugPrint('Error saving invoice: $e');
-      _showSnackBar(
-        context,
-        'Error: ${e.toString().replaceFirst('Exception: ', '')}',
-        Colors.red,
-      );
+      if (context.mounted) {
+        _showSnackBar(
+          context,
+          'Error: ${e.toString().replaceFirst('Exception: ', '')}',
+          Colors.red,
+        );
+      }
       return "Failed";
     }
   }
@@ -737,7 +751,7 @@ class InvoiceApiService {
         "delivery_partner": deliveryPartner,
         'addedby': userId,
       };
-      print(data);
+
       var response = await http.post(
         url,
         headers: {"Content-Type": "application/json"},
@@ -745,33 +759,38 @@ class InvoiceApiService {
       );
 
       var message = json.decode(response.body);
-      print(message);
+
       if (message['success'] == true) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Invoice updated successfully'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Invoice updated successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
         return "Success";
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              message['error'] ??
-                  message['message'] ??
-                  'Failed to update invoice',
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                message['error'] ??
+                    message['message'] ??
+                    'Failed to update invoice',
+              ),
+              backgroundColor: Colors.red,
             ),
-            backgroundColor: Colors.red,
-          ),
-        );
+          );
+        }
         return "Failed";
       }
     } catch (e) {
-      print(e);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
       return "Failed";
     }
   }
@@ -795,7 +814,9 @@ class InvoiceApiService {
           list.add(InvoiceModel.fromJson(item));
         }
       }
-    } catch (e) {}
+    } catch (e) {
+      return [];
+    }
     return list;
   }
 
@@ -838,26 +859,32 @@ class InvoiceApiService {
       var message = json.decode(response.body);
 
       if (message['success'] == true) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Invoice deleted successfully'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Invoice deleted successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
         return "Success";
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(message['message'] ?? 'Failed to delete'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(message['message'] ?? 'Failed to delete'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
         return "Failed";
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
       return "Failed";
     }
   }

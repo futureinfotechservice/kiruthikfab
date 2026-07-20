@@ -100,6 +100,9 @@ class CallRegisterService {
 
     final json = jsonDecode(response.body);
 
+    if (json['data'][0]['id'] == null) {
+      return [];
+    }
     return (json['data'] as List)
         .map((e) => SourceCallHistoryModel.fromJson(e))
         .toList();

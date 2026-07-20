@@ -5,16 +5,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import 'package:kiruthikfab/models/delivery_partner_master_model.dart';
+import 'package:kiruthikfab/services/config.dart';
+import 'package:kiruthikfab/services/delivery_partner_api_service.dart';
+import 'package:kiruthikfab/services/invoice_apiservice.dart';
+import 'package:kiruthikfab/services/kyc_apiservice.dart';
+import 'package:kiruthikfab/widgets/custom_search_dropdown_source.dart';
+import 'package:kiruthikfab/widgets/customappbarwidget.dart';
+import 'package:kiruthikfab/widgets/customdropdownwidget.dart';
+import 'package:kiruthikfab/widgets/customtextfield.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../../../widgets/customappbarwidget.dart';
-import '../../../../../widgets/customdropdownwidget.dart';
-import '../../../../../widgets/customtextfield.dart';
-import '../../../services/invoice_apiservice.dart';
-import '../../../services/kyc_apiservice.dart';
-import '../../models/delivery_partner_master_model.dart';
-import '../../services/config.dart';
-import '../../services/delivery_partner_api_service.dart';
 import '../master/inventory/inventory_master.dart';
 import 'invoice_print_view.dart';
 
@@ -987,10 +988,17 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
           isReadOnly: isViewMode,
         ),
         const SizedBox(height: 16),
-        CustomDropdownSearch(
+        CustomDropdownSearchSource(
           label: "Customer Name",
           isRequired: true,
-          items: customerList.map((c) => c['name'].toString()).toList(),
+          items: customerList
+              .map(
+                (c) => {
+                  'name': c['name'].toString(),
+                  'mobile': c['mobile1'].toString(),
+                },
+              )
+              .toList(),
           selectedItem: selectedCustomer,
           isReadOnly: isViewMode,
           // focusNode: _customerFocusNode,
@@ -1038,12 +1046,20 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
         const SizedBox(width: 16),
 
         Expanded(
-          child: CustomDropdownSearch(
+          child: CustomDropdownSearchSource(
             label: "Customer Name",
             isRequired: true,
-            items: customerList.map((c) => c['name'].toString()).toList(),
+            items: customerList
+                .map(
+                  (c) => {
+                    'name': c['name'].toString(),
+                    'mobile': c['mobile1'].toString(),
+                  },
+                )
+                .toList(),
             selectedItem: selectedCustomer,
             isReadOnly: isViewMode,
+            // focusNode: _customerFocusNode,
             onChanged: isViewMode
                 ? null
                 : (value) {

@@ -1,10 +1,9 @@
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
-
-import '../../../indigator/main.dart';
-import '../../../models/CustomerMasterModel.dart';
-import '../../../services/customer_apiservice.dart';
-import '../../../widgets/customdropdownwidget.dart';
+import 'package:kiruthikfab/indigator/main.dart';
+import 'package:kiruthikfab/models/customer_master_model.dart';
+import 'package:kiruthikfab/services/customer_apiservice.dart';
+import 'package:kiruthikfab/widgets/customdropdownwidget.dart';
 
 class CustomerMasterEntryScreen extends StatefulWidget {
   final CustomerMasterModel? customer;
@@ -392,16 +391,18 @@ class _CustomerMasterEntryScreenState extends State<CustomerMasterEntryScreen> {
       }
 
       if (result == "Success") {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              _isEditMode
-                  ? 'Customer updated successfully!'
-                  : 'Customer created successfully!',
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                _isEditMode
+                    ? 'Customer updated successfully!'
+                    : 'Customer created successfully!',
+              ),
+              backgroundColor: Colors.green,
             ),
-            backgroundColor: Colors.green,
-          ),
-        );
+          );
+        }
 
         await Future.delayed(const Duration(seconds: 1));
         if (mounted) {
@@ -409,9 +410,11 @@ class _CustomerMasterEntryScreenState extends State<CustomerMasterEntryScreen> {
         }
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

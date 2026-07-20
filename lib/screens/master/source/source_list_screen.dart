@@ -152,12 +152,14 @@ class _SourceListScreenState extends State<SourceListScreen> {
     if (confirmed != true) return;
 
     try {
-      final result = await _apiService.deleteSource(context, sourceId);
+      if (mounted) {
+        final result = await _apiService.deleteSource(context, sourceId);
 
-      if (result == "Success") {
-        setState(() {
-          _sources.removeAt(index);
-        });
+        if (result == "Success") {
+          setState(() {
+            _sources.removeAt(index);
+          });
+        }
       }
     } catch (e) {
       setState(() {});

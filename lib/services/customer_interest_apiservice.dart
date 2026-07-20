@@ -93,7 +93,11 @@ class CustomerInterestApiservice {
         body: data,
       );
 
-      return _handleResponse(context, response.body);
+      if (context.mounted) {
+        return _handleResponse(context, response.body);
+      } else {
+        return '';
+      }
     } catch (e) {
       if (context.mounted) {
         _showError(context, "Error: $e");
@@ -127,7 +131,11 @@ class CustomerInterestApiservice {
         body: data,
       );
 
-      return _handleResponse(context, response.body);
+      if (context.mounted) {
+        return _handleResponse(context, response.body);
+      } else {
+        return '';
+      }
     } catch (e) {
       if (context.mounted) {
         _showError(context, "Error: $e");
@@ -141,7 +149,9 @@ class CustomerInterestApiservice {
     final companyid = prefs.getString('companyid') ?? '';
 
     if (companyid.isEmpty) {
-      _showError(context, "Company ID not found. Please login again.");
+      if (context.mounted) {
+        _showError(context, "Company ID not found. Please login again.");
+      }
       return "Failed";
     }
 
@@ -157,11 +167,13 @@ class CustomerInterestApiservice {
       if (message["status"] == "success") {
         return "Success";
       } else {
-        _showError(context, message["message"] ?? "Delete failed");
+        if (context.mounted) {
+          _showError(context, message["message"] ?? "Delete failed");
+        }
         return "Failed";
       }
     } catch (e) {
-      _showError(context, "Error: $e");
+      if (context.mounted) _showError(context, "Error: $e");
       return "Failed";
     }
   }

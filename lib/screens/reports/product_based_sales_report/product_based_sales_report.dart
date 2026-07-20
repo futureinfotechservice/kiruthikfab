@@ -3,18 +3,19 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:kiruthikfab/indigator/main.dart';
-import 'package:kiruthikfab/models/ProductBasedSalesReportModel.dart';
+import 'package:kiruthikfab/models/product_based_sales_report_model.dart';
 import 'package:kiruthikfab/models/source_master_model.dart';
 import 'package:kiruthikfab/screens/navigation_provider.dart';
 import 'package:kiruthikfab/services/kyc_apiservice.dart';
-import 'package:kiruthikfab/services/productBasedReportApiService.dart';
+import 'package:kiruthikfab/services/product_based_report_api_service.dart';
 import 'package:kiruthikfab/services/source_apiservice.dart';
+import 'package:kiruthikfab/widgets/custom_search_dropdown_source.dart';
 import 'package:kiruthikfab/widgets/customdropdownwidget.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../generate_sales_report/generate_sales_pdf.dart';
 import 'generate_sales_excel.dart';
-import 'generate_sales_report/generate_sales_pdf.dart';
 
 class ProductBasedSalesReport extends StatefulWidget {
   const ProductBasedSalesReport({super.key});
@@ -453,12 +454,18 @@ class _ProductBasedSalesReportState extends State<ProductBasedSalesReport> {
                           Expanded(
                             child: Stack(
                               children: [
-                                CustomDropdownSearch(
+                                CustomDropdownSearchSource(
                                   label: "Source",
                                   isRequired: false,
-                                  items: List<String>.from(
-                                    sources.map((item) => item.name),
-                                  ),
+                                  items: sources
+                                      .map(
+                                        (e) => {
+                                          'name': e.name,
+                                          'mobile': e.mobileNo,
+                                        },
+                                      )
+                                      .take(100)
+                                      .toList(),
                                   selectedItem: selectedSource?.name,
                                   onChanged: (value) {
                                     setState(() {
@@ -687,12 +694,18 @@ class _ProductBasedSalesReportState extends State<ProductBasedSalesReport> {
                       Expanded(
                         child: Stack(
                           children: [
-                            CustomDropdownSearch(
+                            CustomDropdownSearchSource(
                               label: "Source",
                               isRequired: false,
-                              items: List<String>.from(
-                                sources.map((item) => item.name),
-                              ),
+                              items: sources
+                                  .map(
+                                    (e) => {
+                                      'name': e.name,
+                                      'mobile': e.mobileNo,
+                                    },
+                                  )
+                                  .take(100)
+                                  .toList(),
                               selectedItem: selectedSource?.name,
                               onChanged: (value) {
                                 setState(() {
@@ -844,7 +857,6 @@ class _ProductBasedSalesReportState extends State<ProductBasedSalesReport> {
                   onPressed: _filteredData.isEmpty
                       ? null
                       : () async {
-                          print('generatePdf1');
                           if (_fromDate != null && _toDate != null) {
                             await SalesReportService.generatePdf(
                               fromDate: _dateFormatPdf
@@ -859,7 +871,6 @@ class _ProductBasedSalesReportState extends State<ProductBasedSalesReport> {
                               search: _searchController.text.trim(),
                             );
                           } else {
-                            print('generatePdf2');
                             await SalesReportService.generatePdf(
                               source: selectedSource?.id ?? '',
                               product: selectedProduct?['id'] ?? "",

@@ -91,36 +91,40 @@ class _SourceModeMasterScreenState extends State<SourceModeMasterScreen> {
         result = await _apiService.updateSourceMode(
           context: context,
           occupationId: _editingSourceMode!.id,
-          sourcingmode_name: _sourcingModeNameController.text,
+          sourcingmodeName: _sourcingModeNameController.text,
         );
       } else {
         // Insert new sourceMode
         result = await _apiService.insertSourceMode(
           context: context,
-          sourcingmode_name: _sourcingModeNameController.text,
+          sourcingmodeName: _sourcingModeNameController.text,
         );
       }
 
       if (result == "Success") {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              _isEditMode
-                  ? 'SourceMode updated successfully!'
-                  : 'SourceMode created successfully!',
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                _isEditMode
+                    ? 'SourceMode updated successfully!'
+                    : 'SourceMode created successfully!',
+              ),
+              backgroundColor: Colors.green,
             ),
-            backgroundColor: Colors.green,
-          ),
-        );
+          );
+        }
 
         // Reset form and reload list
         _cancelEdit();
         await _loadSourceModes();
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() {

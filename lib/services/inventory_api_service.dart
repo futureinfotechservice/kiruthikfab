@@ -53,8 +53,9 @@ class InventoryApiService {
       if (message["status"] == "success") {
         return "Success";
       } else {
-        if (context.mounted)
+        if (context.mounted) {
           _showError(context, message["message"] ?? "Delete failed");
+        }
         return "Failed";
       }
     } catch (e) {

@@ -4,7 +4,7 @@ import 'package:kiruthikfab/screens/reports/sales_report_table.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../models/SalespersonData.dart';
+import '../../../models/salesperson_data.dart';
 import '../../../services/salesperson_report_apiservice.dart';
 import '../../indigator/main.dart';
 import '../navigation_provider.dart';

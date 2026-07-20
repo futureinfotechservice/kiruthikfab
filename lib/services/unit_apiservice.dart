@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../models/UnitMasterModel.dart';
+import '../models/unit_master_model.dart';
 import 'config.dart';
 
 class UnitApiService {
@@ -17,8 +17,9 @@ class UnitApiService {
     final userid = prefs.getString('id') ?? '';
 
     if (companyid.isEmpty) {
-      if (context.mounted)
+      if (context.mounted) {
         _showError(context, "Company ID not found. Please login again.");
+      }
       return "Failed";
     }
 
@@ -59,8 +60,9 @@ class UnitApiService {
     final userid = prefs.getString('id') ?? '';
 
     if (companyid.isEmpty) {
-      if (context.mounted)
+      if (context.mounted) {
         _showError(context, "Company ID not found. Please login again.");
+      }
       return "Failed";
     }
 
@@ -96,8 +98,9 @@ class UnitApiService {
     final companyid = prefs.getString('companyid') ?? '';
 
     if (companyid.isEmpty) {
-      if (context.mounted)
+      if (context.mounted) {
         _showError(context, "Company ID not found. Please login again.");
+      }
       return [];
     }
 
@@ -140,8 +143,9 @@ class UnitApiService {
     final companyid = prefs.getString('companyid') ?? '';
 
     if (companyid.isEmpty) {
-      if (context.mounted)
+      if (context.mounted) {
         _showError(context, "Company ID not found. Please login again.");
+      }
       return "Failed";
     }
 
@@ -157,8 +161,9 @@ class UnitApiService {
       if (message["status"] == "success") {
         return "Success";
       } else {
-        if (context.mounted)
+        if (context.mounted) {
           _showError(context, message["message"] ?? "Delete failed");
+        }
         return "Failed";
       }
     } catch (e) {

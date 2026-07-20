@@ -2,7 +2,7 @@
 require_once('./vendor/autoload.php');
 require_once('./vendor/tecnickcom/tcpdf/tcpdf.php');
 include 'conn.php';
-
+include 'cors.php';
 // Validate and sanitize inputs
 $companyid = isset($_GET['companyid']) ? intval($_GET['companyid']) : 0;
 if (empty($companyid)) {

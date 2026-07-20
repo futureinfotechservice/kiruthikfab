@@ -35,10 +35,12 @@ class _KYCListScreenState extends State<KYCListScreen> {
 
       userType = prefs.getString('user_type')!.toUpperCase();
 
-      final kycList = await _kycService.fetchKYCList(context);
-      setState(() {
-        _kycList = kycList;
-      });
+      if (mounted) {
+        final kycList = await _kycService.fetchKYCList(context);
+        setState(() {
+          _kycList = kycList;
+        });
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -90,12 +92,14 @@ class _KYCListScreenState extends State<KYCListScreen> {
           );
         }
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error deleting KYC: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error deleting KYC: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     }
   }
@@ -120,8 +124,7 @@ class _KYCListScreenState extends State<KYCListScreen> {
     }).toList();
   }
 
-  // Mobile-optimized product card for expanded view
-  Widget _buildProductCard(var product) {
+  Widget _buildProductCard(KYCProductModel product) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(10),
@@ -211,7 +214,7 @@ class _KYCListScreenState extends State<KYCListScreen> {
   }
 
   // Mobile-optimized family member card
-  Widget _buildFamilyMemberCard(var member) {
+  Widget _buildFamilyMemberCard(KYCChildModel member) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -344,9 +347,9 @@ class _KYCListScreenState extends State<KYCListScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  ...member.products
-                      .map((product) => _buildProductCard(product))
-                      .toList(),
+                  ...member.products.map(
+                    (product) => _buildProductCard(product),
+                  ),
                 ],
               ),
             ),
@@ -489,6 +492,7 @@ class _KYCListScreenState extends State<KYCListScreen> {
                                           'quantity': p.quantity,
                                           'price': p.price,
                                           'total': p.totalAmount,
+                                          'inventoryid': p.inventoryId,
                                         },
                                       )
                                       .toList(),
@@ -519,9 +523,9 @@ class _KYCListScreenState extends State<KYCListScreen> {
               padding: const EdgeInsets.all(12),
               child: Column(
                 children: [
-                  ...kyc.children
-                      .map((member) => _buildFamilyMemberCard(member))
-                      .toList(),
+                  ...kyc.children.map(
+                    (member) => _buildFamilyMemberCard(member),
+                  ),
                 ],
               ),
             ),

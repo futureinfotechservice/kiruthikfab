@@ -53,13 +53,15 @@ class SalesReportService {
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
-        print('_savePdf first');
-        return await _savePdf(response.bodyBytes);
+        final file = await _savePdf(response.bodyBytes);
+        if (file != null) {
+          await OpenFilex.open(file.path);
+        }
+        return file;
       } else {
         throw Exception('Failed to generate report: ${response.statusCode}');
       }
     } catch (e) {
-      print(e);
       return null;
     }
   }
@@ -68,30 +70,38 @@ class SalesReportService {
   static Future<File?> _savePdf(Uint8List pdfBytes) async {
     try {
       Directory directory;
-      print('_savePdf comming');
-      print(Platform.isAndroid || Platform.isIOS);
+
       if (Platform.isAndroid || Platform.isIOS) {
+        // Mobile platforms
         directory = await getApplicationDocumentsDirectory();
       } else if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-        // Desktop platforms
+        // Desktop platforms - use Downloads folder
         directory =
             await getDownloadsDirectory() ??
             await getApplicationDocumentsDirectory();
       } else {
+        // Fallback
         directory = await getApplicationDocumentsDirectory();
       }
-      print(directory);
+
+      // Create directory if it doesn't exist
+      if (!await directory.exists()) {
+        await directory.create(recursive: true);
+      }
+
       final filePath =
           '${directory.path}/Product_Based_Sales_Report_${DateTime.now().millisecondsSinceEpoch}.pdf';
       final file = File(filePath);
 
       // Write the PDF bytes to file
-      final a = await file.writeAsBytes(pdfBytes);
-      print(a);
-      if (await a.exists()) {
-        ScaffoldMessenger(child: Text("File Stored in $filePath"));
+      await file.writeAsBytes(pdfBytes);
+
+      // Verify file was created
+      if (await file.exists()) {
+        return file;
+      } else {
+        throw Exception('Failed to save file');
       }
-      return file;
     } catch (e) {
       return null;
     }
@@ -101,19 +111,33 @@ class SalesReportService {
   static Future<Directory?> getDownloadsDirectory() async {
     try {
       if (Platform.isWindows) {
-        // Windows downloads folder
-        final userDir = await getApplicationDocumentsDirectory();
-        final downloadsPath = '${userDir.path}\\Downloads';
-        final dir = Directory(downloadsPath);
-        if (!await dir.exists()) {
-          await dir.create(recursive: true);
+        // Windows downloads folder - multiple possible locations
+        // final userDir = await getApplicationDocumentsDirectory();
+        final possiblePaths = [
+          // '${userDir.path}\\Downloads',
+          // '${userDir.path}\\..\\Downloads',
+          'C:\\Users\\${Platform.environment['USERNAME']}\\Downloads',
+        ];
+
+        for (final path in possiblePaths) {
+          final dir = Directory(path);
+          if (await dir.exists()) {
+            return dir;
+          }
         }
+
+        final path =
+            'C:\\Users\\${Platform.environment['USERNAME']}\\Downloads';
+        // final defaultPath = '${userDir.path}\\Downloads';
+        final dir = Directory(path);
+        await dir.create(recursive: true);
         return dir;
       } else if (Platform.isLinux || Platform.isMacOS) {
         // Linux/Mac downloads folder
         final homeDir = Platform.environment['HOME'] ?? '';
         final downloadsPath = '$homeDir/Downloads';
         final dir = Directory(downloadsPath);
+
         if (!await dir.exists()) {
           await dir.create(recursive: true);
         }
@@ -128,9 +152,13 @@ class SalesReportService {
   // Open PDF - IO Platform
   static Future<void> openPdf(File file) async {
     try {
+      if (!await file.exists()) {
+        throw Exception('File does not exist');
+      }
+
       final result = await OpenFilex.open(file.path);
       if (result.type != ResultType.done) {
-        throw Exception('Could not open PDF');
+        throw Exception('Could not open PDF: ${result.message}');
       }
     } catch (e) {
       rethrow;
@@ -140,6 +168,10 @@ class SalesReportService {
   // Share PDF - IO Platform
   static Future<void> sharePdf(File file) async {
     try {
+      if (!await file.exists()) {
+        throw Exception('File does not exist');
+      }
+
       final xFile = XFile(file.path);
       await SharePlus.instance.share(
         ShareParams(
@@ -167,5 +199,50 @@ class SalesReportService {
     } catch (e) {
       return false;
     }
+  }
+
+  // Get file size in bytes
+  static Future<int> getFileSize(File file) async {
+    try {
+      if (await file.exists()) {
+        return await file.length();
+      }
+      return 0;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  // Get file name from path
+  static String getFileName(File file) {
+    return file.path.split(Platform.pathSeparator).last;
+  }
+
+  // Show success snackbar with file location
+  static void showSuccessSnackbar(BuildContext context, File file) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('PDF saved at: ${file.path}'),
+        backgroundColor: Colors.green,
+        duration: const Duration(seconds: 4),
+        action: SnackBarAction(
+          label: 'Open',
+          onPressed: () async {
+            try {
+              await openPdf(file);
+            } catch (e) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Error opening PDF: $e'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            }
+          },
+        ),
+      ),
+    );
   }
 }

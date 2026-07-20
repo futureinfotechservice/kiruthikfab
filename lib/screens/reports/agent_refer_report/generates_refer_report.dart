@@ -15,34 +15,39 @@ import 'package:url_launcher/url_launcher.dart';
 bool get isDesktop =>
     !kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS);
 
-void printLedger({
+// Function to print agent report PDF
+void printAgentReport({
   required String companyId,
-  required String inventoryId,
   required String fromDate,
   required String toDate,
+  String? agentId,
+  String? searchQuery,
   required BuildContext context,
 }) async {
   try {
     // Show loading indicator
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Preparing ledger for printing...'),
+        content: Text('Preparing agent report for printing...'),
         backgroundColor: Colors.blue,
       ),
     );
 
     // Build URL with parameters
-    final String baseUrls = '$baseUrl/stock_ledger_pdf.php';
-    Map<String, String> queryParams = {
-      'companyid': companyId,
-      'inventoryid': inventoryId,
-    };
+    final String baseUrls = '$baseUrl/agent_refer_report_pdf.php';
+    Map<String, String> queryParams = {'companyid': companyId};
 
     if (fromDate.isNotEmpty) {
-      queryParams['from_date'] = fromDate;
+      queryParams['fromdate'] = fromDate;
     }
     if (toDate.isNotEmpty) {
-      queryParams['to_date'] = toDate;
+      queryParams['todate'] = toDate;
+    }
+    if (agentId != null && agentId.isNotEmpty) {
+      queryParams['agent_id'] = agentId;
+    }
+    if (searchQuery != null && searchQuery.isNotEmpty) {
+      queryParams['search'] = searchQuery;
     }
 
     final Uri uri = Uri.parse(baseUrls).replace(queryParameters: queryParams);
@@ -54,7 +59,7 @@ void printLedger({
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Opening ledger for printing...'),
+            content: Text('Opening agent report for printing...'),
             backgroundColor: Colors.green,
           ),
         );
@@ -68,7 +73,7 @@ void printLedger({
       }
 
       String? savePath = await FileSaver.instance.saveFile(
-        name: 'Stock_Ledger_Print_${DateTime.now().millisecondsSinceEpoch}.pdf',
+        name: 'Agent_Report_${DateTime.now().millisecondsSinceEpoch}.pdf',
         bytes: response.bodyBytes,
         fileExtension: 'pdf',
         customMimeType: 'application/pdf',
@@ -108,7 +113,7 @@ void printLedger({
       // Save to temporary directory
       final Directory tempDir = await getTemporaryDirectory();
       final String fileName =
-          'Stock_Ledger_Print_${DateTime.now().millisecondsSinceEpoch}.pdf';
+          'Agent_Report_Print_${DateTime.now().millisecondsSinceEpoch}.pdf';
       final String filePath = '${tempDir.path}/$fileName';
       final File file = File(filePath);
       await file.writeAsBytes(response.bodyBytes);
@@ -119,7 +124,7 @@ void printLedger({
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Opening ledger for printing...'),
+            content: Text('Opening agent report for printing...'),
             backgroundColor: Colors.green,
           ),
         );
@@ -129,7 +134,7 @@ void printLedger({
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error printing ledger: $e'),
+          content: Text('Error printing agent report: $e'),
           backgroundColor: Colors.red,
         ),
       );
@@ -137,19 +142,21 @@ void printLedger({
   }
 }
 
-void exportLedger(
+// Function to export agent report
+void exportAgentReport(
   String format, {
   required String companyId,
-  required String inventoryId,
   required String fromDate,
   required String toDate,
+  String? agentId,
+  String? searchQuery,
   required BuildContext context,
 }) async {
   try {
     // Show loading indicator
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Exporting ledger as ${format.toUpperCase()}...'),
+        content: Text('Exporting agent report as ${format.toUpperCase()}...'),
         backgroundColor: Colors.blue,
       ),
     );
@@ -160,12 +167,12 @@ void exportLedger(
     String contentType = '';
 
     if (format.toLowerCase() == 'pdf') {
-      endpoint = 'stock_ledger_pdf.php';
+      endpoint = 'agent_refer_report_pdf.php';
       fileExtension = 'pdf';
       contentType = 'application/pdf';
     } else if (format.toLowerCase() == 'excel' ||
         format.toLowerCase() == 'xlsx') {
-      endpoint = 'stock_ledger_excel.php';
+      endpoint = 'agent_refer_report_excel.php';
       fileExtension = 'xlsx';
       contentType =
           'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
@@ -175,16 +182,19 @@ void exportLedger(
 
     // Build URL with parameters
     final String baseUrls = '$baseUrl/$endpoint';
-    Map<String, String> queryParams = {
-      'companyid': companyId,
-      'inventoryid': inventoryId,
-    };
+    Map<String, String> queryParams = {'companyid': companyId};
 
     if (fromDate.isNotEmpty) {
-      queryParams['from_date'] = fromDate;
+      queryParams['fromdate'] = fromDate;
     }
     if (toDate.isNotEmpty) {
-      queryParams['to_date'] = toDate;
+      queryParams['todate'] = toDate;
+    }
+    if (agentId != null && agentId.isNotEmpty) {
+      queryParams['agent_id'] = agentId;
+    }
+    if (searchQuery != null && searchQuery.isNotEmpty) {
+      queryParams['search'] = searchQuery;
     }
 
     final Uri uri = Uri.parse(baseUrls).replace(queryParameters: queryParams);
@@ -198,7 +208,7 @@ void exportLedger(
 
     // Save file
     final String fileName =
-        'Stock_Ledger_${DateTime.now().millisecondsSinceEpoch}.$fileExtension';
+        'Agent_Report_${DateTime.now().millisecondsSinceEpoch}.$fileExtension';
 
     if (kIsWeb) {
       // Web: Download directly
@@ -277,37 +287,41 @@ void exportLedger(
   }
 }
 
-// Convenience methods
-void exportLedgerPDF({
+// Convenience methods for agent report
+void exportAgentReportPDF({
   required String companyId,
-  required String inventoryId,
   required String fromDate,
   required String toDate,
+  String? agentId,
+  String? searchQuery,
   required BuildContext context,
 }) {
-  exportLedger(
+  exportAgentReport(
     'pdf',
     companyId: companyId,
-    inventoryId: inventoryId,
     fromDate: fromDate,
     toDate: toDate,
+    agentId: agentId,
+    searchQuery: searchQuery,
     context: context,
   );
 }
 
-void exportLedgerExcel({
+void exportAgentReportExcel({
   required String companyId,
-  required String inventoryId,
   required String fromDate,
   required String toDate,
+  String? agentId,
+  String? searchQuery,
   required BuildContext context,
 }) {
-  exportLedger(
+  exportAgentReport(
     'excel',
     companyId: companyId,
-    inventoryId: inventoryId,
     fromDate: fromDate,
     toDate: toDate,
+    agentId: agentId,
+    searchQuery: searchQuery,
     context: context,
   );
 }
@@ -341,78 +355,9 @@ Future<String> _saveFileToDevice(
     throw Exception('Could not access storage');
   }
 
-  // Ensure directory exists
-  if (!await directory.exists()) {
-    await directory.create(recursive: true);
-  }
-
   final String filePath = '${directory.path}/$fileName';
   final File file = File(filePath);
   await file.writeAsBytes(bytes);
 
   return filePath;
-}
-
-// Additional helper method to open ledger with print dialog directly
-Future<void> openLedgerForPrinting({
-  required String companyId,
-  required String inventoryId,
-  required String fromDate,
-  required String toDate,
-  required BuildContext context,
-}) async {
-  try {
-    final String baseUrls = '$baseUrl/stock_ledger_pdf.php';
-    Map<String, String> queryParams = {
-      'companyid': companyId,
-      'inventoryid': inventoryId,
-    };
-
-    if (fromDate.isNotEmpty) {
-      queryParams['from_date'] = fromDate;
-    }
-    if (toDate.isNotEmpty) {
-      queryParams['to_date'] = toDate;
-    }
-
-    final Uri uri = Uri.parse(baseUrls).replace(queryParameters: queryParams);
-
-    if (kIsWeb) {
-      // Web: Open in new tab
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else if (isDesktop) {
-      // Desktop: Download and open with print dialog
-      final http.Response response = await http.get(uri);
-      if (response.statusCode == 200) {
-        final Directory tempDir = await getTemporaryDirectory();
-        final String filePath =
-            '${tempDir.path}/Stock_Ledger_${DateTime.now().millisecondsSinceEpoch}.pdf';
-        final File file = File(filePath);
-        await file.writeAsBytes(response.bodyBytes);
-
-        // Open with default PDF viewer (which usually has print option)
-        await OpenFilex.open(filePath);
-      }
-    } else {
-      // Mobile: Download and open
-      final http.Response response = await http.get(uri);
-      if (response.statusCode == 200) {
-        final Directory tempDir = await getTemporaryDirectory();
-        final String filePath =
-            '${tempDir.path}/Stock_Ledger_${DateTime.now().millisecondsSinceEpoch}.pdf';
-        final File file = File(filePath);
-        await file.writeAsBytes(response.bodyBytes);
-        await OpenFilex.open(filePath);
-      }
-    }
-  } catch (e) {
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error opening ledger: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
 }

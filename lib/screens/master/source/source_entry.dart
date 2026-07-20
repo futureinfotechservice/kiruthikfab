@@ -3,13 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../../models/customer_interest_model.dart';
-import '../../../../models/source_master_model.dart';
-import '../../../../services/customer_interest_apiservice.dart';
-import '../../../../services/source_apiservice.dart';
-import '../../../../widgets/customdropdownwidget.dart';
-import '../../../models/district_master.dart';
-import '../../../services/district_master_api_service.dart';
+import 'package:kiruthikfab/models/customer_interest_model.dart';
+import 'package:kiruthikfab/models/source_master_model.dart';
+import 'package:kiruthikfab/services/customer_interest_apiservice.dart';
+import 'package:kiruthikfab/services/source_apiservice.dart';
+import 'package:kiruthikfab/widgets/customdropdownwidget.dart';
+import 'package:kiruthikfab/models/district_master.dart';
+import 'package:kiruthikfab/services/district_master_api_service.dart';
 
 class SourceEntryScreen extends StatefulWidget {
   final SourceMasterModel? source;
@@ -114,9 +114,9 @@ class _SourceEntryScreenState extends State<SourceEntryScreen> {
         // _apiService.fetchEntryPersons(context),
         _apiService.fetchSalesPersons(context),
       ]);
-      final res = await _apiService1.fetchInterests(context);
-
       if (mounted) {
+        final res = await _apiService1.fetchInterests(context);
+
         setState(() {
           _districts = results[0] as List<DistrictMasterModel>;
           _areas = results[1] as List<Map<String, dynamic>>;
@@ -255,74 +255,73 @@ class _SourceEntryScreenState extends State<SourceEntryScreen> {
     setState(() => _isLoading = true);
 
     try {
-      String result;
-
-      if (_isEditMode) {
-        result = await _apiService.updateSource(
-          context: context,
-          sourceId: widget.source!.id,
-          sourceDate: _dateController.text,
-          branch: _selectedDistrict!,
-          // This should be a String ID
-          name: _nameController.text,
-          companyName: _companyNameController.text,
-          mobileNo: _mobileNoController.text,
-          contactNo: _contactNoController.text,
-          whatsappNo: _whatsappNoController.text,
-          area: _getNameById(_areas, _selectedAreaId),
-          areaId: _selectedAreaId ?? '',
-          address: _addressController.text,
-          occupation: _getNameById(_occupations, _selectedOccupationId),
-          occupationId: _selectedOccupationId ?? '',
-          referBy: _getNameById(_refers, _selectedReferById),
-          referById: _selectedReferById ?? '',
-          agent: _getNameById(_agents, _selectedAgentId),
-          agentId: _selectedAgentId ?? '',
-          sourcingMode: _getNameById(_sourcingModes, _selectedSourcingModeId),
-          sourcingModeId: _selectedSourcingModeId!,
-          // This should be a String
-          entryPerson: loggedName,
-          entryPersonId: loggedId,
-          backgroundNetwork: _backgroundNetworkController.text,
-          customerInterest: _selectedInterest?.id ?? '',
-          notes: _notesController.text,
-          salesPerson: _getNameById(_salesPersons, _selectedSalesPersonId),
-          salesPersonId: _selectedSalesPersonId ?? '',
-        );
-        print(result);
-      } else {
-        result = await _apiService.insertSource(
-          context: context,
-          sourceDate: _dateController.text,
-          branch: _selectedDistrict!,
-          // This should be a String ID
-          name: _nameController.text,
-          companyName: _companyNameController.text,
-          mobileNo: _mobileNoController.text,
-          contactNo: _contactNoController.text,
-          whatsappNo: _whatsappNoController.text,
-          area: _getNameById(_areas, _selectedAreaId),
-          areaId: _selectedAreaId ?? '',
-          address: _addressController.text,
-          occupation: _getNameById(_occupations, _selectedOccupationId),
-          occupationId: _selectedOccupationId ?? '',
-          referBy: _getNameById(_refers, _selectedReferById),
-          referById: _selectedReferById ?? '',
-          agent: _getNameById(_agents, _selectedAgentId),
-          agentId: _selectedAgentId ?? '',
-          sourcingMode: _getNameById(_sourcingModes, _selectedSourcingModeId),
-          sourcingModeId: _selectedSourcingModeId!,
-          // This should be a String
-          entryPerson: loggedName,
-          entryPersonId: loggedId,
-          backgroundNetwork: _backgroundNetworkController.text,
-          customerInterest: _selectedInterest?.id ?? '',
-          notes: _notesController.text,
-          salesPerson: _getNameById(_salesPersons, _selectedSalesPersonId),
-          salesPersonId: _selectedSalesPersonId ?? '',
-        );
+      String result = '';
+      if (mounted) {
+        if (_isEditMode) {
+          result = await _apiService.updateSource(
+            context: context,
+            sourceId: widget.source!.id,
+            sourceDate: _dateController.text,
+            branch: _selectedDistrict!,
+            // This should be a String ID
+            name: _nameController.text,
+            companyName: _companyNameController.text,
+            mobileNo: _mobileNoController.text,
+            contactNo: _contactNoController.text,
+            whatsappNo: _whatsappNoController.text,
+            area: _getNameById(_areas, _selectedAreaId),
+            areaId: _selectedAreaId ?? '',
+            address: _addressController.text,
+            occupation: _getNameById(_occupations, _selectedOccupationId),
+            occupationId: _selectedOccupationId ?? '',
+            referBy: _getNameById(_refers, _selectedReferById),
+            referById: _selectedReferById ?? '',
+            agent: _getNameById(_agents, _selectedAgentId),
+            agentId: _selectedAgentId ?? '',
+            sourcingMode: _getNameById(_sourcingModes, _selectedSourcingModeId),
+            sourcingModeId: _selectedSourcingModeId!,
+            // This should be a String
+            entryPerson: loggedName,
+            entryPersonId: loggedId,
+            backgroundNetwork: _backgroundNetworkController.text,
+            customerInterest: _selectedInterest?.id ?? '',
+            notes: _notesController.text,
+            salesPerson: _getNameById(_salesPersons, _selectedSalesPersonId),
+            salesPersonId: _selectedSalesPersonId ?? '',
+          );
+        } else {
+          result = await _apiService.insertSource(
+            context: context,
+            sourceDate: _dateController.text,
+            branch: _selectedDistrict!,
+            // This should be a String ID
+            name: _nameController.text,
+            companyName: _companyNameController.text,
+            mobileNo: _mobileNoController.text,
+            contactNo: _contactNoController.text,
+            whatsappNo: _whatsappNoController.text,
+            area: _getNameById(_areas, _selectedAreaId),
+            areaId: _selectedAreaId ?? '',
+            address: _addressController.text,
+            occupation: _getNameById(_occupations, _selectedOccupationId),
+            occupationId: _selectedOccupationId ?? '',
+            referBy: _getNameById(_refers, _selectedReferById),
+            referById: _selectedReferById ?? '',
+            agent: _getNameById(_agents, _selectedAgentId),
+            agentId: _selectedAgentId ?? '',
+            sourcingMode: _getNameById(_sourcingModes, _selectedSourcingModeId),
+            sourcingModeId: _selectedSourcingModeId!,
+            // This should be a String
+            entryPerson: loggedName,
+            entryPersonId: loggedId,
+            backgroundNetwork: _backgroundNetworkController.text,
+            customerInterest: _selectedInterest?.id ?? '',
+            notes: _notesController.text,
+            salesPerson: _getNameById(_salesPersons, _selectedSalesPersonId),
+            salesPersonId: _selectedSalesPersonId ?? '',
+          );
+        }
       }
-
       if (result == "Success") {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -700,7 +699,6 @@ class _SourceEntryScreenState extends State<SourceEntryScreen> {
                         isRequired: true,
                         hint: 'Select District',
                         onChanged: (value) {
-                          print(value);
                           setState(() {
                             _selectedDistrict = value;
                           });
@@ -1111,11 +1109,11 @@ class _SourceEntryScreenState extends State<SourceEntryScreen> {
 // import 'package:intl/intl.dart';
 // import 'package:shared_preferences/shared_preferences.dart';
 //
-// import '../../../../models/customer_interest_model.dart';
-// import '../../../../models/source_master_model.dart';
-// import '../../../../services/customer_interest_apiservice.dart';
-// import '../../../../services/source_apiservice.dart';
-// import '../../../../widgets/customdropdownwidget.dart';
+// import 'package:kiruthikfab/models/customer_interest_model.dart';
+// import 'package:kiruthikfab/models/source_master_model.dart';
+// import 'package:kiruthikfab/services/customer_interest_apiservice.dart';
+// import 'package:kiruthikfab/services/source_apiservice.dart';
+// import 'package:kiruthikfab/widgets/customdropdownwidget.dart';
 // import '../../../indigator/main.dart';
 // import '../../../models/district_master.dart';
 // import '../../../services/district_master_api_service.dart';

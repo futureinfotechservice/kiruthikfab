@@ -75,10 +75,12 @@ class _InventoryMasterState extends State<InventoryMaster> {
     final companyId = prefs.getString('companyid') ?? '';
 
     try {
-      inventoryNo = await InventoryApiService().getNextInventoryNumber(
-        context,
-        companyId,
-      );
+      if (mounted) {
+        inventoryNo = await InventoryApiService().getNextInventoryNumber(
+          context,
+          companyId,
+        );
+      }
 
       if (inventoryNo.isNotEmpty) {
         final parts = inventoryNo.split('-');
@@ -91,7 +93,6 @@ class _InventoryMasterState extends State<InventoryMaster> {
         setState(() {});
       }
     } catch (e) {
-      print('Error fetching inventory number: $e');
       final year = DateTime.now().year;
       inventoryNo = 'KI-$year-0001';
       _currentSequenceNumber = 1;
@@ -1615,7 +1616,6 @@ class _InventoryMasterState extends State<InventoryMaster> {
         _showSnackBar('Failed to fetch inventory items', Colors.red);
       }
     } catch (e) {
-      print(e);
       _showSnackBar('Error fetching inventory: $e', Colors.red);
     } finally {
       if (mounted) {

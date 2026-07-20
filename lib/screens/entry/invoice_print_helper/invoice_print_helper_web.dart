@@ -115,9 +115,6 @@ class InvoicePrintHelper {
     // Web doesn't have persistent file storage, so this is a no-op
     // Files are downloaded and exist in browser's download folder
     // which the user manages
-    print(
-      'Delete PDF not applicable on web - files are downloaded via browser',
-    );
   }
 
   /// Check if file exists not applicable for web
@@ -147,6 +144,5 @@ class InvoicePrintHelper {
   /// Cleanup old PDFs not applicable for web
   static Future<void> cleanupOldPDFs({int olderThanDays = 7}) async {
     // No-op for web
-    print('Cleanup old PDFs not applicable on web');
   }
 }

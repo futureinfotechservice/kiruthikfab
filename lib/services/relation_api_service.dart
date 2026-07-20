@@ -17,8 +17,9 @@ class RelationApiService {
     final userid = prefs.getString('id') ?? '';
 
     if (companyid.isEmpty) {
-      if (context.mounted)
+      if (context.mounted) {
         _showError(context, "Company ID not found. Please login again.");
+      }
       return "Failed";
     }
 
@@ -38,7 +39,11 @@ class RelationApiService {
         body: data,
       );
 
-      return _handleResponse(context, response.body);
+      if (context.mounted) {
+        return _handleResponse(context, response.body);
+      } else {
+        return '';
+      }
     } catch (e) {
       if (context.mounted) _showError(context, "Error: $e");
       return "Failed";
@@ -55,8 +60,9 @@ class RelationApiService {
     final userid = prefs.getString('id') ?? '';
 
     if (companyid.isEmpty) {
-      if (context.mounted)
+      if (context.mounted) {
         _showError(context, "Company ID not found. Please login again.");
+      }
       return "Failed";
     }
 
@@ -76,7 +82,11 @@ class RelationApiService {
         body: data,
       );
 
-      return _handleResponse(context, response.body);
+      if (context.mounted) {
+        return _handleResponse(context, response.body);
+      } else {
+        return '';
+      }
     } catch (e) {
       if (context.mounted) _showError(context, "Error: $e");
       return "Failed";
@@ -88,8 +98,9 @@ class RelationApiService {
     final companyid = prefs.getString('companyid') ?? '';
 
     if (companyid.isEmpty) {
-      if (context.mounted)
+      if (context.mounted) {
         _showError(context, "Company ID not found. Please login again.");
+      }
       return [];
     }
 
@@ -110,10 +121,10 @@ class RelationApiService {
 
         try {
           List<dynamic> items = json.decode(response.body);
-          List<RelationMasterModel> Relations = items
+          List<RelationMasterModel> relations = items
               .map((item) => RelationMasterModel.fromJson(item))
               .toList();
-          return Relations;
+          return relations;
         } catch (e) {
           return [];
         }
@@ -126,12 +137,14 @@ class RelationApiService {
     }
   }
 
-  Future<String> deleteRelation(BuildContext context, String RelationId) async {
+  Future<String> deleteRelation(BuildContext context, String relationId) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final companyid = prefs.getString('companyid') ?? '';
 
     if (companyid.isEmpty) {
-      _showError(context, "Company ID not found. Please login again.");
+      if (context.mounted) {
+        _showError(context, "Company ID not found. Please login again.");
+      }
       return "Failed";
     }
 
@@ -140,18 +153,20 @@ class RelationApiService {
       var response = await http.post(
         url,
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: {'relationid': RelationId, 'companyid': companyid},
+        body: {'relationid': relationId, 'companyid': companyid},
       );
 
       var message = jsonDecode(response.body);
       if (message["status"] == "success") {
         return "Success";
       } else {
-        _showError(context, message["message"] ?? "Delete failed");
+        if (context.mounted) {
+          _showError(context, message["message"] ?? "Delete failed");
+        }
         return "Failed";
       }
     } catch (e) {
-      _showError(context, "Error: $e");
+      if (context.mounted) _showError(context, "Error: $e");
       return "Failed";
     }
   }

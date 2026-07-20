@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../models/ProductBasedSalesReportModel.dart';
+import '../models/product_based_sales_report_model.dart';
 import 'config.dart';
 
 class ProductBasedSalesReportService {

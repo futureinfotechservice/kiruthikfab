@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../indigator/main.dart';
-import '../../../models/CustomerMasterModel.dart';
+import '../../../models/customer_master_model.dart';
 import '../../../services/customer_apiservice.dart';
 import '../../navigation_provider.dart';
 import 'customermaster_entry.dart';
@@ -70,17 +70,19 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
 
     if (confirmed == true) {
       try {
-        final result = await _apiService.deleteCustomer(context, customerId);
-        if (result == "Success" && mounted) {
-          setState(() {
-            _customers.removeAt(index);
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Customer deleted successfully'),
-              backgroundColor: Colors.green,
-            ),
-          );
+        if (mounted) {
+          final result = await _apiService.deleteCustomer(context, customerId);
+          if (result == "Success" && mounted) {
+            setState(() {
+              _customers.removeAt(index);
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Customer deleted successfully'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
         }
       } catch (e) {
         if (mounted) {

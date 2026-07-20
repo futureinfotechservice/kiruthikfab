@@ -466,8 +466,9 @@ class SourceApiService {
 
       var message = json.decode(response.body);
       if (message["status"] == "success") return "Success";
-      if (context.mounted)
+      if (context.mounted) {
         _showError(context, message["message"] ?? "Delete failed");
+      }
       return "Failed";
     } catch (e) {
       if (context.mounted) _showError(context, "Error: $e");

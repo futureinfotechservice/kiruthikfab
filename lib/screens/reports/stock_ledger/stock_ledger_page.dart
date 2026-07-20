@@ -104,7 +104,7 @@ class _StockLedgerPageState extends State<StockLedgerPage> {
   }
 
   Future<void> _fetchLedgerData({bool loadMore = false}) async {
-    if (_selectedInventoryId == null) return;
+    if (_selectedInventoryId == null || _selectedInventoryId!.isEmpty) return;
     if (loadMore) {
       // setState(() => _isLoadingMore = true);
     } else {
@@ -240,7 +240,10 @@ class _StockLedgerPageState extends State<StockLedgerPage> {
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _transactions.isEmpty
-                ? buildEmptyState(fetchLedgerData: _fetchLedgerData)
+                ? buildEmptyState(
+                    fetchLedgerData: _fetchLedgerData,
+                    selectedInventoryDropdown: _selectedInventoryDropdown ?? '',
+                  )
                 : CustomScrollView(
                     controller: _scrollController,
                     slivers: [
@@ -460,14 +463,18 @@ class _StockLedgerPageState extends State<StockLedgerPage> {
             isRequired: true,
             label: 'Select Inventory',
             items: _inventories.map((inventory) {
-              return inventory.inventoryNumber;
+              return '${inventory.inventoryNumber} - ${inventory.productName} - ${inventory.modelName} - ${inventory.unitName} - ${inventory.sizeName}';
             }).toList(),
 
             onChanged: (value) {
               _selectedInventoryDropdown = value;
 
               _selectedInventoryId = _inventories
-                  .where((inventory) => inventory.inventoryNumber == value)
+                  .where(
+                    (inventory) =>
+                        '${inventory.inventoryNumber} - ${inventory.productName} - ${inventory.modelName} - ${inventory.unitName} - ${inventory.sizeName}' ==
+                        value,
+                  )
                   .first
                   .id;
 

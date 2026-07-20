@@ -120,6 +120,8 @@ class KYCProductModel {
   final String quantity;
   final String price;
   final String totalAmount;
+  final String inventoryId;
+
   final String sortOrder;
 
   KYCProductModel({
@@ -133,6 +135,7 @@ class KYCProductModel {
     required this.price,
     required this.totalAmount,
     required this.sortOrder,
+    required this.inventoryId,
   });
 
   factory KYCProductModel.fromJson(Map<String, dynamic> json) {
@@ -147,6 +150,7 @@ class KYCProductModel {
       price: json['price']?.toString() ?? '0',
       totalAmount: json['total_amount']?.toString() ?? '0',
       sortOrder: json['sort_order']?.toString() ?? '0',
+      inventoryId: json['inventoryid']?.toString() ?? '',
     );
   }
 

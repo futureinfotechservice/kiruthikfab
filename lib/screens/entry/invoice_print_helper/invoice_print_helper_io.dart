@@ -38,9 +38,12 @@ class InvoicePrintHelper {
   /// Share PDF via share sheet
   static Future<void> sharePDF(File file) async {
     try {
-      await Share.shareXFiles([
-        XFile(file.path, mimeType: 'application/pdf'),
-      ], text: 'Check out this PDF document');
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(file.path, mimeType: 'application/pdf')],
+          text: 'Check out this PDF document',
+        ),
+      );
     } catch (e) {
       throw Exception('Failed to share PDF: $e');
     }

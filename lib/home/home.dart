@@ -257,8 +257,14 @@ class CustomerManagementAppState extends State<CustomerManagementApp> {
     }
 
     if (isWeb) {
-      return WillPopScope(
-        onWillPop: onWillPop,
+      return PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (bool didPop, dynamic result) {
+          if (!didPop) {
+            onWillPop();
+          }
+        },
+
         child: Scaffold(
           body: Row(
             children: [
@@ -324,8 +330,14 @@ class CustomerManagementAppState extends State<CustomerManagementApp> {
         ),
       );
     } else {
-      return WillPopScope(
-        onWillPop: onWillPop,
+      return PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (bool didPop, dynamic result) {
+          if (!didPop) {
+            onWillPop();
+          }
+        },
+
         child: Scaffold(
           appBar: _buildAppBar(),
           body: buildCurrentScreen(),
