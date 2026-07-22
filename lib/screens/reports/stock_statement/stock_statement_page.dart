@@ -8,6 +8,7 @@ import 'package:kiruthikfab/services/stock_api_service.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../indigator/main.dart';
 import 'generates.dart';
 import 'widgets.dart';
 
@@ -164,7 +165,7 @@ class _StockStatementPageState extends State<StockStatementPage> {
           _buildStockSummary(),
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? const Center(child: CircularWaveProgress())
                 : _filteredItems.isEmpty
                 ? buildEmptyState(_fetchStockStatement)
                 : _isGridView

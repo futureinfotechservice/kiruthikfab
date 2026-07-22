@@ -1350,7 +1350,7 @@ class _CustomerMasterEntryScreenState extends State<CustomerMasterEntryScreen> {
 //         child: Column(
 //           mainAxisAlignment: MainAxisAlignment.center,
 //           children: [
-//             CircularProgressIndicator(),
+//             CircularWaveProgress(),
 //             SizedBox(height: 16),
 //             Text('Processing...', style: TextStyle(fontSize: 16, color: Colors.grey)),
 //           ],

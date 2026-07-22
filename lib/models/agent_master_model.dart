@@ -2,6 +2,7 @@ class AgentMasterModel {
   String id;
   String companyId;
   String agentName;
+  String percentage;
   String addedBy;
   String activeStatus;
 
@@ -9,6 +10,7 @@ class AgentMasterModel {
     required this.id,
     required this.companyId,
     required this.agentName,
+    required this.percentage,
     required this.addedBy,
     required this.activeStatus,
   });
@@ -18,6 +20,7 @@ class AgentMasterModel {
       id: json['id']?.toString() ?? '',
       companyId: json['companyid']?.toString() ?? '',
       agentName: json['agentname']?.toString() ?? '',
+      percentage: json['percentage']?.toString() ?? '',
       addedBy: json['addedby']?.toString() ?? '',
       activeStatus: json['activestatus']?.toString() ?? '1',
     );
@@ -28,6 +31,7 @@ class AgentMasterModel {
       'id': id,
       'companyid': companyId,
       'agentname': agentName,
+      'percentage': percentage,
       'addedby': addedBy,
       'activestatus': activeStatus,
     };

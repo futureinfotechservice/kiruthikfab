@@ -1,15 +1,16 @@
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
 import 'package:kiruthikfab/models/customer_interest_model.dart';
+import 'package:kiruthikfab/models/district_master.dart';
 import 'package:kiruthikfab/models/source_master_model.dart';
 import 'package:kiruthikfab/services/customer_interest_apiservice.dart';
+import 'package:kiruthikfab/services/district_master_api_service.dart';
 import 'package:kiruthikfab/services/source_apiservice.dart';
 import 'package:kiruthikfab/widgets/customdropdownwidget.dart';
-import 'package:kiruthikfab/models/district_master.dart';
-import 'package:kiruthikfab/services/district_master_api_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../../indigator/main.dart';
 
 class SourceEntryScreen extends StatefulWidget {
   final SourceMasterModel? source;
@@ -628,7 +629,7 @@ class _SourceEntryScreenState extends State<SourceEntryScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(),
+                  CircularWaveProgress(),
                   SizedBox(height: 16),
                   Text(
                     'Loading...',

@@ -319,7 +319,12 @@ class _DashboardScreenState extends State<DashboardScreen>
             context,
             listen: false,
           );
-          navProvider.updateIndex(selectedIndex: 1, reportSubIndex: 0);
+          navProvider.updateIndex(
+            selectedIndex: 1,
+            reportSubIndex: 0,
+            entrySubIndex: 0,
+            masterSubIndex: 0,
+          );
         },
         'Source',
         counts.source,
@@ -334,7 +339,12 @@ class _DashboardScreenState extends State<DashboardScreen>
             context,
             listen: false,
           );
-          navProvider.updateIndex(selectedIndex: 2, entrySubIndex: 2);
+          navProvider.updateIndex(
+            selectedIndex: 2,
+            entrySubIndex: 3,
+            masterSubIndex: 0,
+            reportSubIndex: 0,
+          );
         },
         'Called',
         counts.called,
@@ -349,7 +359,12 @@ class _DashboardScreenState extends State<DashboardScreen>
             context,
             listen: false,
           );
-          navProvider.updateIndex(selectedIndex: 2, entrySubIndex: 2);
+          navProvider.updateIndex(
+            selectedIndex: 2,
+            entrySubIndex: 3,
+            masterSubIndex: 0,
+            reportSubIndex: 0,
+          );
         },
         'Not Called',
         counts.notCalled,
@@ -364,7 +379,12 @@ class _DashboardScreenState extends State<DashboardScreen>
             context,
             listen: false,
           );
-          navProvider.updateIndex(selectedIndex: 2, entrySubIndex: 1);
+          navProvider.updateIndex(
+            selectedIndex: 2,
+            entrySubIndex: 2,
+            masterSubIndex: 0,
+            reportSubIndex: 0,
+          );
         },
         'KYC Filled',
         counts.kyc,
@@ -379,7 +399,12 @@ class _DashboardScreenState extends State<DashboardScreen>
             context,
             listen: false,
           );
-          navProvider.updateIndex(selectedIndex: 2, entrySubIndex: 0);
+          navProvider.updateIndex(
+            selectedIndex: 2,
+            entrySubIndex: 1,
+            reportSubIndex: 0,
+            masterSubIndex: 0,
+          );
         },
         'Total Value',
         counts.value,

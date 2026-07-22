@@ -5,6 +5,7 @@ class SourceMasterModel {
   final String sourceDate;
   final String sourceDateDisplay;
   final String branch;
+  final String branchName;
   final String name;
   final String companyName;
   final String mobileNo;
@@ -65,6 +66,7 @@ class SourceMasterModel {
     required this.addedby,
     required this.activestatus,
     required this.createdAt,
+    required this.branchName,
   });
 
   factory SourceMasterModel.fromJson(Map<String, dynamic> json) {
@@ -75,6 +77,7 @@ class SourceMasterModel {
       sourceDate: json['source_date']?.toString() ?? '',
       sourceDateDisplay: json['source_date_display']?.toString() ?? '',
       branch: json['branch']?.toString() ?? '',
+      branchName: json['branch_name']?.toString() ?? '',
       name: json['name']?.toString() ?? '',
       companyName: json['company_name']?.toString() ?? '',
       mobileNo: json['mobile_no']?.toString() ?? '',
@@ -168,8 +171,6 @@ class SourceResponse {
     );
   }
 }
-
-
 
 // class SourceMasterModel {
 //   final String id;

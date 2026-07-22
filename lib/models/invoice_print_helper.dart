@@ -1,14 +1,20 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../services/invoice_apiservice.dart';
 import '../screens/entry/invoice_print_helper/invoice_print_helper.dart'
     as invoice_print_helper;
+import 'invoice_share/invoice_share.dart';
 
 class InvoicePrintHelper {
   static Future<void> printInvoice({
@@ -22,6 +28,7 @@ class InvoicePrintHelper {
     required String grandTotal,
     required String packingAmount,
     Company? company,
+    bool isShare = false,
   }) async {
     try {
       final pdf = await generatePDF(
@@ -35,7 +42,10 @@ class InvoicePrintHelper {
         company: company,
         packingAmount: packingAmount,
       );
-
+      if (isShare) {
+        await _shareInvoice(context: context, pdf: pdf, invoice: invoice);
+        return;
+      }
       if (kIsWeb) {
         // Use the web-specific implementation
         await invoice_print_helper.InvoicePrintHelper.downloadPDF(
@@ -53,15 +63,230 @@ class InvoicePrintHelper {
           );
         }
       } else {
-        // For Android and other non-web platforms
         await Printing.layoutPdf(onLayout: (format) async => pdf);
       }
     } catch (e) {
+      print(e);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error generating PDF: $e'),
             backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  static Future<void> _shareInvoice({
+    required BuildContext context,
+    required Uint8List pdf,
+    required InvoiceModel invoice,
+  }) async {
+    try {
+      String filePath;
+
+      // For Web - download directly
+      if (kIsWeb) {
+        await shareOnWeb(context, pdf, invoice);
+        return;
+      }
+      // if (true) {
+      //   await shareOnWeb(context, pdf, invoice);
+      //   return;
+      // }
+
+      // For Mobile and Desktop - save to file
+      try {
+        // Try to get temporary directory
+        final directory = await getTemporaryDirectory();
+        filePath = '${directory.path}/Invoice_${invoice.invoiceNo}.pdf';
+      } catch (e) {
+        // Fallback to application documents directory
+        try {
+          final directory = await getApplicationDocumentsDirectory();
+          filePath = '${directory.path}/Invoice_${invoice.invoiceNo}.pdf';
+        } catch (e) {
+          // Last resort fallback
+          filePath = 'Invoice_${invoice.invoiceNo}.pdf';
+        }
+      }
+
+      // Save the PDF file
+      final file = File(filePath);
+      await file.writeAsBytes(pdf);
+
+      // Verify file exists
+      if (!await file.exists()) {
+        throw Exception('Failed to save PDF file');
+      }
+
+      // Platform-specific sharing
+      if (Platform.isAndroid || Platform.isIOS) {
+        await _shareOnMobile(context, filePath, invoice);
+      } else if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+        await _shareOnDesktop(context, filePath, invoice);
+      } else {
+        // Fallback sharing
+        await _shareGeneral(context, filePath, invoice);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error sharing: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      rethrow;
+    }
+  }
+
+  // Mobile sharing implementation
+  static Future<void> _shareOnMobile(
+    BuildContext context,
+    String filePath,
+    InvoiceModel invoice,
+  ) async {
+    try {
+      final XFile xFile = XFile(filePath);
+
+      // Check if WhatsApp is installed
+      bool whatsappInstalled = false;
+      String? phoneNumber = invoice.customerPhone.trim();
+
+      if (phoneNumber.isNotEmpty) {
+        try {
+          // Remove any non-digit characters except +
+          phoneNumber = phoneNumber.replaceAll(RegExp(r'[^0-9+]'), '');
+          final whatsappUrl = 'whatsapp://send?phone=$phoneNumber';
+          whatsappInstalled = await canLaunchUrl(Uri.parse(whatsappUrl));
+        } catch (e) {
+          whatsappInstalled = false;
+        }
+      }
+
+      if (whatsappInstalled && phoneNumber != null && phoneNumber.isNotEmpty) {
+        // Share via WhatsApp
+        await SharePlus.instance.share(
+          ShareParams(
+            files: [xFile],
+            text: 'Invoice #${invoice.invoiceNo}',
+            sharePositionOrigin: const Rect.fromLTWH(0, 0, 1, 1),
+          ),
+        );
+
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Share dialog opened - choose WhatsApp'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      } else {
+        // General share dialog
+        await SharePlus.instance.share(
+          ShareParams(
+            files: [xFile],
+            text: 'Invoice #${invoice.invoiceNo}',
+            sharePositionOrigin: const Rect.fromLTWH(0, 0, 1, 1),
+          ),
+        );
+
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Share dialog opened'),
+              backgroundColor: Colors.blue,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      // If sharing fails, show file location
+      await _showFileLocation(context, filePath);
+    }
+  }
+
+  // Desktop sharing implementation
+  static Future<void> _shareOnDesktop(
+    BuildContext context,
+    String filePath,
+    InvoiceModel invoice,
+  ) async {
+    try {
+      final XFile xFile = XFile(filePath);
+      await SharePlus.instance.share(
+        ShareParams(files: [xFile], text: 'Invoice #${invoice.invoiceNo}'),
+      );
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Share dialog opened'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      // If sharing fails, show file location
+      await _showFileLocation(context, filePath);
+    }
+  }
+
+  // General sharing fallback
+  static Future<void> _shareGeneral(
+    BuildContext context,
+    String filePath,
+    InvoiceModel invoice,
+  ) async {
+    try {
+      final XFile xFile = XFile(filePath);
+      await SharePlus.instance.share(
+        ShareParams(files: [xFile], text: 'Invoice #${invoice.invoiceNo}'),
+      );
+    } catch (e) {
+      await _showFileLocation(context, filePath);
+    }
+  }
+
+  // Show file location helper
+  static Future<void> _showFileLocation(
+    BuildContext context,
+    String filePath,
+  ) async {
+    try {
+      // Open file location
+      final directory = File(filePath).parent.path;
+      if (Platform.isWindows) {
+        await Process.start('explorer', [directory]);
+      } else if (Platform.isLinux) {
+        await Process.start('xdg-open', [directory]);
+      } else if (Platform.isMacOS) {
+        await Process.start('open', [directory]);
+      }
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('PDF saved at: $filePath'),
+            backgroundColor: Colors.blue,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('PDF saved at: $filePath'),
+            backgroundColor: Colors.blue,
+            duration: const Duration(seconds: 4),
           ),
         );
       }

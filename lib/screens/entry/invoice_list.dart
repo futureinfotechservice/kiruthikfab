@@ -59,7 +59,7 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
     if (mounted) _invoices = await invoiceApiService().getInvoiceList(context);
     _extractUniqueValues();
     _filterInvoices();
-    setState(() {});
+    // setState(() {});
   }
 
   void _extractUniqueValues() {
@@ -70,26 +70,27 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
   void _filterInvoices() {
     final query = _searchController.text.toLowerCase();
 
-    setState(() {
-      _filteredInvoices = _invoices.where((invoice) {
-        final matchesSearch =
-            query.isEmpty ||
-            invoice.invoiceNo.toLowerCase().contains(query) ||
-            invoice.customerName.toLowerCase().contains(query);
+    _filteredInvoices = _invoices.where((invoice) {
+      final matchesSearch =
+          query.isEmpty ||
+          invoice.invoiceNo.toLowerCase().contains(query) ||
+          invoice.customerName.toLowerCase().contains(query);
 
-        final invoiceDate = DateFormat("yyyy-MM-dd").parse(invoice.date);
-        final matchesDate =
-            (_fromDate == null || invoiceDate.isAfter(_fromDate!)) &&
-            (_toDate == null ||
-                invoiceDate.isBefore(_toDate!.add(const Duration(days: 1))));
+      final invoiceDate = DateFormat("yyyy-MM-dd").parse(invoice.date);
+      final matchesDate =
+          (_fromDate == null || invoiceDate.isAfter(_fromDate!)) &&
+          (_toDate == null ||
+              invoiceDate.isBefore(_toDate!.add(const Duration(days: 1))));
 
-        final matchesCustomer =
-            _selectedCustomer.isEmpty ||
-            invoice.customerName == _selectedCustomer;
+      final matchesCustomer =
+          _selectedCustomer.isEmpty ||
+          invoice.customerName == _selectedCustomer;
 
-        return matchesSearch && matchesDate && matchesCustomer;
-      }).toList();
-    });
+      return matchesSearch && matchesDate && matchesCustomer;
+    }).toList();
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   Future<void> _selectDate(BuildContext context, bool isFromDate) async {
@@ -238,6 +239,76 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
           context: context,
           invoice: invoice,
           // Now includes customer details
+          items: formattedItems,
+          customerName: invoice.customerName,
+          subtotal: invoice.subtotal,
+          taxAmount: taxAmount.toStringAsFixed(2),
+          taxPercentage: invoice.taxPercentage,
+          grandTotal: grandTotal.toString(),
+          company: company,
+          packingAmount: invoice.packingAmount.toString(),
+        );
+      }
+    }
+  }
+
+  void _shareInvoice(InvoiceModel invoice) async {
+    // Load full invoice details for printing
+    final details = await invoiceApiService().getInvoiceDetails(
+      context,
+      invoice.id,
+    );
+
+    // Load company details
+    Company? company;
+    if (mounted) company = await invoiceApiService().getCompanyDetails(context);
+
+    if (details.isNotEmpty) {
+      // Calculate tax amount from invoice data
+      double subtotal = double.tryParse(invoice.subtotal) ?? 0;
+      double grandTotal = double.tryParse(invoice.grandTotal) ?? 0;
+      double pack = double.tryParse(invoice.packingAmount.toString()) ?? 0;
+      // double taxPercentage = double.tryParse(invoice.taxPercentage) ?? 5.0;
+
+      grandTotal = grandTotal + (pack * 5) / 100;
+
+      // Calculate tax amount (grandTotal = subtotal + tax)
+      double taxAmount = grandTotal - subtotal - pack;
+
+      // Format the items with proper description
+      final formattedItems = details.map((item) {
+        // Build description with all available details
+        final List<String> descriptionParts = [];
+
+        // Add product name (always present)
+        descriptionParts.add(item['productname'] ?? item['productName'] ?? '');
+
+        // Add model if available
+        final modelName = item['modelname'] ?? item['modelName'] ?? '';
+        if (modelName.isNotEmpty) {
+          descriptionParts.add('Model: $modelName');
+        }
+
+        // Add size if available
+        final sizeName = item['sizename'] ?? item['sizeName'] ?? '';
+        if (sizeName.isNotEmpty) {
+          descriptionParts.add('Size: $sizeName');
+        }
+
+        // Add unit if available
+        final unitName = item['unitname'] ?? item['unitName'] ?? '';
+        if (unitName.isNotEmpty) {
+          descriptionParts.add('Unit: $unitName');
+        }
+
+        return {...item, 'formattedDescription': descriptionParts.join(' | ')};
+      }).toList();
+
+      if (mounted) {
+        await InvoicePrintHelper.printInvoice(
+          context: context,
+          invoice: invoice,
+          isShare: true,
           items: formattedItems,
           customerName: invoice.customerName,
           subtotal: invoice.subtotal,
@@ -594,8 +665,8 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
           onChanged: (value) {
             setState(() {
               _selectedCustomer = value ?? '';
-              _filterInvoices();
             });
+            _filterInvoices();
           },
         ),
       ],
@@ -646,8 +717,8 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
             onChanged: (value) {
               setState(() {
                 _selectedCustomer = value ?? '';
-                _filterInvoices();
               });
+              _filterInvoices();
             },
           ),
         ),
@@ -724,6 +795,16 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
                     onPressed: () => _printInvoice(invoice),
                     tooltip: 'Print',
                   ),
+
+                  IconButton(
+                    icon: const Icon(
+                      Icons.share,
+                      color: Colors.green,
+                      size: 20,
+                    ),
+                    onPressed: () => _shareInvoice(invoice),
+                    tooltip: 'Share',
+                  ),
                   if (userType.toUpperCase() == 'ADMIN') ...[
                     const SizedBox(width: 4),
                     IconButton(
@@ -735,16 +816,6 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
                       onPressed: () => _editInvoice(invoice),
                       tooltip: 'Edit',
                     ),
-                    // const SizedBox(width: 4),
-                    // IconButton(
-                    //   icon: const Icon(
-                    //     Icons.delete,
-                    //     color: Colors.red,
-                    //     size: 20,
-                    //   ),
-                    //   onPressed: () => _deleteInvoice(invoice.id),
-                    //   tooltip: 'Delete',
-                    // ),
                   ],
                 ],
               ),
@@ -861,6 +932,16 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
                             onPressed: () => _printInvoice(invoice),
                             tooltip: 'Print',
                           ),
+
+                          IconButton(
+                            icon: const Icon(
+                              Icons.share,
+                              color: Colors.green,
+                              size: 20,
+                            ),
+                            onPressed: () => _shareInvoice(invoice),
+                            tooltip: 'Share',
+                          ),
                           if (userType.toUpperCase() == 'ADMIN') ...[
                             IconButton(
                               icon: const Icon(
@@ -871,15 +952,6 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
                               onPressed: () => _editInvoice(invoice),
                               tooltip: 'Edit',
                             ),
-                            // IconButton(
-                            //   icon: const Icon(
-                            //     Icons.delete,
-                            //     color: Colors.red,
-                            //     size: 18,
-                            //   ),
-                            //   onPressed: () => _deleteInvoice(invoice.id),
-                            //   tooltip: 'Delete',
-                            // ),
                           ],
                         ],
                       ),

@@ -10,6 +10,7 @@
     $search    = trim($_POST['search'] ?? '');
     $fromDate  = trim($_POST['from_date'] ?? '');
     $toDate    = trim($_POST['to_date'] ?? '');
+    $selectedStatus    = trim($_POST['selectedStatus'] ?? '');
     if (empty($companyid)) {
         echo json_encode([
             "status" => "error",
@@ -33,6 +34,17 @@
          
     )
     ";
+    }
+    if (!empty($selectedStatus)&& $selectedStatus !== 'All') {
+
+        $selectedStatus = mysqli_real_escape_string($conn, $selectedStatus);
+
+        $where .= "
+    AND (
+        ih.status = '$selectedStatus'
+    )
+    ";
+        
     }
     if (!empty($fromDate) && !empty($toDate)) {
 

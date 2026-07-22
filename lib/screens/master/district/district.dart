@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
+import '../../../indigator/main.dart';
 import '../../../models/district_master.dart';
 import '../../../models/state_master.dart';
 import '../../../services/district_master_api_service.dart';
@@ -258,7 +259,7 @@ class _DistrictMasterScreenState extends State<DistrictMasterScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(),
+                  CircularWaveProgress(),
                   SizedBox(height: 16),
                   Text(
                     'Processing...',
@@ -296,7 +297,7 @@ class _DistrictMasterScreenState extends State<DistrictMasterScreen> {
                           const Center(
                             child: Padding(
                               padding: EdgeInsets.all(32),
-                              child: CircularProgressIndicator(),
+                              child: CircularWaveProgress(),
                             ),
                           )
                         else if (_filteredDistricts.isEmpty)

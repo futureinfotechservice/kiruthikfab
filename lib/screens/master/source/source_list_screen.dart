@@ -201,7 +201,7 @@ class _SourceListScreenState extends State<SourceListScreen> {
 
               Text("No : ${source.sourceNo}"),
               Text("Mobile : ${source.mobileNo}"),
-              Text("Branch : ${source.branch}"),
+              Text("Branch : ${source.branchName}"),
               Text("Mode : ${source.sourcingMode}"),
 
               if (source.companyName.isNotEmpty) Text(source.companyName),
@@ -503,7 +503,7 @@ class _SourceListScreenState extends State<SourceListScreen> {
 //                   const SizedBox(
 //                     height: 20,
 //                     width: 20,
-//                     child: CircularProgressIndicator(strokeWidth: 2),
+//                     child: CircularWaveProgress(strokeWidth: 2),
 //                   ),
 //               ],
 //             ),
@@ -517,7 +517,7 @@ class _SourceListScreenState extends State<SourceListScreen> {
 //                     child: Column(
 //                       mainAxisAlignment: MainAxisAlignment.center,
 //                       children: [
-//                         CircularProgressIndicator(),
+//                         CircularWaveProgress(),
 //                         SizedBox(height: 16),
 //                         Text(
 //                           'Loading sources...',

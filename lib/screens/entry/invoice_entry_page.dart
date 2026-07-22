@@ -50,7 +50,7 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
   List<Model> modellist = [];
   List<ProductSize> sizelist = [];
   List<Unit> unitlist = [];
-
+  List<KycProduct> customerKyc = [];
   final _billNoController = TextEditingController();
   final _billDateController = TextEditingController(
     text: DateFormat("dd/MM/yyyy").format(DateTime.now()),
@@ -122,6 +122,90 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
 
   Future<void> loadCustomers() async {
     customerList = await KYCApiService().fetchCustomers(context);
+    setState(() {});
+  }
+
+  Future<void> loadCustomerKyc(String id) async {
+    customerKyc = await KYCApiService().fetchCustomerKyc(context, id);
+
+    if (customerKyc.isNotEmpty) {
+      try {
+        setState(() {
+          _invoiceItems.clear();
+          _quantityControllers.clear();
+          _rateControllers.clear();
+          _quantityFocusNodes.clear();
+          _productDropdownKeys.clear();
+          _modelDropdownKeys.clear();
+          _sizeDropdownKeys.clear();
+          _unitDropdownKeys.clear();
+          selectedProducts.clear();
+          selectedModels.clear();
+          selectedSizes.clear();
+          selectedUnits.clear();
+          _filteredModelsForRow.clear();
+          _filteredSizesForRow.clear();
+          _filteredUnitsForRow.clear();
+
+          for (var detail in customerKyc) {
+            _invoiceItems.add({
+              'productId': detail.productId.toString(),
+              'productName': detail.productName,
+              'modelId': detail.modelId,
+              'modelName': detail.modelName,
+              'sizeId': detail.sizeId,
+              'sizeName': detail.size,
+              'unitId': detail.unitId,
+              'unitName': detail.unitName,
+              'quantity': detail.quantity,
+              'rate': detail.price,
+              'amount': detail.totalAmount,
+            });
+
+            _quantityControllers.add(
+              TextEditingController(text: detail.quantity),
+            );
+            _rateControllers.add(TextEditingController(text: detail.price));
+
+            _quantityFocusNodes.add(FocusNode());
+
+            _productDropdownKeys.add(GlobalKey<DropdownSearchState<String>>());
+            _modelDropdownKeys.add(GlobalKey<DropdownSearchState<String>>());
+            _sizeDropdownKeys.add(GlobalKey<DropdownSearchState<String>>());
+            _unitDropdownKeys.add(GlobalKey<DropdownSearchState<String>>());
+
+            selectedProducts.add(detail.productName);
+            selectedModels.add(detail.modelName);
+            selectedSizes.add(detail.size);
+            selectedUnits.add(detail.unitName);
+
+            // Initialize filtered lists
+            _filteredModelsForRow.add([]);
+            _filteredSizesForRow.add([]);
+            _filteredUnitsForRow.add([]);
+          }
+
+          double total = 0;
+          for (var item in _invoiceItems) {
+            total += double.tryParse(item['amount']) ?? 0;
+          }
+
+          double tax = total / ((_taxPercentage / 100) + 1);
+          double subtotal = total - tax;
+          setState(() {
+            _subtotal = subtotal.toStringAsFixed(2);
+            _taxAmount = tax.toStringAsFixed(2);
+            _grandTotal = total.toStringAsFixed(2);
+          });
+        });
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to load invoice details')),
+          );
+        }
+      }
+    }
     setState(() {});
   }
 
@@ -380,11 +464,14 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
       subtotal += double.tryParse(item['amount']) ?? 0;
     }
 
-    // Calculate tax on subtotal (no discount)
+    int packagingAmount = int.parse(
+      _packingAmountController.text.isNotEmpty
+          ? _packingAmountController.text
+          : '0',
+    );
     double tax =
-        (subtotal * (_taxPercentage / 100)) +
-        ((double.parse(_packingAmountController.text) * 5) / 100);
-    int packagingAmount = int.parse(_packingAmountController.text.toString());
+        (subtotal * (_taxPercentage / 100)) + ((packagingAmount * 5) / 100);
+
     double grandTotal = subtotal + tax + packagingAmount;
 
     setState(() {
@@ -1013,6 +1100,7 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
                     );
                     customerId = selected['id'];
                   });
+                  loadCustomerKyc(customerId.toString());
                 },
         ),
       ],
@@ -1071,6 +1159,7 @@ class _InvoiceEntryPageState extends State<InvoiceEntryPage> {
                       );
                       customerId = selected['id'];
                     });
+                    loadCustomerKyc(customerId.toString());
                   },
           ),
         ),

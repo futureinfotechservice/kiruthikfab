@@ -6,7 +6,7 @@ import '../screens/entry/call_register_screen.dart';
 import '../screens/entry/delivery_management_screen.dart';
 import '../screens/entry/invoice_list.dart';
 import '../screens/entry/inward_entry_page.dart';
-import '../screens/entry/kyc_list_screen.dart';
+import '../screens/entry/kyc/kyc_list_screen.dart';
 import '../screens/navigation_provider.dart';
 
 class EntrySectionScreen extends StatefulWidget {

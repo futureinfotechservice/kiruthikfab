@@ -8,6 +8,7 @@ import 'package:kiruthikfab/services/stock_api_service.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../indigator/main.dart';
 import '../../../widgets/customdropdownwidget.dart';
 import '../../navigation_provider.dart';
 import 'generates.dart';
@@ -238,7 +239,7 @@ class _StockLedgerPageState extends State<StockLedgerPage> {
           _buildFilterSection(),
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? const Center(child: CircularWaveProgress())
                 : _transactions.isEmpty
                 ? buildEmptyState(
                     fetchLedgerData: _fetchLedgerData,

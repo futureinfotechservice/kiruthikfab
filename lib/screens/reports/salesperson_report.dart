@@ -281,17 +281,23 @@ class _SalespersonReportState extends State<SalespersonReport> {
                     ),
                     prefixIcon: const Icon(Icons.person, color: Colors.blue),
                   ),
-                  items: allSalespersons.map<DropdownMenuItem<String>>((
-                    salesPerson,
-                  ) {
-                    return DropdownMenuItem<String>(
-                      value: salesPerson.name,
-                      child: Text(
-                        salesPerson.name,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    );
-                  }).toList(),
+                  items: [
+                    DropdownMenuItem<String>(
+                      value: '',
+                      child: Text('All', overflow: TextOverflow.ellipsis),
+                    ),
+                    ...allSalespersons.map<DropdownMenuItem<String>>((
+                      salesPerson,
+                    ) {
+                      return DropdownMenuItem<String>(
+                        value: salesPerson.name,
+                        child: Text(
+                          salesPerson.name,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      );
+                    }).toList(),
+                  ],
                   onChanged: (value) async {
                     if (value != null) {
                       setState(() {
@@ -405,17 +411,34 @@ class _SalespersonReportState extends State<SalespersonReport> {
                             color: Colors.blue,
                           ),
                         ),
-                        items: allSalespersons.map<DropdownMenuItem<String>>((
-                          salesPerson,
-                        ) {
-                          return DropdownMenuItem<String>(
-                            value: salesPerson.name,
-                            child: Text(
-                              salesPerson.name,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          );
-                        }).toList(),
+                        items: [
+                          DropdownMenuItem<String>(
+                            value: '',
+                            child: Text('All', overflow: TextOverflow.ellipsis),
+                          ),
+                          ...allSalespersons.map<DropdownMenuItem<String>>((
+                            salesPerson,
+                          ) {
+                            return DropdownMenuItem<String>(
+                              value: salesPerson.name,
+                              child: Text(
+                                salesPerson.name,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            );
+                          }).toList(),
+                        ],
+                        // items: allSalespersons.map<DropdownMenuItem<String>>((
+                        //   salesPerson,
+                        // ) {
+                        //   return DropdownMenuItem<String>(
+                        //     value: salesPerson.name,
+                        //     child: Text(
+                        //       salesPerson.name,
+                        //       overflow: TextOverflow.ellipsis,
+                        //     ),
+                        //   );
+                        // }).toList(),
                         onChanged: (value) async {
                           if (value != null) {
                             setState(() {
@@ -511,17 +534,34 @@ class _SalespersonReportState extends State<SalespersonReport> {
                     ),
                     prefixIcon: const Icon(Icons.person, color: Colors.blue),
                   ),
-                  items: allSalespersons.map<DropdownMenuItem<String>>((
-                    salesPerson,
-                  ) {
-                    return DropdownMenuItem<String>(
-                      value: salesPerson.name,
-                      child: Text(
-                        salesPerson.name,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    );
-                  }).toList(),
+                  items: [
+                    DropdownMenuItem<String>(
+                      value: '',
+                      child: Text('All', overflow: TextOverflow.ellipsis),
+                    ),
+                    ...allSalespersons.map<DropdownMenuItem<String>>((
+                      salesPerson,
+                    ) {
+                      return DropdownMenuItem<String>(
+                        value: salesPerson.name,
+                        child: Text(
+                          salesPerson.name,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      );
+                    }).toList(),
+                  ],
+                  // items: allSalespersons.map<DropdownMenuItem<String>>((
+                  //   salesPerson,
+                  // ) {
+                  //   return DropdownMenuItem<String>(
+                  //     value: salesPerson.name,
+                  //     child: Text(
+                  //       salesPerson.name,
+                  //       overflow: TextOverflow.ellipsis,
+                  //     ),
+                  //   );
+                  // }).toList(),
                   onChanged: (value) async {
                     if (value != null) {
                       setState(() {
@@ -618,7 +658,8 @@ class _SalespersonReportState extends State<SalespersonReport> {
 
   void _applyFilters() {
     setState(() {
-      String searchQuery = selectedSalesPerson!.toLowerCase().trim().toString();
+      String searchQuery =
+          selectedSalesPerson?.toLowerCase().trim().toString() ?? '';
 
       // Start with all salespersons
       List<SalespersonData> filtered = List.from(allSalespersons);
@@ -940,7 +981,17 @@ class _SalespersonReportState extends State<SalespersonReport> {
                     ),
                     const Spacer(),
                     IconButton(
-                      onPressed: init,
+                      onPressed: () {
+                        selectedSalesPerson = '';
+                        _fromDateController.text = '';
+                        _fromDate = null;
+                        _toDateController.text = '';
+                        _toDate = null;
+                        _filteredData = List.from(allSalespersons);
+                        _isFiltered = false;
+                        _updateTotals();
+                        init();
+                      },
                       icon: const Icon(
                         Icons.refresh,
                         color: Colors.white,
@@ -1007,7 +1058,14 @@ class _SalespersonReportState extends State<SalespersonReport> {
               ),
               const SizedBox(width: 8),
               IconButton(
-                onPressed: init,
+                onPressed: () {
+                  selectedSalesPerson = '';
+                  _fromDateController.text = '';
+                  _fromDate = null;
+                  _toDateController.text = '';
+                  _toDate = null;
+                  init();
+                },
                 icon: const Icon(Icons.refresh, color: Colors.white),
               ),
             ],

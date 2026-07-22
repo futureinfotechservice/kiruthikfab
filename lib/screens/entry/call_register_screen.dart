@@ -24,7 +24,7 @@ class _CallRegisterScreenState extends State<CallRegisterScreen> {
   List<CallRegisterModel> records = [];
   List<CallRegisterModel> filtered = [];
   List<Map<String, dynamic>> salesPerson = [];
-  Map<String, dynamic>? selectedSalesPerson;
+  Map<String, dynamic> selectedSalesPerson = {'name': 'all', 'id': ''};
   bool loading = true;
 
   final searchController = TextEditingController();
@@ -92,7 +92,7 @@ class _CallRegisterScreenState extends State<CallRegisterScreen> {
           limit: 100,
           fromDate: fromDate != null ? _dateFormat.format(fromDate!) : '',
           toDate: toDate != null ? _dateFormat.format(toDate!) : '',
-          callById: selectedSalesPerson?['id'].toString() ?? "",
+          callById: selectedSalesPerson['id'].toString(),
           search: searchController.text,
         );
       }
@@ -140,7 +140,7 @@ class _CallRegisterScreenState extends State<CallRegisterScreen> {
           limit: 100,
           fromDate: fromDate != null ? _dateFormat.format(fromDate!) : '',
           toDate: toDate != null ? _dateFormat.format(toDate!) : '',
-          callById: selectedSalesPerson?['id'].toString() ?? "",
+          callById: selectedSalesPerson['id'].toString(),
           search: searchController.text,
         );
       }
@@ -307,7 +307,10 @@ class _CallRegisterScreenState extends State<CallRegisterScreen> {
                           if (!isUser)
                             Expanded(
                               child: customSearchDropdownSalesPerson(
-                                salesPerson: salesPerson,
+                                salesPerson: [
+                                  {'name': 'all', 'id': ''},
+                                  ...salesPerson,
+                                ],
                                 selectedSalesPerson: selectedSalesPerson,
                                 searchController1: _searchController1,
                                 onChanged: (value) {
@@ -356,7 +359,7 @@ class _CallRegisterScreenState extends State<CallRegisterScreen> {
                                 toDate = null;
                                 searchController.clear();
                                 filtered = records;
-                                selectedSalesPerson = null;
+                                selectedSalesPerson = {'name': 'all', 'id': ''};
                               });
                               load();
                             },

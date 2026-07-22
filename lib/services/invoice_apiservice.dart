@@ -101,6 +101,63 @@ class Product {
   }
 }
 
+class KycProduct {
+  final String id;
+  final String totalAmount;
+
+  final String customerId;
+  final String productId;
+  final String productName;
+  final String size;
+  final String inventoryId;
+  final String quantity;
+  final String price;
+  final String sortOrder;
+  final String modelId;
+  final String modelName;
+  final String sizeId;
+  final String unitId;
+  final String unitName;
+
+  KycProduct({
+    required this.id,
+    required this.totalAmount,
+    required this.customerId,
+    required this.productId,
+    required this.size,
+    required this.productName,
+    required this.inventoryId,
+    required this.quantity,
+    required this.price,
+    required this.sortOrder,
+    required this.modelId,
+    required this.modelName,
+    required this.sizeId,
+    required this.unitId,
+    required this.unitName,
+  });
+
+  factory KycProduct.fromJson(Map<String, dynamic> json) {
+    return KycProduct(
+      id: json['id']?.toString() ?? '',
+      totalAmount: json['total_amount'] ?? '',
+      customerId: json['customer_id'] ?? '',
+      productId: json['product_id'] ?? '',
+      productName: json['product_name'] ?? '',
+      size: json['size'] ?? '',
+      inventoryId: json['inventoryid'] ?? '',
+      quantity: json['quantity'] ?? '',
+      price: json['price'] ?? '',
+      sortOrder: json['sort_order'] ?? '',
+      modelId: json['modelid'] ?? '',
+      modelName: json['modelname'] ?? '',
+      sizeId: json['sizeid'] ?? '',
+      unitId: json['unitid'] ?? '',
+      unitName: json['unitname'] ?? '',
+    );
+  }
+}
+
 class Model {
   final String id;
   final String modelName;

@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../indigator/main.dart';
-import '../../models/kyc_master_model.dart';
-import '../../services/kyc_apiservice.dart';
-import '../navigation_provider.dart';
+import '../../../indigator/main.dart';
+import '../../../models/kyc_master_model.dart';
+import '../../../services/kyc_apiservice.dart';
+import '../../navigation_provider.dart';
 import 'kyc_entry_screen.dart';
 
 class KYCListScreen extends StatefulWidget {

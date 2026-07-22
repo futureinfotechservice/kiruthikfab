@@ -11,6 +11,7 @@ class AgentApiService {
   Future<String> insertAgent({
     required BuildContext context,
     required String agentname,
+    required String percentage,
   }) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final companyid = prefs.getString('companyid') ?? '';
@@ -23,12 +24,13 @@ class AgentApiService {
       return "Failed";
     }
 
-    var url = Uri.parse('$baseUrl/agent_insert.php');
+    var url = Uri.parse('$baseUrl/agent_insert1.php');
 
     try {
       var data = {
         'companyid': companyid,
         'agentname': agentname,
+        "percentage": percentage,
         'addedby': userid,
         'activestatus': '1',
       };
@@ -42,12 +44,8 @@ class AgentApiService {
         },
         body: json.encode(data),
       );
-
-      if (context.mounted) {
-        return _handleResponse(context, response.body);
-      } else {
-        return '';
-      }
+      print(response.body);
+      return _handleResponse(context, response.body);
     } catch (e) {
       if (context.mounted) _showError(context, "Error: $e");
       return "Failed";
@@ -58,6 +56,7 @@ class AgentApiService {
     required BuildContext context,
     required String agentId,
     required String agentname,
+    required String percentage,
   }) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final companyid = prefs.getString('companyid') ?? '';
@@ -70,13 +69,14 @@ class AgentApiService {
       return "Failed";
     }
 
-    var url = Uri.parse('$baseUrl/agent_update.php');
+    var url = Uri.parse('$baseUrl/agent_update1.php');
 
     try {
       var data = {
         'agentid': agentId,
         'companyid': companyid,
         'agentname': agentname,
+        'percentage': percentage,
         'addedby': userid,
       };
 
@@ -89,12 +89,8 @@ class AgentApiService {
         },
         body: json.encode(data),
       );
-
-      if (context.mounted) {
-        return _handleResponse(context, response.body);
-      } else {
-        return '';
-      }
+      print(response.body);
+      return _handleResponse(context, response.body);
     } catch (e) {
       if (context.mounted) _showError(context, "Error: $e");
       return "Failed";
@@ -112,7 +108,7 @@ class AgentApiService {
       return [];
     }
 
-    var url = Uri.parse('$baseUrl/agent_fetch.php');
+    var url = Uri.parse('$baseUrl/agent_fetch1.php');
 
     try {
       var response = await http.post(
@@ -142,6 +138,7 @@ class AgentApiService {
             return [];
           }
         } catch (e) {
+          print(e);
           return [];
         }
       } else {

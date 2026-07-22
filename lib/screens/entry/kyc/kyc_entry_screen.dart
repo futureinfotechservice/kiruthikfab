@@ -11,7 +11,7 @@ import 'package:kiruthikfab/widgets/custom_search_dropdown_source.dart';
 import 'package:kiruthikfab/widgets/customdropdownwidget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../master/inventory/inventory_master.dart';
+import '../../master/inventory/inventory_master.dart';
 
 typedef ProductMap = Map<String, dynamic>;
 typedef MemberMap = Map<String, dynamic>;
@@ -139,7 +139,7 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
       'quantity': '0',
       'price': '0.00',
       'total': '0.00',
-      'is_autofilled': false,
+      // 'is_autofilled': false,
       'inventoryid': '',
       'selectedInventoryDropdown': '',
     };
@@ -297,9 +297,13 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
         final productId = products[productIdx]['product_id']?.toString() ?? '';
         final inventoryId =
             products[productIdx]['inventoryid']?.toString() ?? '';
-        // if(inventoryId.isNotEmpty){
-        //   products[productIdx]['selectedInventoryDropdown']=
-        // }
+        if (inventoryId.isNotEmpty) {
+          final InventoryItem inventory = inventoryItems
+              .where((inventory) => inventory.id.toString() == inventoryId)
+              .first;
+          products[productIdx]['selectedInventoryDropdown'] =
+              '${inventory.inventoryid} - ${inventory.productName} - ${inventory.modelName} - ${inventory.unitName} - ${inventory.sizeName}';
+        }
         if (productId.isNotEmpty) {
           final availableSizes = _getAvailableSizesForProduct(productId);
 
@@ -307,7 +311,7 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
               (products[productIdx]['size'] == null ||
                   products[productIdx]['size'].toString().isEmpty)) {
             products[productIdx]['size'] = availableSizes.first;
-            products[productIdx]['is_autofilled'] = true;
+            // products[productIdx]['is_autofilled'] = true;
           }
         }
       }
@@ -429,9 +433,9 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
     // If only one size exists, auto-select it
     if (availableSizes.length == 1) {
       productsList[productIndex]['size'] = availableSizes.first;
-      productsList[productIndex]['is_autofilled'] = true;
+      // productsList[productIndex]['is_autofilled'] = true;
     } else {
-      productsList[productIndex]['is_autofilled'] = false;
+      // productsList[productIndex]['is_autofilled'] = false;
       // Clear size if product changed and multiple sizes available
       productsList[productIndex]['size'] = '';
     }
@@ -608,7 +612,7 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
                 'quantity': product['quantity']?.toString() ?? '0',
                 'price': product['price']?.toString() ?? '0.00',
                 'total': product['total']?.toString() ?? '0.00',
-                'is_autofilled': product['is_autofilled'] ?? false,
+                // 'is_autofilled': product['is_autofilled'] ?? false,
                 'inventoryid': product['inventoryid']?.toString() ?? '',
               };
               validProducts.add(validProduct);
@@ -828,7 +832,7 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
     // Get available sizes based on selected product
     final productId = product['product_id']?.toString() ?? '';
     final availableSizes = _getAvailableSizesForProduct(productId);
-    final isAutofilled = product['is_autofilled'] ?? false;
+    // final isAutofilled = product['is_autofilled'] ?? false;
     final hasInventory = _productHasInventory(productId);
 
     // Use available sizes if product selected, otherwise show all sizes
@@ -840,10 +844,14 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: isAutofilled ? Colors.green.shade50 : Colors.grey[50],
+        color:
+            // isAutofilled ? Colors.green.shade50 :
+            Colors.grey[50],
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: isAutofilled ? Colors.green.shade200 : Colors.grey[200]!,
+          color:
+              // isAutofilled ? Colors.green.shade200 :
+              Colors.grey[200]!,
         ),
       ),
       child: Column(
@@ -941,27 +949,27 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
                             color: Colors.grey,
                           ),
                         ),
-                        if (isAutofilled) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.green.shade100,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              'Auto-filled',
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: Colors.green.shade700,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
+                        // if (isAutofilled) ...[
+                        //   const SizedBox(width: 8),
+                        //   Container(
+                        //     padding: const EdgeInsets.symmetric(
+                        //       horizontal: 6,
+                        //       vertical: 2,
+                        //     ),
+                        //     decoration: BoxDecoration(
+                        //       color: Colors.green.shade100,
+                        //       borderRadius: BorderRadius.circular(4),
+                        //     ),
+                        //     child: Text(
+                        //       'Auto-filled',
+                        //       style: TextStyle(
+                        //         fontSize: 10,
+                        //         color: Colors.green.shade700,
+                        //         fontWeight: FontWeight.w500,
+                        //       ),
+                        //     ),
+                        //   ),
+                        // ],
                         if (!hasInventory && productId.isNotEmpty) ...[
                           const SizedBox(width: 8),
                           Container(
@@ -1067,36 +1075,38 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
                             color: Colors.grey,
                           ),
                         ),
-                        if (isAutofilled) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.green.shade100,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              'Auto-filled',
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: Colors.green.shade700,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
+                        // if (isAutofilled) ...[
+                        //   const SizedBox(width: 8),
+                        //   Container(
+                        //     padding: const EdgeInsets.symmetric(
+                        //       horizontal: 6,
+                        //       vertical: 2,
+                        //     ),
+                        //     decoration: BoxDecoration(
+                        //       color: Colors.green.shade100,
+                        //       borderRadius: BorderRadius.circular(4),
+                        //     ),
+                        //     child: Text(
+                        //       'Auto-filled',
+                        //       style: TextStyle(
+                        //         fontSize: 10,
+                        //         color: Colors.green.shade700,
+                        //         fontWeight: FontWeight.w500,
+                        //       ),
+                        //     ),
+                        //   ),
+                        // ],
                       ],
                     ),
                     const SizedBox(height: 4),
                     Container(
                       decoration: BoxDecoration(
                         border: Border.all(
-                          color: isAutofilled
-                              ? Colors.green.shade300
-                              : Colors.grey[300]!,
+                          color:
+                              // isAutofilled
+                              //     ? Colors.green.shade300
+                              //     :
+                              Colors.grey[300]!,
                         ),
                         borderRadius: BorderRadius.circular(4),
                       ),
@@ -1124,20 +1134,22 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
                             child: Text(size, overflow: TextOverflow.ellipsis),
                           );
                         }).toList(),
-                        onChanged: isAutofilled || sizeNames.isEmpty
-                            ? null
-                            : (value) {
-                                if (value != null &&
-                                    value.isNotEmpty &&
-                                    value != 'No sizes available') {
-                                  _updateProduct(
-                                    memberIdx,
-                                    productIdx,
-                                    'size',
-                                    value,
-                                  );
-                                }
-                              },
+                        onChanged:
+                            // isAutofilled || sizeNames.isEmpty
+                            //     ? null
+                            //     :
+                            (value) {
+                              if (value != null &&
+                                  value.isNotEmpty &&
+                                  value != 'No sizes available') {
+                                _updateProduct(
+                                  memberIdx,
+                                  productIdx,
+                                  'size',
+                                  value,
+                                );
+                              }
+                            },
                       ),
                     ),
                   ],
@@ -1305,7 +1317,7 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
     );
   }
 
-  Widget _buildFamilyMemberCard(int memberIdx) {
+  Widget buildFamilyMemberCard(int memberIdx) {
     var member = _familyMembersWithProducts[memberIdx];
     List<String> genderNames = _genders
         .map((g) => g['name'] as String)
@@ -1698,7 +1710,7 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
       children: [
         ...List.generate(
           _familyMembersWithProducts.length,
-          (index) => _buildFamilyMemberCard(index),
+          (index) => buildFamilyMemberCard(index),
         ),
       ],
     );
@@ -2808,7 +2820,7 @@ class _KYCEntryScreenState extends State<KYCEntryScreen> {
 //         child: Column(
 //           mainAxisAlignment: MainAxisAlignment.center,
 //           children: [
-//             CircularProgressIndicator(),
+//             CircularWaveProgress(),
 //             SizedBox(height: 16),
 //             Text('Loading...', style: TextStyle(fontSize: 16, color: Colors.grey)),
 //           ],

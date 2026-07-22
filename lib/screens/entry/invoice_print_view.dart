@@ -45,7 +45,7 @@ class InvoicePrintPreview extends StatelessWidget {
           //       context: context,
           //       barrierDismissible: false,
           //       builder: (context) => const Center(
-          //         child: CircularProgressIndicator(),
+          //         child: CircularWaveProgress(),
           //       ),
           //     );
           //
@@ -176,7 +176,7 @@ class InvoicePrintPreview extends StatelessWidget {
           //       context: context,
           //       barrierDismissible: false,
           //       builder: (context) => const Center(
-          //         child: CircularProgressIndicator(),
+          //         child: CircularWaveProgress(),
           //       ),
           //     );
           //

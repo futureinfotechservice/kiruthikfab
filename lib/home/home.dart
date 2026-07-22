@@ -187,7 +187,7 @@ class CustomerManagementAppState extends State<CustomerManagementApp> {
           case 0:
             return const DashboardScreen();
 
-          case 1:
+          case 2:
             return EntrySectionScreen(
               initialSubIndex: navProvider.entrySubIndex,
               onSubIndexChanged: (subIndex) {
@@ -198,7 +198,7 @@ class CustomerManagementAppState extends State<CustomerManagementApp> {
               },
             );
 
-          case 2:
+          case 3:
             return ReportSectionScreen(
               initialSubIndex: navProvider.reportSubIndex,
               onSubIndexChanged: (subIndex) {

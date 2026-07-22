@@ -6,6 +6,7 @@ import 'package:kiruthikfab/models/kyc_master_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'config.dart';
+import 'invoice_apiservice.dart';
 
 class KYCApiService {
   // Fetch Customers for dropdown
@@ -25,6 +26,38 @@ class KYCApiService {
 
         if (data['status'] == 'success') {
           return List<Map<String, dynamic>>.from(data['data']);
+        }
+      }
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Future<List<KycProduct>> fetchCustomerKyc(
+    BuildContext context,
+    String id,
+  ) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    final companyid = prefs.getString('companyid') ?? '';
+
+    if (companyid.isEmpty) return [];
+
+    var url = Uri.parse('$baseUrl/fetch_kyc_by_customer.php');
+    try {
+      var response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'companyid': companyid, 'customer_id': id}),
+      );
+
+      if (response.statusCode == 200) {
+        var data = json.decode(response.body);
+
+        if (data['status'] == 'success') {
+          return (data['data'] as List)
+              .map((item) => KycProduct.fromJson(item))
+              .toList();
         }
       }
       return [];
@@ -151,10 +184,7 @@ class KYCApiService {
         'product_sections': json.encode(productSections),
       };
 
-      print('Insert KYC Data: ${json.encode(data)}');
-
       var response = await http.post(url, body: data);
-      print('Insert Response: ${response.body}');
 
       if (context.mounted) {
         return _handleResponse(context, response.body);
@@ -162,7 +192,6 @@ class KYCApiService {
         return '';
       }
     } catch (e) {
-      print('Insert Error: $e');
       if (context.mounted) _showError(context, "Error: $e");
       return "Failed";
     }
@@ -300,21 +329,11 @@ class KYCApiService {
         'product_sections': productSections, // Send as List, not JSON string
       };
 
-      print('=== UPDATE KYC REQUEST ===');
-      print('URL: $url');
-      print('Data: ${jsonEncode(data)}');
-      print('=== END UPDATE KYC REQUEST ===');
-
       var response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(data),
       );
-
-      print('=== UPDATE KYC RESPONSE ===');
-      print('Status Code: ${response.statusCode}');
-      print('Response Body: ${response.body}');
-      print('=== END UPDATE KYC RESPONSE ===');
 
       if (context.mounted) {
         return _handleResponse(context, response.body);
@@ -322,7 +341,6 @@ class KYCApiService {
         return '';
       }
     } catch (e) {
-      print('Update Error: $e');
       if (context.mounted) _showError(context, "Error: $e");
       return "Failed";
     }
@@ -436,9 +454,6 @@ class KYCApiService {
         body: {'kyc_id': kycId, 'companyid': companyid},
       );
 
-      print('Fetch KYC Response Status: ${response.statusCode}');
-      print('Fetch KYC Response Body: ${response.body}');
-
       if (response.statusCode == 200) {
         var data = json.decode(response.body);
         if (data['status'] == 'success') {
@@ -451,7 +466,6 @@ class KYCApiService {
               try {
                 kycData['family_members'] = json.decode(familyMembers);
               } catch (e) {
-                print('Error parsing family_members: $e');
                 kycData['family_members'] = [];
               }
             }
@@ -477,13 +491,11 @@ class KYCApiService {
             }
           }
 
-          print('Parsed KYC Data: ${json.encode(kycData)}');
           return kycData;
         }
       }
       return null;
     } catch (e) {
-      print('Error fetching KYC detail: $e');
       return null;
     }
   }

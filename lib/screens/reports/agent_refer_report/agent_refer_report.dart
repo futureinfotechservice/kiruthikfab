@@ -9,6 +9,7 @@ import 'package:kiruthikfab/services/config.dart';
 import 'package:kiruthikfab/widgets/customdropdownwidget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../indigator/main.dart';
 import '../../../services/source_apiservice.dart';
 import 'agent_detail_report.dart';
 import 'generates_refer_report.dart';
@@ -505,7 +506,7 @@ class _AgentReferReportState extends State<AgentReferReport> {
           // Agents List
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? const Center(child: CircularWaveProgress())
                 : _error.isNotEmpty
                 ? Center(
                     child: Column(

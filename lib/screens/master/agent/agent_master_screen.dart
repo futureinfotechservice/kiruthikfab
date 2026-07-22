@@ -1,5 +1,6 @@
 // import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../../indigator/main.dart';
@@ -18,6 +19,7 @@ class _AgentMasterScreenState extends State<AgentMasterScreen> {
   final _formKey = GlobalKey<FormState>();
   final AgentApiService _apiService = AgentApiService();
   final TextEditingController _agentNameController = TextEditingController();
+  final TextEditingController _percentageController = TextEditingController();
 
   bool _isLoading = false;
   bool _isEditMode = false;
@@ -38,6 +40,7 @@ class _AgentMasterScreenState extends State<AgentMasterScreen> {
   @override
   void dispose() {
     _agentNameController.dispose();
+    _percentageController.dispose();
     super.dispose();
   }
 
@@ -91,12 +94,14 @@ class _AgentMasterScreenState extends State<AgentMasterScreen> {
           context: context,
           agentId: _editingAgent!.id,
           agentname: _agentNameController.text,
+          percentage: _percentageController.text,
         );
       } else {
         // Insert new agent
         result = await _apiService.insertAgent(
           context: context,
           agentname: _agentNameController.text,
+          percentage: _percentageController.text,
         );
       }
 
@@ -177,6 +182,7 @@ class _AgentMasterScreenState extends State<AgentMasterScreen> {
       _isEditMode = true;
       _editingAgent = agent;
       _agentNameController.text = agent.agentName;
+      _percentageController.text = agent.percentage.toString();
     });
 
     // Scroll to top to show the form
@@ -191,6 +197,7 @@ class _AgentMasterScreenState extends State<AgentMasterScreen> {
       _isEditMode = false;
       _editingAgent = null;
       _agentNameController.clear();
+      _percentageController.clear();
     });
   }
 
@@ -341,169 +348,506 @@ class _AgentMasterScreenState extends State<AgentMasterScreen> {
         child: Column(
           children: [
             Row(
-              children: [
-                const Text(
-                  'Agent Name',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF374151),
-                  ),
-                ),
-                const Text(
-                  ' *',
-                  style: TextStyle(
-                    color: Colors.red,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
                   flex: 3,
-                  child: Container(
-                    height: 50,
-                    decoration: BoxDecoration(
-                      border: Border.all(color: const Color(0xFFD1D5DB)),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            textInputAction: TextInputAction.done,
-                            onFieldSubmitted: (_) {
-                              _submitForm();
-                            },
-                            controller: _agentNameController,
-                            decoration: InputDecoration(
-                              hintText:
-                                  'Enter agent name (e.g., John Smith, Agency Name, etc.)',
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                              ),
-                              border: InputBorder.none,
-                            ),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Agent name is required';
-                              }
-                              if (value.length < 2) {
-                                return 'Agent name must be at least 2 characters';
-                              }
-                              return null;
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 2),
-                        if (_isEditMode)
-                          IconButton(
-                            icon: const Icon(Icons.close, color: Colors.grey),
-                            onPressed: _cancelEdit,
-                            tooltip: 'Cancel Edit',
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-                if (isWeb) ...[
-                  const SizedBox(width: 16),
-                  Expanded(
-                    flex: 1,
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: SizedBox(
-                            height: 50,
-                            child: ElevatedButton(
-                              onPressed: _submitForm,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF1E293B),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              child: Text(
-                                _isEditMode ? 'Update' : 'Create',
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        if (_isEditMode) ...[
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: SizedBox(
-                              height: 50,
-                              child: OutlinedButton(
-                                onPressed: _cancelEdit,
-                                style: OutlinedButton.styleFrom(
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Agent Name, Percentage, and Create/Update Button in the same row
+                      isWeb
+                          ? Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Agent Name field
+                                Expanded(
+                                  flex: 3,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Row(
+                                        children: [
+                                          Text(
+                                            'Agent Name',
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w500,
+                                              color: Color(0xFF374151),
+                                            ),
+                                          ),
+                                          Text(
+                                            ' *',
+                                            style: TextStyle(
+                                              color: Colors.red,
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Container(
+                                        height: 50,
+                                        decoration: BoxDecoration(
+                                          border: Border.all(
+                                            color: const Color(0xFFD1D5DB),
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Expanded(
+                                              child: TextFormField(
+                                                textInputAction:
+                                                    TextInputAction.done,
+                                                onFieldSubmitted: (_) {
+                                                  _submitForm();
+                                                },
+                                                controller:
+                                                    _agentNameController,
+                                                decoration: InputDecoration(
+                                                  hintText:
+                                                      'Enter agent name (e.g., John Smith, Agency Name, etc.)',
+                                                  contentPadding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 16,
+                                                      ),
+                                                  border: InputBorder.none,
+                                                ),
+                                                validator: (value) {
+                                                  if (value == null ||
+                                                      value.isEmpty) {
+                                                    return 'Agent name is required';
+                                                  }
+                                                  if (value.length < 2) {
+                                                    return 'Agent name must be at least 2 characters';
+                                                  }
+                                                  return null;
+                                                },
+                                              ),
+                                            ),
+                                            const SizedBox(width: 2),
+                                            if (_isEditMode)
+                                              IconButton(
+                                                icon: const Icon(
+                                                  Icons.close,
+                                                  color: Colors.grey,
+                                                ),
+                                                onPressed: _cancelEdit,
+                                                tooltip: 'Cancel Edit',
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                child: const Text('Cancel'),
-                              ),
+                                const SizedBox(width: 16),
+                                // Percentage field
+                                Expanded(
+                                  flex: 2,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Row(
+                                        children: [
+                                          Text(
+                                            'Percentage',
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w500,
+                                              color: Color(0xFF374151),
+                                            ),
+                                          ),
+                                          Text(
+                                            ' *',
+                                            style: TextStyle(
+                                              color: Colors.red,
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Container(
+                                        height: 50,
+                                        decoration: BoxDecoration(
+                                          border: Border.all(
+                                            color: const Color(0xFFD1D5DB),
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                        ),
+                                        child: TextFormField(
+                                          controller: _percentageController,
+                                          keyboardType:
+                                              const TextInputType.numberWithOptions(
+                                                decimal: true,
+                                              ),
+                                          inputFormatters: [
+                                            FilteringTextInputFormatter.allow(
+                                              RegExp(r'^\d*\.?\d{0,2}$'),
+                                            ),
+                                          ],
+                                          onChanged: (value) {
+                                            if (value.isEmpty) return;
+                                            final number = double.tryParse(
+                                              value,
+                                            );
+                                            if (number != null &&
+                                                number > 100) {
+                                              _percentageController.value =
+                                                  const TextEditingValue(
+                                                    text: "100.00",
+                                                    selection:
+                                                        TextSelection.collapsed(
+                                                          offset: 6,
+                                                        ),
+                                                  );
+                                            }
+                                          },
+                                          decoration: const InputDecoration(
+                                            hintText: '%',
+                                            contentPadding:
+                                                EdgeInsets.symmetric(
+                                                  horizontal: 16,
+                                                ),
+                                            border: InputBorder.none,
+                                          ),
+                                          validator: (value) {
+                                            if (value == null ||
+                                                value.isEmpty) {
+                                              return 'Required';
+                                            }
+                                            final number = double.tryParse(
+                                              value,
+                                            );
+                                            if (number == null) {
+                                              return 'Invalid';
+                                            }
+                                            return null;
+                                          },
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                // Create/Update Button
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  flex: 1,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const SizedBox(height: 28),
+                                      // Matches label height for alignment
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: SizedBox(
+                                              height: 50,
+                                              child: ElevatedButton(
+                                                onPressed: _submitForm,
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: const Color(
+                                                    0xFF1E293B,
+                                                  ),
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          8,
+                                                        ),
+                                                  ),
+                                                ),
+                                                child: Text(
+                                                  _isEditMode
+                                                      ? 'Update'
+                                                      : 'Create',
+                                                  style: const TextStyle(
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.w500,
+                                                    color: Colors.white,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          if (_isEditMode) ...[
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: SizedBox(
+                                                height: 50,
+                                                child: OutlinedButton(
+                                                  onPressed: _cancelEdit,
+                                                  style: OutlinedButton.styleFrom(
+                                                    shape: RoundedRectangleBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            8,
+                                                          ),
+                                                    ),
+                                                  ),
+                                                  child: const Text('Cancel'),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            )
+                          : Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Agent Name field
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      flex: 3,
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          const Row(
+                                            children: [
+                                              Text(
+                                                'Agent Name',
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w500,
+                                                  color: Color(0xFF374151),
+                                                ),
+                                              ),
+                                              Text(
+                                                ' *',
+                                                style: TextStyle(
+                                                  color: Colors.red,
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Container(
+                                            height: 50,
+                                            decoration: BoxDecoration(
+                                              border: Border.all(
+                                                color: const Color(0xFFD1D5DB),
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                            child: Row(
+                                              children: [
+                                                Expanded(
+                                                  child: TextFormField(
+                                                    textInputAction:
+                                                        TextInputAction.done,
+                                                    onFieldSubmitted: (_) {
+                                                      _submitForm();
+                                                    },
+                                                    controller:
+                                                        _agentNameController,
+                                                    decoration: InputDecoration(
+                                                      hintText:
+                                                          'Enter agent name (e.g., John Smith, Agency Name, etc.)',
+                                                      contentPadding:
+                                                          const EdgeInsets.symmetric(
+                                                            horizontal: 16,
+                                                          ),
+                                                      border: InputBorder.none,
+                                                    ),
+                                                    validator: (value) {
+                                                      if (value == null ||
+                                                          value.isEmpty) {
+                                                        return 'Agent name is required';
+                                                      }
+                                                      if (value.length < 2) {
+                                                        return 'Agent name must be at least 2 characters';
+                                                      }
+                                                      return null;
+                                                    },
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 2),
+                                                if (_isEditMode)
+                                                  IconButton(
+                                                    icon: const Icon(
+                                                      Icons.close,
+                                                      color: Colors.grey,
+                                                    ),
+                                                    onPressed: _cancelEdit,
+                                                    tooltip: 'Cancel Edit',
+                                                  ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    // Percentage field
+                                    Expanded(
+                                      flex: 2,
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          const Row(
+                                            children: [
+                                              Text(
+                                                'Percentage',
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w500,
+                                                  color: Color(0xFF374151),
+                                                ),
+                                              ),
+                                              Text(
+                                                ' *',
+                                                style: TextStyle(
+                                                  color: Colors.red,
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Container(
+                                            height: 50,
+                                            decoration: BoxDecoration(
+                                              border: Border.all(
+                                                color: const Color(0xFFD1D5DB),
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                            child: TextFormField(
+                                              controller: _percentageController,
+                                              keyboardType:
+                                                  const TextInputType.numberWithOptions(
+                                                    decimal: true,
+                                                  ),
+                                              inputFormatters: [
+                                                FilteringTextInputFormatter.allow(
+                                                  RegExp(r'^\d*\.?\d{0,2}$'),
+                                                ),
+                                              ],
+                                              onChanged: (value) {
+                                                if (value.isEmpty) return;
+                                                final number = double.tryParse(
+                                                  value,
+                                                );
+                                                if (number != null &&
+                                                    number > 100) {
+                                                  _percentageController.value =
+                                                      const TextEditingValue(
+                                                        text: "100.00",
+                                                        selection:
+                                                            TextSelection.collapsed(
+                                                              offset: 6,
+                                                            ),
+                                                      );
+                                                }
+                                              },
+                                              decoration: const InputDecoration(
+                                                hintText: '%',
+                                                contentPadding:
+                                                    EdgeInsets.symmetric(
+                                                      horizontal: 16,
+                                                    ),
+                                                border: InputBorder.none,
+                                              ),
+                                              validator: (value) {
+                                                if (value == null ||
+                                                    value.isEmpty) {
+                                                  return 'Required';
+                                                }
+                                                final number = double.tryParse(
+                                                  value,
+                                                );
+                                                if (number == null) {
+                                                  return 'Invalid';
+                                                }
+                                                return null;
+                                              },
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+
+                                // Create/Update Button
+                                const SizedBox(height: 16),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: SizedBox(
+                                        height: 50,
+                                        child: ElevatedButton(
+                                          onPressed: _submitForm,
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: const Color(
+                                              0xFF1E293B,
+                                            ),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                          ),
+                                          child: Text(
+                                            _isEditMode ? 'Update' : 'Create',
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w500,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    if (_isEditMode) ...[
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: SizedBox(
+                                          height: 50,
+                                          child: OutlinedButton(
+                                            onPressed: _cancelEdit,
+                                            style: OutlinedButton.styleFrom(
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                              ),
+                                            ),
+                                            child: const Text('Cancel'),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ],
                             ),
-                          ),
-                        ],
-                      ],
-                    ),
+                    ],
                   ),
-                ],
+                ),
               ],
             ),
-            if (!isWeb) ...[
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: _submitForm,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1E293B),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: Text(
-                        _isEditMode ? 'Update Agent' : 'Create Agent',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-                  if (_isEditMode) ...[
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: _cancelEdit,
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: const Text('Cancel'),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ],
           ],
         ),
       ),
@@ -658,7 +1002,7 @@ class _AgentMasterScreenState extends State<AgentMasterScreen> {
                     Expanded(
                       flex: 4,
                       child: Text(
-                        agent.agentName,
+                        "${agent.agentName} - ${agent.percentage} %",
                         style: TextStyle(
                           fontWeight: isEditing
                               ? FontWeight.bold
@@ -745,7 +1089,7 @@ class _AgentMasterScreenState extends State<AgentMasterScreen> {
               ),
             ),
             title: Text(
-              agent.agentName,
+              "${agent.agentName} - ${agent.percentage} %",
               style: TextStyle(
                 fontWeight: isEditing ? FontWeight.bold : FontWeight.w500,
                 color: isEditing ? Colors.blue : Colors.black87,

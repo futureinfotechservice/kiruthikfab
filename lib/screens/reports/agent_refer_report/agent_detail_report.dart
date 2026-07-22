@@ -7,6 +7,7 @@ import 'package:kiruthikfab/models/agent_report_model.dart';
 import 'package:kiruthikfab/screens/reports/agent_refer_report/refer_report_widget.dart';
 import 'package:kiruthikfab/services/config.dart';
 
+import '../../../indigator/main.dart';
 import 'agent_detail_widgets.dart';
 import 'generate_agent_report.dart';
 
@@ -136,7 +137,7 @@ class _AgentDetailReportState extends State<AgentDetailReport> {
         printReport: _printReport,
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularWaveProgress())
           : _error.isNotEmpty
           ? Center(
               child: Column(

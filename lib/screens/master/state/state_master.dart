@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
+import '../../../indigator/main.dart';
 import '../../../models/state_master.dart';
 import '../../../services/state_master_api_service.dart';
 // import '../../../models/state_master.dart';
@@ -225,7 +226,7 @@ class _StateMasterScreenState extends State<StateMasterScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(),
+                  CircularWaveProgress(),
                   SizedBox(height: 16),
                   Text(
                     'Processing...',
@@ -263,7 +264,7 @@ class _StateMasterScreenState extends State<StateMasterScreen> {
                           const Center(
                             child: Padding(
                               padding: EdgeInsets.all(32),
-                              child: CircularProgressIndicator(),
+                              child: CircularWaveProgress(),
                             ),
                           )
                         else if (_filteredStates.isEmpty)

@@ -52,7 +52,7 @@ if (!empty($fromDate) && !empty($toDate)) {
 
     $where .= "
     AND cr.date >= '$fromDate' 
-AND cr.date < '$toDate'
+AND cr.date <= '$toDate'
     
      
     ";

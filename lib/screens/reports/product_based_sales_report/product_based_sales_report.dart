@@ -507,6 +507,7 @@ class _ProductBasedSalesReportState extends State<ProductBasedSalesReport> {
                                             addedby: '',
                                             activestatus: '',
                                             createdAt: '',
+                                            branchName: '',
                                           ),
                                         );
                                       } else {
@@ -747,6 +748,7 @@ class _ProductBasedSalesReportState extends State<ProductBasedSalesReport> {
                                         addedby: '',
                                         activestatus: '',
                                         createdAt: '',
+                                        branchName: '',
                                       ),
                                     );
                                   } else {
